@@ -294,7 +294,7 @@ export default function ClientDetail() {
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
         {/* ── 1. Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <Link to="/">
+          <Link to="/demandas">
             <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
           <div className="flex-1 min-w-0">

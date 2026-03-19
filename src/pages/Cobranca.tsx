@@ -1,0 +1,177 @@
+import { useState, useMemo } from "react";
+import {
+  Search, DollarSign, TrendingUp, Ban, CheckCircle,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { InternalLayout } from "@/components/InternalLayout";
+import { StatCard } from "@/components/StatCard";
+import { BillingBadge } from "@/components/StatusBadge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { useCases } from "@/hooks/use-cases";
+import { BILLING_LABELS } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import type { Database } from "@/integrations/supabase/types";
+
+type BillingStatus = Database["public"]["Enums"]["billing_status"];
+
+export default function Cobranca() {
+  const { data: cases = [], isLoading } = useCases();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [billingFilter, setBillingFilter] = useState("all");
+
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const totalFees = cases.reduce((sum, c) => sum + (c.billing?.[0]?.amount ?? 0), 0);
+  const totalPaid = cases
+    .filter((c) => c.billing?.[0]?.billing_status === "pago")
+    .reduce((sum, c) => sum + (c.billing?.[0]?.amount ?? 0), 0);
+  const totalPending = totalFees - totalPaid;
+  const pendingCount = cases.filter((c) => {
+    const b = c.billing?.[0];
+    return b && b.billing_status !== "pago";
+  }).length;
+
+  const filtered = useMemo(() => {
+    return cases.filter((c) => {
+      const q = search.toLowerCase();
+      const name = c.clients?.full_name?.toLowerCase() ?? "";
+      const matchSearch = !q || name.includes(q);
+      const billing = c.billing?.[0];
+      const matchBilling = billingFilter === "all" || billing?.billing_status === billingFilter;
+      return matchSearch && matchBilling;
+    });
+  }, [cases, search, billingFilter]);
+
+  const handleQuickStatusChange = async (billingId: string, newStatus: BillingStatus) => {
+    const updates: Record<string, unknown> = { billing_status: newStatus };
+    if (newStatus === "pago") {
+      updates.payment_date = new Date().toISOString().split("T")[0];
+    }
+    const { error } = await supabase.from("billing").update(updates).eq("id", billingId);
+    if (error) {
+      toast.error("Erro ao atualizar cobrança.");
+    } else {
+      toast.success("Status de cobrança atualizado!");
+      queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
+    }
+  };
+
+  return (
+    <InternalLayout>
+      <div className="p-6 space-y-6">
+        {/* Stats */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Honorários Previstos" value={fmt(totalFees)} icon={TrendingUp} color="text-primary" />
+            <StatCard label="Já Recebido" value={fmt(totalPaid)} icon={DollarSign} color="text-success" />
+            <StatCard label="A Receber" value={fmt(totalPending)} icon={Ban} color="text-warning" />
+            <StatCard label="Cobranças Pendentes" value={pendingCount} icon={Ban} color="text-destructive" />
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar por nome..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <Select value={billingFilter} onValueChange={setBillingFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Status cobrança" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas cobranças</SelectItem>
+              {Object.entries(BILLING_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Table */}
+        {isLoading ? (
+          <Skeleton className="h-96 rounded-xl" />
+        ) : (
+          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Responsável</TableHead>
+                  <TableHead>Honorário</TableHead>
+                  <TableHead>Status Cobrança</TableHead>
+                  <TableHead className="hidden md:table-cell">Data Pagamento</TableHead>
+                  <TableHead className="hidden md:table-cell">Forma</TableHead>
+                  <TableHead>Ação Rápida</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((c) => {
+                  const billing = c.billing?.[0];
+                  const isPending = billing && billing.billing_status !== "pago";
+                  return (
+                    <TableRow key={c.id} className={isPending ? "border-l-2 border-l-warning" : ""}>
+                      <TableCell className="font-medium">
+                        <Link to={`/demandas/${c.id}`} className="hover:text-primary transition-colors">
+                          {c.clients?.full_name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{c.internal_owner ?? "—"}</TableCell>
+                      <TableCell className="text-sm font-medium">{billing ? fmt(billing.amount) : "—"}</TableCell>
+                      <TableCell>
+                        {billing ? <BillingBadge status={billing.billing_status} /> : <span className="text-xs text-muted-foreground">Sem cobrança</span>}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                        {billing?.payment_date ? new Date(billing.payment_date).toLocaleDateString("pt-BR") : "—"}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                        {billing?.payment_method ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        {billing && billing.billing_status !== "pago" && (
+                          <div className="flex gap-1">
+                            {billing.billing_status === "nao_cobrado" && (
+                              <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => handleQuickStatusChange(billing.id, "cobrado")}>
+                                Cobrar
+                              </Button>
+                            )}
+                            <Button variant="default" size="sm" className="text-xs h-7" onClick={() => handleQuickStatusChange(billing.id, "pago")}>
+                              <CheckCircle className="h-3 w-3 mr-1" /> Pago
+                            </Button>
+                          </div>
+                        )}
+                        {billing?.billing_status === "pago" && (
+                          <span className="text-xs text-success flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" /> Quitado
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                      Nenhuma cobrança encontrada.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+    </InternalLayout>
+  );
+}

@@ -79,7 +79,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem asChild>
-          <Link to={`/clients/${caseData.id}`} className="cursor-pointer">
+          <Link to={`/demandas/${caseData.id}`} className="cursor-pointer">
             <Eye className="mr-2 h-4 w-4" />
             Ver detalhes
           </Link>
