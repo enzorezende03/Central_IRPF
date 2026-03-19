@@ -1,10 +1,10 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   ArrowLeft, Copy, MessageCircle, CheckCircle, Circle, FileText, Clock,
   User, Mail, Phone, DollarSign, ExternalLink, Upload, Send, Eye,
-  AlertCircle, Calendar, CreditCard, Save, RefreshCw, Download,
+  AlertCircle, Calendar, CreditCard, Save, RefreshCw, Download, Loader2, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -39,6 +39,7 @@ function fmtDate(d: string) {
 }
 
 import { getPortalUrl, getWhatsAppMessage, logTimelineEvent } from "@/lib/portal-utils";
+import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -396,86 +397,25 @@ export default function ClientDetail() {
                   {approvedDocs} aprovados · {pendingDocs} pendentes · {docRequests.length} total
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-1">
+              <CardContent className="space-y-2">
                 {docRequests.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">Nenhum documento solicitado.</p>
                 ) : (
                   docRequests.map((doc) => {
-                    const uploaded = uploadedDocs.find((u) => u.document_request_id === doc.id);
+                    const docUploads = uploadedDocs.filter((u) => u.document_request_id === doc.id);
                     return (
-                      <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors">
-                        {doc.status === "aprovado" ? (
-                          <CheckCircle className="h-5 w-5 text-success shrink-0" />
-                        ) : doc.status === "enviado" ? (
-                          <AlertCircle className="h-5 w-5 text-info shrink-0" />
-                        ) : doc.status === "rejeitado" ? (
-                          <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${doc.status === "aprovado" ? "text-muted-foreground line-through" : "font-medium"}`}>
-                            {doc.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {doc.category && (
-                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{doc.category}</span>
-                            )}
-                            {doc.is_required && (
-                              <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          {doc.status === "pendente" && uploaded && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs h-7"
-                              onClick={() => updateDocStatus.mutate({ docId: doc.id, status: "aprovado" })}
-                            >
-                              <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
-                            </Button>
-                          )}
-                          {doc.status === "enviado" && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs h-7"
-                                onClick={() => updateDocStatus.mutate({ docId: doc.id, status: "aprovado" })}
-                              >
-                                <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs h-7 text-destructive"
-                                onClick={() => updateDocStatus.mutate({ docId: doc.id, status: "rejeitado" })}
-                              >
-                                Rejeitar
-                              </Button>
-                            </>
-                          )}
-                          {doc.status === "rejeitado" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs h-7"
-                              onClick={() => updateDocStatus.mutate({ docId: doc.id, status: "pendente" })}
-                            >
-                              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Solicitar novamente
-                            </Button>
-                          )}
-                          {uploaded && (
-                            <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                              <a href={uploaded.file_url} target="_blank" rel="noopener noreferrer">
-                                <Eye className="h-3.5 w-3.5" />
-                              </a>
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                      <InternalDocRow
+                        key={doc.id}
+                        doc={doc}
+                        uploads={docUploads}
+                        caseId={id!}
+                        onStatusChange={(status) => updateDocStatus.mutate({ docId: doc.id, status })}
+                        onRefresh={() => {
+                          queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+                          queryClient.invalidateQueries({ queryKey: ["uploaded-docs", id] });
+                          queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                        }}
+                      />
                     );
                   })
                 )}
@@ -639,49 +579,14 @@ export default function ClientDetail() {
                 <CardDescription>Declaração e recibo de entrega</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {deliverable ? (
-                  <>
-                    <div className="space-y-2">
-                      {deliverable.irpf_file_url ? (
-                        <div className="flex items-center gap-2 p-2 rounded-lg border bg-success/5">
-                          <FileText className="h-4 w-4 text-success" />
-                          <span className="text-sm flex-1">Declaração IRPF</span>
-                          <Button variant="ghost" size="sm" className="h-7" asChild>
-                            <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-3.5 w-3.5" />
-                            </a>
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Declaração não enviada.</p>
-                      )}
-                      {deliverable.receipt_file_url ? (
-                        <div className="flex items-center gap-2 p-2 rounded-lg border bg-success/5">
-                          <FileText className="h-4 w-4 text-success" />
-                          <span className="text-sm flex-1">Recibo de Entrega</span>
-                          <Button variant="ghost" size="sm" className="h-7" asChild>
-                            <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-3.5 w-3.5" />
-                            </a>
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Recibo não enviado.</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {deliverable.sent_to_client ? (
-                        <Badge className="bg-success/15 text-success border-success/30">
-                          <CheckCircle className="h-3 w-3 mr-1" /> Liberado ao cliente
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">Não liberado ao cliente</Badge>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum arquivo final enviado.</p>
-                )}
+                <DeliverableUploadSection
+                  caseId={id!}
+                  deliverable={deliverable}
+                  onRefresh={() => {
+                    queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                  }}
+                />
               </CardContent>
             </Card>
           </div>
@@ -776,6 +681,222 @@ function BillingBlock({
           className="mt-1 text-sm"
         />
       </div>
+    </div>
+  );
+}
+
+// ── Internal Document Row ──
+function InternalDocRow({
+  doc,
+  uploads,
+  caseId,
+  onStatusChange,
+  onRefresh,
+}: {
+  doc: Tables<"document_requests">;
+  uploads: Tables<"uploaded_documents">[];
+  caseId: string;
+  onStatusChange: (status: DocumentStatus) => void;
+  onRefresh: () => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const statusIcon = {
+    pendente: <Circle className="h-5 w-5 text-muted-foreground shrink-0" />,
+    enviado: <AlertCircle className="h-5 w-5 text-info shrink-0" />,
+    aprovado: <CheckCircle className="h-5 w-5 text-success shrink-0" />,
+    rejeitado: <AlertCircle className="h-5 w-5 text-destructive shrink-0" />,
+  } satisfies Record<DocumentStatus, React.ReactNode>;
+
+  const handleOfficeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      const err = validateFile(file);
+      if (err) { toast.error(err); return; }
+    }
+
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const path = buildStoragePath(caseId, file.name, doc.id);
+        const url = await uploadFileToBucket("documentos_clientes", path, file);
+        await supabase.from("uploaded_documents").insert({
+          case_id: caseId,
+          document_request_id: doc.id,
+          file_name: file.name,
+          file_url: url,
+          file_type: file.type || null,
+          uploaded_by: "office",
+        });
+      }
+      await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
+      await logTimelineEvent(caseId, "Documento enviado pelo escritório", `Escritório enviou "${doc.title}"`);
+      toast.success("Arquivo enviado!");
+      onRefresh();
+    } catch {
+      toast.error("Erro ao enviar arquivo.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="p-3 rounded-lg border hover:bg-muted/30 transition-colors space-y-2">
+      <div className="flex items-center gap-3">
+        {statusIcon[doc.status]}
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm ${doc.status === "aprovado" ? "text-muted-foreground line-through" : "font-medium"}`}>
+            {doc.title}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            {doc.category && <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{doc.category}</span>}
+            {doc.is_required && <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>}
+          </div>
+        </div>
+        <div className="flex gap-1 shrink-0 flex-wrap justify-end">
+          {(doc.status === "enviado" || (doc.status === "pendente" && uploads.length > 0)) && (
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => onStatusChange("aprovado")}>
+              <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
+            </Button>
+          )}
+          {doc.status === "enviado" && (
+            <Button variant="ghost" size="sm" className="text-xs h-7 text-destructive" onClick={() => onStatusChange("rejeitado")}>
+              Rejeitar
+            </Button>
+          )}
+          {doc.status === "rejeitado" && (
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => onStatusChange("pendente")}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Solicitar novamente
+            </Button>
+          )}
+          <input ref={fileInputRef} type="file" className="hidden" multiple accept={getAcceptString()} onChange={handleOfficeUpload} />
+          <Button variant="ghost" size="sm" className="text-xs h-7" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
+      </div>
+      {uploads.length > 0 && (
+        <div className="ml-8 space-y-1">
+          {uploads.map((u) => (
+            <div key={u.id} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/50">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="flex-1 truncate">{u.file_name}</span>
+              <span className="text-muted-foreground shrink-0">{new Date(u.uploaded_at).toLocaleDateString("pt-BR")}</span>
+              <span className="text-[10px] text-muted-foreground shrink-0">{u.uploaded_by === "client" ? "Cliente" : "Escritório"}</span>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" asChild>
+                <a href={u.file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3 w-3" /></a>
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Deliverable Upload Section ──
+function DeliverableUploadSection({
+  caseId,
+  deliverable,
+  onRefresh,
+}: {
+  caseId: string;
+  deliverable: Tables<"final_deliverables"> | null | undefined;
+  onRefresh: () => void;
+}) {
+  const irpfRef = useRef<HTMLInputElement>(null);
+  const receiptRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<"irpf" | "receipt" | null>(null);
+
+  const handleUpload = async (type: "irpf" | "receipt", file: File) => {
+    const err = validateFile(file);
+    if (err) { toast.error(err); return; }
+
+    setUploading(type);
+    const bucket = type === "irpf" ? "declaracoes_finais" : "recibos_entrega";
+    const path = buildStoragePath(caseId, file.name);
+
+    try {
+      const url = await uploadFileToBucket(bucket, path, file);
+      const field = type === "irpf" ? "irpf_file_url" : "receipt_file_url";
+
+      if (deliverable) {
+        await supabase.from("final_deliverables").update({ [field]: url }).eq("id", deliverable.id);
+      } else {
+        await supabase.from("final_deliverables").insert({ case_id: caseId, [field]: url });
+      }
+
+      const label = type === "irpf" ? "Declaração IRPF" : "Recibo de Entrega";
+      await logTimelineEvent(caseId, `${label} enviada`, `Arquivo: ${file.name}`);
+      toast.success(`${label} enviada com sucesso!`);
+      onRefresh();
+    } catch {
+      toast.error("Erro ao enviar arquivo.");
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const toggleRelease = async () => {
+    if (!deliverable) return;
+    const newVal = !deliverable.sent_to_client;
+    await supabase.from("final_deliverables").update({ sent_to_client: newVal }).eq("id", deliverable.id);
+    await logTimelineEvent(caseId, newVal ? "Entrega liberada" : "Entrega bloqueada", newVal ? "Arquivos finais liberados para o cliente" : "Arquivos finais bloqueados", true);
+    toast.success(newVal ? "Arquivos liberados ao cliente!" : "Liberação revogada.");
+    onRefresh();
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* IRPF */}
+      <div className="flex items-center gap-2 p-2.5 rounded-lg border">
+        <FileText className={`h-4 w-4 shrink-0 ${deliverable?.irpf_file_url ? "text-success" : "text-muted-foreground"}`} />
+        <span className="text-sm flex-1">{deliverable?.irpf_file_url ? "Declaração IRPF" : "Enviar Declaração IRPF"}</span>
+        {deliverable?.irpf_file_url && (
+          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+            <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
+          </Button>
+        )}
+        <input ref={irpfRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload("irpf", e.target.files[0])} />
+        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === "irpf"} onClick={() => irpfRef.current?.click()}>
+          {uploading === "irpf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {deliverable?.irpf_file_url ? "Substituir" : "Upload"}</>}
+        </Button>
+      </div>
+
+      {/* Receipt */}
+      <div className="flex items-center gap-2 p-2.5 rounded-lg border">
+        <FileText className={`h-4 w-4 shrink-0 ${deliverable?.receipt_file_url ? "text-success" : "text-muted-foreground"}`} />
+        <span className="text-sm flex-1">{deliverable?.receipt_file_url ? "Recibo de Entrega" : "Enviar Recibo de Entrega"}</span>
+        {deliverable?.receipt_file_url && (
+          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+            <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
+          </Button>
+        )}
+        <input ref={receiptRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload("receipt", e.target.files[0])} />
+        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === "receipt"} onClick={() => receiptRef.current?.click()}>
+          {uploading === "receipt" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {deliverable?.receipt_file_url ? "Substituir" : "Upload"}</>}
+        </Button>
+      </div>
+
+      {/* Release toggle */}
+      {deliverable && (deliverable.irpf_file_url || deliverable.receipt_file_url) && (
+        <Button
+          variant={deliverable.sent_to_client ? "destructive" : "default"}
+          size="sm"
+          className="w-full"
+          onClick={toggleRelease}
+        >
+          {deliverable.sent_to_client ? (
+            <><CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Liberado — Clique para revogar</>
+          ) : (
+            <><Send className="h-3.5 w-3.5 mr-1.5" /> Liberar para o Cliente</>
+          )}
+        </Button>
+      )}
     </div>
   );
 }
