@@ -190,8 +190,9 @@ export default function ClientDetail() {
         .eq("id", id!);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async (_, status) => {
       toast.success("Status atualizado!");
+      await logTimelineEvent(id!, "Status alterado", `Status alterado para ${STATUS_LABELS[status]}`, true);
       invalidateAll();
     },
   });
