@@ -38,9 +38,7 @@ function fmtDate(d: string) {
   return format(new Date(d), "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
 
-function getPortalUrl(token: string) {
-  return `${window.location.origin}/portal/${token}`;
-}
+import { getPortalUrl, getWhatsAppMessage, logTimelineEvent } from "@/lib/portal-utils";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
