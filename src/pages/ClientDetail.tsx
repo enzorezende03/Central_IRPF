@@ -38,9 +38,7 @@ function fmtDate(d: string) {
   return format(new Date(d), "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
 
-function getPortalUrl(token: string) {
-  return `${window.location.origin}/portal/${token}`;
-}
+import { getPortalUrl, getWhatsAppMessage, logTimelineEvent } from "@/lib/portal-utils";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -192,8 +190,9 @@ export default function ClientDetail() {
         .eq("id", id!);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async (_, status) => {
       toast.success("Status atualizado!");
+      await logTimelineEvent(id!, "Status alterado", `Status alterado para ${STATUS_LABELS[status]}`, true);
       invalidateAll();
     },
   });
@@ -268,16 +267,24 @@ export default function ClientDetail() {
 
   const client = caseData.clients as Tables<"clients"> | null;
   const portalUrl = getPortalUrl(caseData.portal_token);
-  const whatsappMsg = `Olá, ${client?.full_name ?? "Cliente"}. Para darmos andamento ao seu IRPF, envie seus documentos e responda as pendências neste link: ${portalUrl}`;
+  const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", caseData.portal_token, caseData.client_message);
 
   const answeredIds = new Set(answers.map((a) => a.question_id));
   const unansweredCount = questions.filter((q) => !answeredIds.has(q.id)).length;
   const approvedDocs = docRequests.filter((d) => d.status === "aprovado").length;
   const pendingDocs = docRequests.filter((d) => d.status === "pendente").length;
 
-  const copyToClipboard = (text: string, label: string) => {
+  const copyToClipboard = async (text: string, label: string, eventType: string, description: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copiado!`);
+    await logTimelineEvent(id!, eventType, description);
+    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+  };
+
+  const handleOpenPortal = async () => {
+    window.open(portalUrl, "_blank");
+    await logTimelineEvent(id!, "Portal aberto", "Portal aberto pelo escritório");
+    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
   };
 
   return (
@@ -360,16 +367,14 @@ export default function ClientDetail() {
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
-                <Button variant="outline" size="sm" onClick={() => copyToClipboard(portalUrl, "Link")}>
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(portalUrl, "Link", "Link copiado", `Link do portal copiado para ${client?.full_name}`)}>
                   <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar Link
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => copyToClipboard(whatsappMsg, "Mensagem WhatsApp")}>
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(whatsappMsg, "Mensagem WhatsApp", "WhatsApp copiado", `Mensagem WhatsApp copiada para ${client?.full_name}`)}>
                   <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> WhatsApp
                 </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={portalUrl} target="_blank" rel="noopener noreferrer">
-                    <Eye className="h-3.5 w-3.5 mr-1.5" /> Abrir
-                  </a>
+                <Button variant="outline" size="sm" onClick={handleOpenPortal}>
+                  <Eye className="h-3.5 w-3.5 mr-1.5" /> Abrir
                 </Button>
               </div>
             </div>
