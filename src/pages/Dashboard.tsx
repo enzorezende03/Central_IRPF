@@ -203,7 +203,7 @@ export default function Dashboard() {
                 {filtered.map((c) => {
                   const billing = c.billing?.[0];
                   return (
-                    <TableRow key={c.id} className="hover:bg-muted/50">
+                    <TableRow key={c.id} className={`hover:bg-muted/50 ${billing && billing.billing_status !== "pago" ? "border-l-2 border-l-warning" : ""}`}>
                       <TableCell className="font-medium">
                         <Link to={`/clients/${c.id}`} className="hover:text-primary transition-colors">
                           {c.clients?.full_name}

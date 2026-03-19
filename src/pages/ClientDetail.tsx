@@ -626,20 +626,37 @@ function BillingBlock({
   const [status, setStatus] = useState<BillingStatusType | "">(billing?.billing_status ?? "");
   const [amount, setAmount] = useState(billing?.amount?.toString() ?? "");
   const [notes, setNotes] = useState(billing?.notes ?? "");
+  const [paymentDate, setPaymentDate] = useState(billing?.payment_date ?? "");
+  const [paymentMethod, setPaymentMethod] = useState(billing?.payment_method ?? "");
 
-  // Sync when billing loads
   const currentStatus = status || billing?.billing_status || "nao_cobrado";
   const currentAmount = amount || billing?.amount?.toString() || "0";
 
+  const isPending = currentStatus !== "pago";
+
   return (
     <div className="space-y-3">
+      {isPending && (
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-warning/10 border border-warning/30">
+          <AlertCircle className="h-4 w-4 text-warning shrink-0" />
+          <p className="text-xs text-warning font-medium">
+            {currentStatus === "nao_cobrado" ? "Honorário ainda não cobrado" : "Aguardando pagamento"}
+          </p>
+        </div>
+      )}
       <div>
         <label className="text-xs font-medium text-muted-foreground">Status</label>
         <Select
           value={currentStatus}
           onValueChange={(v) => {
             setStatus(v as BillingStatusType);
-            onUpdate({ billing_status: v as BillingStatusType });
+            const updates: Partial<Tables<"billing">> = { billing_status: v as BillingStatusType };
+            if (v === "pago" && !paymentDate) {
+              const today = new Date().toISOString().split("T")[0];
+              setPaymentDate(today);
+              updates.payment_date = today;
+            }
+            onUpdate(updates);
           }}
         >
           <SelectTrigger className="mt-1">
@@ -662,18 +679,40 @@ function BillingBlock({
           className="mt-1"
         />
       </div>
-      {billing?.payment_date && (
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Data de Pagamento</label>
-          <p className="text-sm mt-1">{billing.payment_date}</p>
-        </div>
-      )}
-      {billing?.payment_method && (
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Método de Pagamento</label>
-          <p className="text-sm mt-1">{billing.payment_method}</p>
-        </div>
-      )}
+      <div>
+        <label className="text-xs font-medium text-muted-foreground">Data de Pagamento</label>
+        <Input
+          type="date"
+          value={paymentDate}
+          onChange={(e) => setPaymentDate(e.target.value)}
+          onBlur={() => onUpdate({ payment_date: paymentDate || null })}
+          className="mt-1"
+        />
+      </div>
+      <div>
+        <label className="text-xs font-medium text-muted-foreground">Forma de Pagamento</label>
+        <Select
+          value={paymentMethod || "__none"}
+          onValueChange={(v) => {
+            const val = v === "__none" ? "" : v;
+            setPaymentMethod(val);
+            onUpdate({ payment_method: val || null });
+          }}
+        >
+          <SelectTrigger className="mt-1">
+            <SelectValue placeholder="Selecionar..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none">Não informado</SelectItem>
+            <SelectItem value="PIX">PIX</SelectItem>
+            <SelectItem value="Transferência">Transferência</SelectItem>
+            <SelectItem value="Boleto">Boleto</SelectItem>
+            <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
+            <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+            <SelectItem value="Link de Pagamento">Link de Pagamento</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <div>
         <label className="text-xs font-medium text-muted-foreground">Observações</label>
         <Textarea
