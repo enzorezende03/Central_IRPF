@@ -396,86 +396,25 @@ export default function ClientDetail() {
                   {approvedDocs} aprovados · {pendingDocs} pendentes · {docRequests.length} total
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-1">
+              <CardContent className="space-y-2">
                 {docRequests.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">Nenhum documento solicitado.</p>
                 ) : (
                   docRequests.map((doc) => {
-                    const uploaded = uploadedDocs.find((u) => u.document_request_id === doc.id);
+                    const docUploads = uploadedDocs.filter((u) => u.document_request_id === doc.id);
                     return (
-                      <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors">
-                        {doc.status === "aprovado" ? (
-                          <CheckCircle className="h-5 w-5 text-success shrink-0" />
-                        ) : doc.status === "enviado" ? (
-                          <AlertCircle className="h-5 w-5 text-info shrink-0" />
-                        ) : doc.status === "rejeitado" ? (
-                          <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${doc.status === "aprovado" ? "text-muted-foreground line-through" : "font-medium"}`}>
-                            {doc.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {doc.category && (
-                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{doc.category}</span>
-                            )}
-                            {doc.is_required && (
-                              <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          {doc.status === "pendente" && uploaded && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs h-7"
-                              onClick={() => updateDocStatus.mutate({ docId: doc.id, status: "aprovado" })}
-                            >
-                              <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
-                            </Button>
-                          )}
-                          {doc.status === "enviado" && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs h-7"
-                                onClick={() => updateDocStatus.mutate({ docId: doc.id, status: "aprovado" })}
-                              >
-                                <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs h-7 text-destructive"
-                                onClick={() => updateDocStatus.mutate({ docId: doc.id, status: "rejeitado" })}
-                              >
-                                Rejeitar
-                              </Button>
-                            </>
-                          )}
-                          {doc.status === "rejeitado" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs h-7"
-                              onClick={() => updateDocStatus.mutate({ docId: doc.id, status: "pendente" })}
-                            >
-                              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Solicitar novamente
-                            </Button>
-                          )}
-                          {uploaded && (
-                            <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                              <a href={uploaded.file_url} target="_blank" rel="noopener noreferrer">
-                                <Eye className="h-3.5 w-3.5" />
-                              </a>
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                      <InternalDocRow
+                        key={doc.id}
+                        doc={doc}
+                        uploads={docUploads}
+                        caseId={id!}
+                        onStatusChange={(status) => updateDocStatus.mutate({ docId: doc.id, status })}
+                        onRefresh={() => {
+                          queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+                          queryClient.invalidateQueries({ queryKey: ["uploaded-docs", id] });
+                          queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                        }}
+                      />
                     );
                   })
                 )}
