@@ -266,16 +266,24 @@ export default function ClientDetail() {
 
   const client = caseData.clients as Tables<"clients"> | null;
   const portalUrl = getPortalUrl(caseData.portal_token);
-  const whatsappMsg = `Olá, ${client?.full_name ?? "Cliente"}. Para darmos andamento ao seu IRPF, envie seus documentos e responda as pendências neste link: ${portalUrl}`;
+  const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", caseData.portal_token, caseData.client_message);
 
   const answeredIds = new Set(answers.map((a) => a.question_id));
   const unansweredCount = questions.filter((q) => !answeredIds.has(q.id)).length;
   const approvedDocs = docRequests.filter((d) => d.status === "aprovado").length;
   const pendingDocs = docRequests.filter((d) => d.status === "pendente").length;
 
-  const copyToClipboard = (text: string, label: string) => {
+  const copyToClipboard = async (text: string, label: string, eventType: string, description: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copiado!`);
+    await logTimelineEvent(id!, eventType, description);
+    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+  };
+
+  const handleOpenPortal = async () => {
+    window.open(portalUrl, "_blank");
+    await logTimelineEvent(id!, "Portal aberto", "Portal aberto pelo escritório");
+    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
   };
 
   return (
