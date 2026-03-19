@@ -222,7 +222,8 @@ export default function ClientDetail() {
     },
     onSuccess: () => {
       toast.success("Status do documento atualizado!");
-      queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["uploaded-docs", id] });
     },
   });
 
