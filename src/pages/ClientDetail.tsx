@@ -272,9 +272,9 @@ export default function ClientDetail() {
   const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", caseData.portal_token, caseData.client_message);
 
   const answeredIds = new Set(answers.map((a) => a.question_id));
-  const unansweredCount = questions.filter((q) => !answeredIds.has(q.id)).length;
-  const approvedDocs = docRequests.filter((d) => d.status === "aprovado").length;
-  const pendingDocs = docRequests.filter((d) => d.status === "pendente").length;
+  const unansweredCount = questions.filter((q) => q.is_required && !answeredIds.has(q.id)).length;
+  const approvedDocs = docRequests.filter((d) => d.is_required && d.status === "aprovado").length;
+  const pendingDocs = docRequests.filter((d) => d.is_required && (d.status === "pendente" || d.status === "rejeitado")).length;
 
   const copyToClipboard = async (text: string, label: string, eventType: string, description: string) => {
     navigator.clipboard.writeText(text);
