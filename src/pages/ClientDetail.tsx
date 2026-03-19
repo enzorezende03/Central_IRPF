@@ -579,49 +579,14 @@ export default function ClientDetail() {
                 <CardDescription>Declaração e recibo de entrega</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {deliverable ? (
-                  <>
-                    <div className="space-y-2">
-                      {deliverable.irpf_file_url ? (
-                        <div className="flex items-center gap-2 p-2 rounded-lg border bg-success/5">
-                          <FileText className="h-4 w-4 text-success" />
-                          <span className="text-sm flex-1">Declaração IRPF</span>
-                          <Button variant="ghost" size="sm" className="h-7" asChild>
-                            <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-3.5 w-3.5" />
-                            </a>
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Declaração não enviada.</p>
-                      )}
-                      {deliverable.receipt_file_url ? (
-                        <div className="flex items-center gap-2 p-2 rounded-lg border bg-success/5">
-                          <FileText className="h-4 w-4 text-success" />
-                          <span className="text-sm flex-1">Recibo de Entrega</span>
-                          <Button variant="ghost" size="sm" className="h-7" asChild>
-                            <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-3.5 w-3.5" />
-                            </a>
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Recibo não enviado.</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {deliverable.sent_to_client ? (
-                        <Badge className="bg-success/15 text-success border-success/30">
-                          <CheckCircle className="h-3 w-3 mr-1" /> Liberado ao cliente
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">Não liberado ao cliente</Badge>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum arquivo final enviado.</p>
-                )}
+                <DeliverableUploadSection
+                  caseId={id!}
+                  deliverable={deliverable}
+                  onRefresh={() => {
+                    queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                  }}
+                />
               </CardContent>
             </Card>
           </div>
