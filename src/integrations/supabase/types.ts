@@ -402,6 +402,7 @@ export type Database = {
     }
     Functions: {
       get_case_by_token: { Args: { p_token: string }; Returns: string }
+      recalc_case_progress: { Args: { p_case_id: string }; Returns: undefined }
     }
     Enums: {
       answer_type: "text" | "yes_no" | "number" | "date" | "file"

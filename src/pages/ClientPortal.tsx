@@ -300,6 +300,7 @@ export default function ClientPortal() {
                     onSuccess={() => {
                       queryClient.invalidateQueries({ queryKey: ["portal-uploaded", caseId] });
                       queryClient.invalidateQueries({ queryKey: ["portal-docs", caseId] });
+                      queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
                     }}
                   />
                 ))
@@ -327,6 +328,7 @@ export default function ClientPortal() {
                       caseId={caseId!}
                       onSuccess={() => {
                         queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
+                        queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
                       }}
                     />
                   );

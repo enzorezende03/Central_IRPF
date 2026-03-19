@@ -222,7 +222,8 @@ export default function ClientDetail() {
     },
     onSuccess: () => {
       toast.success("Status do documento atualizado!");
-      queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["uploaded-docs", id] });
     },
   });
 
@@ -271,9 +272,9 @@ export default function ClientDetail() {
   const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", caseData.portal_token, caseData.client_message);
 
   const answeredIds = new Set(answers.map((a) => a.question_id));
-  const unansweredCount = questions.filter((q) => !answeredIds.has(q.id)).length;
-  const approvedDocs = docRequests.filter((d) => d.status === "aprovado").length;
-  const pendingDocs = docRequests.filter((d) => d.status === "pendente").length;
+  const unansweredCount = questions.filter((q) => q.is_required && !answeredIds.has(q.id)).length;
+  const approvedDocs = docRequests.filter((d) => d.is_required && d.status === "aprovado").length;
+  const pendingDocs = docRequests.filter((d) => d.is_required && (d.status === "pendente" || d.status === "rejeitado")).length;
 
   const copyToClipboard = async (text: string, label: string, eventType: string, description: string) => {
     navigator.clipboard.writeText(text);
@@ -336,16 +337,19 @@ export default function ClientDetail() {
           <InfoCard icon={Calendar} label="Criado em" value={fmtDate(caseData.created_at)} />
         </div>
 
-        {/* ── 2. Progress ── */}
+        {/* ── 2. Progress (auto-calculated) ── */}
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <p className="text-sm font-semibold">Progresso Geral</p>
+                <p className="text-sm font-semibold">Progresso Geral <span className="text-[10px] font-normal text-muted-foreground ml-1">(calculado automaticamente)</span></p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {approvedDocs} de {docRequests.length} documentos aprovados
+                  {approvedDocs} de {docRequests.filter(d => d.is_required).length} docs obrigatórios aprovados
                   {unansweredCount > 0 && ` · ${unansweredCount} pergunta(s) sem resposta`}
                   {pendingDocs > 0 && ` · ${pendingDocs} documento(s) pendente(s)`}
+                  {deliverable?.irpf_file_url && deliverable?.receipt_file_url && deliverable?.sent_to_client
+                    ? " · ✅ Entrega finalizada"
+                    : !deliverable?.irpf_file_url ? " · Declaração pendente" : !deliverable?.sent_to_client ? " · Entrega não liberada" : ""}
                 </p>
               </div>
               <span className="text-2xl font-bold text-primary">{caseData.progress_percent}%</span>
