@@ -1,71 +1,201 @@
 import { useParams } from "react-router-dom";
-import { FileText, Upload, CheckCircle, Circle, AlertTriangle, Download, MessageSquare, Send } from "lucide-react";
-import { mockDemands, mockChecklist, mockQuestions, mockDocuments } from "@/lib/mock-data";
-import { STATUS_LABELS } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import {
+  FileText, Upload, CheckCircle, Circle, AlertTriangle, Download,
+  MessageSquare, Send, Loader2, Phone, Mail, Clock,
+} from "lucide-react";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { STATUS_LABELS } from "@/lib/types";
+import type { Tables } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/types";
+
+type DocumentStatus = Database["public"]["Enums"]["document_status"];
+
+const STATUS_STEPS = [
+  { key: "aguardando_cliente", label: "Aguardando Documentos" },
+  { key: "documentos_em_analise", label: "Em Análise" },
+  { key: "em_andamento", label: "Em Andamento" },
+  { key: "finalizado", label: "Finalizado" },
+] as const;
 
 export default function ClientPortal() {
-  const { token } = useParams();
-  const demand = mockDemands.find(d => d.access_token === token);
+  const { token } = useParams<{ token: string }>();
+  const queryClient = useQueryClient();
 
-  if (!demand) {
+  // ── Resolve token → case_id ──
+  const { data: caseId, isLoading: loadingToken, isError } = useQuery({
+    queryKey: ["portal-token", token],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_case_by_token", { p_token: token! });
+      if (error || !data) throw new Error("Token inválido");
+      return data as string;
+    },
+    enabled: !!token,
+    retry: false,
+  });
+
+  // ── Fetch case ──
+  const { data: caseData, isLoading: loadingCase } = useQuery({
+    queryKey: ["portal-case", caseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("irpf_cases")
+        .select("*, clients(*)")
+        .eq("id", caseId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!caseId,
+  });
+
+  // ── Fetch doc requests ──
+  const { data: docRequests = [] } = useQuery({
+    queryKey: ["portal-docs", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("document_requests")
+        .select("*")
+        .eq("case_id", caseId!)
+        .order("created_at");
+      return data ?? [];
+    },
+    enabled: !!caseId,
+  });
+
+  // ── Fetch uploaded docs ──
+  const { data: uploadedDocs = [] } = useQuery({
+    queryKey: ["portal-uploaded", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("uploaded_documents")
+        .select("*")
+        .eq("case_id", caseId!)
+        .order("uploaded_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!caseId,
+  });
+
+  // ── Fetch questions + answers ──
+  const { data: questions = [] } = useQuery({
+    queryKey: ["portal-questions", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_questions")
+        .select("*")
+        .eq("case_id", caseId!)
+        .order("sort_order");
+      return data ?? [];
+    },
+    enabled: !!caseId,
+  });
+
+  const { data: answers = [] } = useQuery({
+    queryKey: ["portal-answers", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_answers")
+        .select("*")
+        .eq("case_id", caseId!);
+      return data ?? [];
+    },
+    enabled: !!caseId,
+  });
+
+  // ── Fetch timeline (visible to client) ──
+  const { data: timeline = [] } = useQuery({
+    queryKey: ["portal-timeline", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_timeline")
+        .select("*")
+        .eq("case_id", caseId!)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!caseId,
+  });
+
+  // ── Fetch deliverables ──
+  const { data: deliverable } = useQuery({
+    queryKey: ["portal-deliverable", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("final_deliverables")
+        .select("*")
+        .eq("case_id", caseId!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!caseId,
+  });
+
+  // ── Loading / error states ──
+  if (loadingToken || loadingCase) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center">
-            <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
-            <h1 className="text-xl font-bold mb-2">Link inválido</h1>
-            <p className="text-sm text-muted-foreground">Este link não é válido ou expirou. Entre em contato com seu escritório de contabilidade.</p>
-          </CardContent>
-        </Card>
-      </div>
+      <PortalShell>
+        <div className="space-y-4">
+          <Skeleton className="h-32 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-48 rounded-xl" />
+        </div>
+      </PortalShell>
     );
   }
 
-  const client = demand.client!;
-  const checklist = mockChecklist[demand.id] || [];
-  const questions = mockQuestions[demand.id] || [];
-  const documents = mockDocuments[demand.id] || [];
-  const pendingDocs = checklist.filter(c => !c.checked);
-  const isFinished = demand.status === 'finalizado';
+  if (isError || !caseData) {
+    return (
+      <PortalShell>
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
+            <h1 className="text-xl font-bold mb-2">Link inválido</h1>
+            <p className="text-sm text-muted-foreground">
+              Este link não é válido ou expirou. Entre em contato com seu escritório de contabilidade.
+            </p>
+          </CardContent>
+        </Card>
+      </PortalShell>
+    );
+  }
 
-  const statusSteps = [
-    { key: 'aguardando_cliente', label: 'Aguardando Documentos' },
-    { key: 'documentos_em_analise', label: 'Documentos em Análise' },
-    { key: 'em_andamento', label: 'Em Andamento' },
-    { key: 'finalizado', label: 'Finalizado' },
-  ];
-  const currentStepIndex = statusSteps.findIndex(s => s.key === demand.status);
+  const client = caseData.clients as Tables<"clients"> | null;
+  const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === caseData.status);
+  const isPendencia = caseData.status === "pendencia";
+  const isFinished = caseData.status === "finalizado";
+  const answeredIds = new Set(answers.map((a) => a.question_id));
+  const unansweredQuestions = questions.filter((q) => !answeredIds.has(q.id));
+  const pendingDocs = docRequests.filter((d) => d.status === "pendente");
+  const rejectedDocs = docRequests.filter((d) => d.status === "rejeitado");
+  const hasPendencies = pendingDocs.length > 0 || unansweredQuestions.length > 0 || rejectedDocs.length > 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="max-w-3xl mx-auto p-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-            <FileText className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold">Central IRPF 2026</h1>
-            <p className="text-xs text-muted-foreground">Portal do Cliente</p>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-3xl mx-auto p-4 space-y-6 pb-12">
+    <PortalShell>
+      <div className="space-y-6">
+        {/* ── 1. Header ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card>
             <CardContent className="p-6">
-              <p className="text-lg font-semibold mb-1">Olá, {client.name}!</p>
-              {demand.client_message && (
-                <div className="mt-3 p-3 rounded-lg bg-accent border border-primary/20">
-                  <div className="flex items-start gap-2">
+              <p className="text-xl font-bold mb-1">Olá, {client?.full_name ?? "Cliente"}!</p>
+              <p className="text-sm text-muted-foreground">
+                IRPF {caseData.tax_year} · Ano-base {caseData.base_year}
+              </p>
+              {caseData.client_message && (
+                <div className="mt-4 p-4 rounded-lg bg-accent border border-primary/20">
+                  <div className="flex items-start gap-2.5">
                     <MessageSquare className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <p className="text-sm">{demand.client_message}</p>
+                    <p className="text-sm leading-relaxed">{caseData.client_message}</p>
                   </div>
                 </div>
               )}
@@ -73,120 +203,479 @@ export default function ClientPortal() {
           </Card>
         </motion.div>
 
-        {/* Progress Steps */}
-        <Card>
-          <CardHeader><CardTitle className="text-base">Andamento do IRPF</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {statusSteps.map((step, i) => {
-                const isActive = i <= currentStepIndex && demand.status !== 'pendencia';
-                const isCurrent = i === currentStepIndex;
-                return (
-                  <div key={step.key} className="flex-1">
-                    <div className={`h-2 rounded-full ${isActive ? 'bg-primary' : 'bg-muted'}`} />
-                    <p className={`text-[10px] mt-1 text-center ${isCurrent ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
-                      {step.label}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-            {demand.status === 'pendencia' && (
-              <div className="mt-3 flex items-center gap-2 text-destructive bg-destructive/10 p-2 rounded-lg">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <p className="text-sm font-medium">Existem pendências que precisam da sua atenção.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Pending Documents */}
-        {pendingDocs.length > 0 && (
+        {/* ── Status Progress ── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-warning" />
-                Documentos Pendentes ({pendingDocs.length})
-              </CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Andamento do IRPF</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-1 mb-1">
+                {STATUS_STEPS.map((step, i) => {
+                  const isActive = !isPendencia && i <= currentStepIndex;
+                  const isCurrent = i === currentStepIndex && !isPendencia;
+                  return (
+                    <div key={step.key} className="flex-1">
+                      <div className={`h-2 rounded-full transition-colors ${isActive ? "bg-primary" : "bg-muted"}`} />
+                      <p className={`text-[10px] mt-1.5 text-center leading-tight ${isCurrent ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                        {step.label}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+              {isPendencia && (
+                <div className="mt-3 flex items-center gap-2 text-destructive bg-destructive/10 p-3 rounded-lg">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <p className="text-sm font-medium">Existem pendências que precisam da sua atenção.</p>
+                </div>
+              )}
+              <div className="mt-3">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Progresso geral</span>
+                  <span className="font-semibold text-foreground">{caseData.progress_percent}%</span>
+                </div>
+                <Progress value={caseData.progress_percent} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* ── 4. Pendencies Summary ── */}
+        {hasPendencies && !isFinished && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="border-warning/40">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-warning" />
+                  O que ainda falta
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {pendingDocs.map((d) => (
+                    <li key={d.id} className="flex items-center gap-2 text-sm">
+                      <Circle className="h-3 w-3 text-warning shrink-0" />
+                      <span>Enviar: <strong>{d.title}</strong></span>
+                    </li>
+                  ))}
+                  {rejectedDocs.map((d) => (
+                    <li key={d.id} className="flex items-center gap-2 text-sm text-destructive">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      <span>Reenviar: <strong>{d.title}</strong> (documento rejeitado)</span>
+                    </li>
+                  ))}
+                  {unansweredQuestions.map((q) => (
+                    <li key={q.id} className="flex items-center gap-2 text-sm">
+                      <Circle className="h-3 w-3 text-warning shrink-0" />
+                      <span>Responder: <strong>{q.question}</strong></span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* ── 2. Documents ── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Documentos Solicitados</CardTitle>
+              <CardDescription>
+                Envie os documentos abaixo para darmos andamento à sua declaração.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              {pendingDocs.map(doc => (
-                <div key={doc.id} className="flex items-center gap-3 p-2 rounded-lg border border-warning/30 bg-warning/5">
-                  <Circle className="h-4 w-4 text-warning shrink-0" />
-                  <span className="text-sm flex-1">{doc.label}</span>
-                </div>
-              ))}
+              {docRequests.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">Nenhum documento solicitado no momento.</p>
+              ) : (
+                docRequests.map((doc) => (
+                  <DocumentRow
+                    key={doc.id}
+                    doc={doc}
+                    caseId={caseId!}
+                    clientId={client?.id}
+                    uploadedDocs={uploadedDocs.filter((u) => u.document_request_id === doc.id)}
+                    onSuccess={() => {
+                      queryClient.invalidateQueries({ queryKey: ["portal-uploaded", caseId] });
+                      queryClient.invalidateQueries({ queryKey: ["portal-docs", caseId] });
+                    }}
+                  />
+                ))
+              )}
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* ── 3. Questions ── */}
+        {questions.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Perguntas do Escritório</CardTitle>
+                <CardDescription>Responda as perguntas abaixo para auxiliar na sua declaração.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {questions.map((q) => {
+                  const answer = answers.find((a) => a.question_id === q.id);
+                  return (
+                    <QuestionRow
+                      key={q.id}
+                      question={q}
+                      answer={answer ?? null}
+                      caseId={caseId!}
+                      onSuccess={() => {
+                        queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
+                      }}
+                    />
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
-        {/* Upload Area */}
-        <Card>
-          <CardHeader><CardTitle className="text-base">Enviar Documentos</CardTitle></CardHeader>
-          <CardContent>
-            <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-              <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm font-medium">Clique para enviar documentos</p>
-              <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG até 10MB</p>
-            </div>
-            {documents.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Documentos já enviados:</p>
-                {documents.map(doc => (
-                  <div key={doc.id} className="flex items-center gap-2 text-sm p-2 bg-muted/50 rounded-lg">
-                    <CheckCircle className="h-4 w-4 text-success shrink-0" />
-                    <span className="truncate">{doc.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Questions */}
-        {questions.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle className="text-base">Perguntas do Escritório</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              {questions.map(q => (
-                <div key={q.id} className="space-y-2">
-                  <p className="text-sm font-medium">{q.question_text}</p>
-                  {q.answer_text ? (
-                    <div className="flex items-start gap-2 bg-success/10 p-2 rounded-md">
-                      <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                      <p className="text-sm">{q.answer_text}</p>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Textarea placeholder="Digite sua resposta..." className="text-sm" />
-                      <Button size="icon" className="shrink-0 self-end"><Send className="h-4 w-4" /></Button>
-                    </div>
+        {/* ── 5. Final Deliverables ── */}
+        {deliverable && deliverable.sent_to_client && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+            <Card className="border-success/40">
+              <CardContent className="p-6 text-center">
+                <CheckCircle className="h-12 w-12 text-success mx-auto mb-3" />
+                <h2 className="text-lg font-bold mb-1">Declaração Finalizada! 🎉</h2>
+                <p className="text-sm text-muted-foreground mb-5">
+                  Sua declaração de IRPF {caseData.tax_year} foi concluída com sucesso.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  {deliverable.irpf_file_url && (
+                    <Button asChild>
+                      <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer">
+                        <Download className="h-4 w-4 mr-2" /> Baixar Declaração
+                      </a>
+                    </Button>
+                  )}
+                  {deliverable.receipt_file_url && (
+                    <Button variant="outline" asChild>
+                      <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer">
+                        <Download className="h-4 w-4 mr-2" /> Baixar Recibo de Entrega
+                      </a>
+                    </Button>
                   )}
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
-        {/* Final Declaration */}
-        {isFinished && (
-          <Card className="border-success/30">
-            <CardContent className="p-6 text-center">
-              <CheckCircle className="h-10 w-10 text-success mx-auto mb-3" />
-              <h2 className="text-lg font-bold mb-1">Declaração Finalizada!</h2>
-              <p className="text-sm text-muted-foreground mb-4">Sua declaração de IRPF foi concluída com sucesso.</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button>
-                  <Download className="h-4 w-4 mr-2" /> Baixar Declaração
-                </Button>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" /> Baixar Recibo
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* ── Already sent docs ── */}
+        {uploadedDocs.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Documentos Já Enviados</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {uploadedDocs.map((doc) => (
+                  <div key={doc.id} className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/50">
+                    <CheckCircle className="h-4 w-4 text-success shrink-0" />
+                    <span className="text-sm flex-1 truncate">{doc.file_name}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(doc.uploaded_at).toLocaleDateString("pt-BR")}
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* ── 6. Footer ── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+          <div className="text-center py-6 space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Em caso de dúvidas, entre em contato com o escritório.
+            </p>
+            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> Telefone do escritório</span>
+              <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> Email do escritório</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground/60 mt-4">Central IRPF 2026 · Portal do Cliente</p>
+          </div>
+        </motion.div>
+      </div>
+    </PortalShell>
+  );
+}
+
+// ── Shell layout ──
+function PortalShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+            <FileText className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold">Central IRPF 2026</h1>
+            <p className="text-[10px] text-muted-foreground">Portal do Cliente</p>
+          </div>
+        </div>
+      </header>
+      <div className="max-w-2xl mx-auto px-4 py-6 pb-12">{children}</div>
+    </div>
+  );
+}
+
+// ── Document Row ──
+function DocumentRow({
+  doc,
+  caseId,
+  clientId,
+  uploadedDocs,
+  onSuccess,
+}: {
+  doc: Tables<"document_requests">;
+  caseId: string;
+  clientId?: string;
+  uploadedDocs: Tables<"uploaded_documents">[];
+  onSuccess: () => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const statusIcon = {
+    pendente: <Circle className="h-5 w-5 text-muted-foreground shrink-0" />,
+    enviado: <Clock className="h-5 w-5 text-info shrink-0" />,
+    aprovado: <CheckCircle className="h-5 w-5 text-success shrink-0" />,
+    rejeitado: <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />,
+  } satisfies Record<DocumentStatus, React.ReactNode>;
+
+  const statusLabel = {
+    pendente: "Pendente",
+    enviado: "Enviado — Em análise",
+    aprovado: "Aprovado",
+    rejeitado: "Rejeitado — Reenvie o documento",
+  } satisfies Record<DocumentStatus, string>;
+
+  const canUpload = doc.status === "pendente" || doc.status === "rejeitado";
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const filePath = `${caseId}/${doc.id}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("documentos_clientes")
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("documentos_clientes")
+          .getPublicUrl(filePath);
+
+        const { error: insertError } = await supabase.from("uploaded_documents").insert({
+          case_id: caseId,
+          document_request_id: doc.id,
+          client_id: clientId ?? null,
+          file_name: file.name,
+          file_url: urlData.publicUrl,
+          file_type: file.type || null,
+          uploaded_by: "client",
+        });
+
+        if (insertError) throw insertError;
+      }
+
+      // Update doc request status to 'enviado'
+      await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
+
+      toast.success(`Documento "${doc.title}" enviado com sucesso!`);
+      onSuccess();
+    } catch (err: any) {
+      toast.error("Erro ao enviar documento. Tente novamente.");
+      console.error(err);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+      doc.status === "rejeitado" ? "border-destructive/30 bg-destructive/5" :
+      doc.status === "aprovado" ? "border-success/30 bg-success/5" :
+      "hover:bg-muted/50"
+    }`}>
+      {statusIcon[doc.status]}
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium ${doc.status === "aprovado" ? "line-through text-muted-foreground" : ""}`}>
+          {doc.title}
+        </p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[10px] text-muted-foreground">{statusLabel[doc.status]}</span>
+          {doc.is_required && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>
+          )}
+        </div>
+        {uploadedDocs.length > 0 && doc.status !== "aprovado" && (
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {uploadedDocs.length} arquivo(s) enviado(s)
+          </p>
         )}
       </div>
+      {canUpload && (
+        <div className="shrink-0">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+            onChange={handleUpload}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs h-8"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? (
+              <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
+            ) : (
+              <><Upload className="h-3.5 w-3.5 mr-1" /> Enviar</>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Question Row ──
+function QuestionRow({
+  question,
+  answer,
+  caseId,
+  onSuccess,
+}: {
+  question: Tables<"case_questions">;
+  answer: Tables<"case_answers"> | null;
+  caseId: string;
+  onSuccess: () => void;
+}) {
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!text.trim()) {
+      toast.error("Digite uma resposta.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("case_answers").insert({
+        case_id: caseId,
+        question_id: question.id,
+        answer_text: text.trim(),
+      });
+      if (error) throw error;
+      toast.success("Resposta enviada com sucesso!");
+      setText("");
+      onSuccess();
+    } catch {
+      toast.error("Erro ao enviar resposta. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 p-3 rounded-lg border">
+      <div className="flex items-start gap-2">
+        {answer ? (
+          <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
+        ) : (
+          <Circle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+        )}
+        <div className="flex-1">
+          <p className="text-sm font-medium">{question.question}</p>
+          {question.is_required && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0 mt-1">Obrigatória</Badge>
+          )}
+        </div>
+      </div>
+      {answer ? (
+        <div className="ml-6 bg-success/10 p-3 rounded-md">
+          <p className="text-sm">{answer.answer_text}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Respondido em {new Date(answer.answered_at).toLocaleDateString("pt-BR")}
+          </p>
+        </div>
+      ) : (
+        <div className="ml-6 space-y-2">
+          {question.answer_type === "yes_no" ? (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setText("Sim"); }}
+                className={text === "Sim" ? "border-primary bg-primary/10" : ""}
+              >
+                Sim
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setText("Não"); }}
+                className={text === "Não" ? "border-primary bg-primary/10" : ""}
+              >
+                Não
+              </Button>
+            </div>
+          ) : question.answer_type === "number" ? (
+            <Input
+              type="number"
+              placeholder="Digite o valor..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="text-sm"
+            />
+          ) : question.answer_type === "date" ? (
+            <Input
+              type="date"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="text-sm"
+            />
+          ) : (
+            <Textarea
+              placeholder="Digite sua resposta..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={2}
+              className="text-sm"
+            />
+          )}
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={saving || !text.trim()}
+            className="w-full sm:w-auto"
+          >
+            {saving ? (
+              <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
+            ) : (
+              <><Send className="h-3.5 w-3.5 mr-1" /> Enviar Resposta</>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
