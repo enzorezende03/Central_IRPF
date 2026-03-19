@@ -328,6 +328,7 @@ export default function ClientPortal() {
                       caseId={caseId!}
                       onSuccess={() => {
                         queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
+                        queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
                       }}
                     />
                   );
