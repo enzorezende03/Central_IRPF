@@ -1,10 +1,10 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   ArrowLeft, Copy, MessageCircle, CheckCircle, Circle, FileText, Clock,
   User, Mail, Phone, DollarSign, ExternalLink, Upload, Send, Eye,
-  AlertCircle, Calendar, CreditCard, Save, RefreshCw, Download,
+  AlertCircle, Calendar, CreditCard, Save, RefreshCw, Download, Loader2, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";

@@ -428,6 +428,8 @@ function PortalShell({ children }: { children: React.ReactNode }) {
 }
 
 // ── Document Row ──
+import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
+
 function DocumentRow({
   doc,
   caseId,
@@ -454,7 +456,7 @@ function DocumentRow({
   const statusLabel = {
     pendente: "Pendente",
     enviado: "Enviado — Em análise",
-    aprovado: "Aprovado",
+    aprovado: "Aprovado ✓",
     rejeitado: "Rejeitado — Reenvie o documento",
   } satisfies Record<DocumentStatus, string>;
 
@@ -464,41 +466,50 @@ function DocumentRow({
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    // Validate all files first
+    for (const file of Array.from(files)) {
+      const validationError = validateFile(file);
+      if (validationError) {
+        toast.error(validationError);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+    }
+
     setUploading(true);
     try {
       for (const file of Array.from(files)) {
-        const filePath = `${caseId}/${doc.id}/${Date.now()}_${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from("documentos_clientes")
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from("documentos_clientes")
-          .getPublicUrl(filePath);
+        const filePath = buildStoragePath(caseId, file.name, doc.id);
+        const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, file);
 
         const { error: insertError } = await supabase.from("uploaded_documents").insert({
           case_id: caseId,
           document_request_id: doc.id,
           client_id: clientId ?? null,
           file_name: file.name,
-          file_url: urlData.publicUrl,
+          file_url: fileUrl,
           file_type: file.type || null,
           uploaded_by: "client",
         });
-
         if (insertError) throw insertError;
       }
 
-      // Update doc request status to 'enviado'
       await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
 
-      toast.success(`Documento "${doc.title}" enviado com sucesso!`);
+      // Log timeline
+      await supabase.from("case_timeline").insert({
+        case_id: caseId,
+        event_type: "Documento enviado",
+        description: `Cliente enviou "${doc.title}" (${files.length} arquivo(s))`,
+        visible_to_client: true,
+        created_by: "Cliente",
+      });
+
+      toast.success(`✅ Documento "${doc.title}" enviado com sucesso!`);
       onSuccess();
     } catch (err: any) {
-      toast.error("Erro ao enviar documento. Tente novamente.");
       console.error(err);
+      toast.error("Erro ao enviar documento. Verifique sua conexão e tente novamente.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -506,51 +517,65 @@ function DocumentRow({
   };
 
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+    <div className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border transition-colors ${
       doc.status === "rejeitado" ? "border-destructive/30 bg-destructive/5" :
       doc.status === "aprovado" ? "border-success/30 bg-success/5" :
       "hover:bg-muted/50"
     }`}>
-      {statusIcon[doc.status]}
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${doc.status === "aprovado" ? "line-through text-muted-foreground" : ""}`}>
-          {doc.title}
-        </p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[10px] text-muted-foreground">{statusLabel[doc.status]}</span>
-          {doc.is_required && (
-            <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        {statusIcon[doc.status]}
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-medium ${doc.status === "aprovado" ? "line-through text-muted-foreground" : ""}`}>
+            {doc.title}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className="text-[10px] text-muted-foreground">{statusLabel[doc.status]}</span>
+            {doc.is_required && (
+              <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>
+            )}
+            {doc.category && (
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{doc.category}</span>
+            )}
+          </div>
+          {uploadedDocs.length > 0 && (
+            <div className="mt-1.5 space-y-1">
+              {uploadedDocs.map((ud) => (
+                <div key={ud.id} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <CheckCircle className="h-3 w-3 text-success shrink-0" />
+                  <span className="truncate">{ud.file_name}</span>
+                  <span>· {new Date(ud.uploaded_at).toLocaleDateString("pt-BR")}</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
-        {uploadedDocs.length > 0 && doc.status !== "aprovado" && (
-          <p className="text-[10px] text-muted-foreground mt-1">
-            {uploadedDocs.length} arquivo(s) enviado(s)
-          </p>
-        )}
       </div>
       {canUpload && (
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-col items-end gap-1">
           <input
             ref={fileInputRef}
             type="file"
             className="hidden"
             multiple
-            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+            accept={getAcceptString()}
             onChange={handleUpload}
           />
           <Button
             variant="outline"
             size="sm"
-            className="text-xs h-8"
+            className="text-xs h-8 w-full sm:w-auto"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
           >
             {uploading ? (
               <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
             ) : (
-              <><Upload className="h-3.5 w-3.5 mr-1" /> Enviar</>
+              <><Upload className="h-3.5 w-3.5 mr-1" /> Enviar Arquivo</>
             )}
           </Button>
+          <p className="text-[9px] text-muted-foreground text-right">
+            Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
+          </p>
         </div>
       )}
     </div>
