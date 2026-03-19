@@ -78,7 +78,7 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
                   transition={{ delay: i * 0.03 }}
                 >
                   <Link
-                    to={`/clients/${c.id}`}
+                    to={`/demandas/${c.id}`}
                     className="block p-3 rounded-lg border bg-background hover:shadow-md transition-shadow cursor-pointer"
                   >
                     <p className="text-sm font-medium truncate">
