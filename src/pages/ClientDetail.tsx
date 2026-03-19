@@ -39,6 +39,7 @@ function fmtDate(d: string) {
 }
 
 import { getPortalUrl, getWhatsAppMessage, logTimelineEvent } from "@/lib/portal-utils";
+import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
