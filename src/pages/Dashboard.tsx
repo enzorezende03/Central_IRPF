@@ -1,59 +1,26 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
-  DollarSign, TrendingUp, Ban, Search, LayoutGrid, Table as TableIcon,
+  DollarSign, TrendingUp, Ban, ArrowRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { StatCard } from "@/components/StatCard";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
-import { CaseActions } from "@/components/CaseActions";
-import { KanbanBoard } from "@/components/KanbanBoard";
 import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCases, CaseWithClient } from "@/hooks/use-cases";
-import { STATUS_LABELS, BILLING_LABELS, PRIORITY_LABELS } from "@/lib/types";
+import { useCases } from "@/hooks/use-cases";
+import { STATUS_LABELS } from "@/lib/types";
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
-type CasePriority = Database["public"]["Enums"]["case_priority"];
-type BillingStatus = Database["public"]["Enums"]["billing_status"];
 
 export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
-  const [view, setView] = useState<"table" | "kanban">("table");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [ownerFilter, setOwnerFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [billingFilter, setBillingFilter] = useState("all");
 
-  const owners = useMemo(() => {
-    const set = new Set<string>();
-    cases.forEach((c) => c.internal_owner && set.add(c.internal_owner));
-    return Array.from(set).sort();
-  }, [cases]);
-
-  const filtered = useMemo(() => {
-    return cases.filter((c) => {
-      const q = search.toLowerCase();
-      const name = c.clients?.full_name?.toLowerCase() ?? "";
-      const cpf = c.clients?.cpf ?? "";
-      const matchSearch = !q || name.includes(q) || cpf.includes(q);
-      const matchStatus = statusFilter === "all" || c.status === statusFilter;
-      const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
-      const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
-      const billing = c.billing?.[0];
-      const matchBilling = billingFilter === "all" || billing?.billing_status === billingFilter;
-      return matchSearch && matchStatus && matchOwner && matchPriority && matchBilling;
-    });
-  }, [cases, search, statusFilter, ownerFilter, priorityFilter, billingFilter]);
-
-  // Stats
   const total = cases.length;
   const byStatus = (s: CaseStatus) => cases.filter((c) => c.status === s).length;
   const billingPending = cases.filter((c) => {
@@ -67,15 +34,18 @@ export default function Dashboard() {
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  // Recent 5 cases
+  const recentCases = useMemo(() => cases.slice(0, 5), [cases]);
+
+  // Urgent/pending cases
+  const urgentCases = useMemo(
+    () => cases.filter((c) => c.priority === "urgente" || c.status === "pendencia").slice(0, 5),
+    [cases]
+  );
+
   return (
     <InternalLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Visão geral da Central IRPF 2026</p>
-        </div>
-
         {/* Stat Cards */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -100,159 +70,96 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* Filters */}
-        <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou CPF..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos responsáveis</SelectItem>
-                {owners.map((o) => (
-                  <SelectItem key={o} value={o}>{o}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Prioridade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={billingFilter} onValueChange={setBillingFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Cobrança" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas cobranças</SelectItem>
-                {Object.entries(BILLING_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-1 border rounded-lg p-0.5">
-            <Button
-              variant={view === "table" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("table")}
-            >
-              <TableIcon className="h-4 w-4 mr-1" />
-              Tabela
-            </Button>
-            <Button
-              variant={view === "kanban" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("kanban")}
-            >
-              <LayoutGrid className="h-4 w-4 mr-1" />
-              Kanban
-            </Button>
-          </div>
-        </div>
+        {/* Quick Access Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Cases */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Demandas Recentes</CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/demandas" className="text-xs">
+                    Ver todas <ArrowRight className="h-3 w-3 ml-1" />
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-40" />
+              ) : recentCases.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhuma demanda cadastrada.</p>
+              ) : (
+                <div className="space-y-2">
+                  {recentCases.map((c) => (
+                    <Link
+                      key={c.id}
+                      to={`/demandas/${c.id}`}
+                      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{c.clients?.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{c.clients?.cpf} · {c.internal_owner ?? "Sem responsável"}</p>
+                      </div>
+                      <StatusBadge status={c.status} />
+                      <div className="w-16 hidden sm:block">
+                        <Progress value={c.progress_percent} className="h-1.5" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Content */}
-        {isLoading ? (
-          <Skeleton className="h-96 rounded-xl" />
-        ) : view === "kanban" ? (
-          <KanbanBoard cases={filtered} />
-        ) : (
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead className="hidden md:table-cell">CPF</TableHead>
-                  <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Progresso</TableHead>
-                  <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                  <TableHead className="hidden lg:table-cell">Cobrança</TableHead>
-                  <TableHead className="hidden lg:table-cell text-right">Honorário</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((c) => {
-                  const billing = c.billing?.[0];
-                  return (
-                    <TableRow key={c.id} className={`hover:bg-muted/50 ${billing && billing.billing_status !== "pago" ? "border-l-2 border-l-warning" : ""}`}>
-                      <TableCell className="font-medium">
-                        <Link to={`/clients/${c.id}`} className="hover:text-primary transition-colors">
-                          {c.clients?.full_name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
-                        {c.clients?.cpf}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm">
-                        {c.base_year}
-                      </TableCell>
-                      <TableCell className="text-sm">{c.internal_owner ?? "—"}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={c.status} />
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <div className="flex items-center gap-2 min-w-[100px]">
-                          <Progress value={c.progress_percent} className="h-1.5 flex-1" />
-                          <span className="text-xs text-muted-foreground w-8">{c.progress_percent}%</span>
+          {/* Urgent / Pending */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  Atenção Necessária
+                </CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/demandas" className="text-xs">
+                    Ver todas <ArrowRight className="h-3 w-3 ml-1" />
+                  </Link>
+                </Button>
+              </div>
+              <CardDescription>Demandas urgentes ou com pendências</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-40" />
+              ) : urgentCases.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircle className="h-8 w-8 text-success mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Nenhuma pendência urgente!</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {urgentCases.map((c) => {
+                    const billing = c.billing?.[0];
+                    return (
+                      <Link
+                        key={c.id}
+                        to={`/demandas/${c.id}`}
+                        className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{c.clients?.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{c.internal_owner ?? "Sem responsável"}</p>
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
                         <PriorityBadge priority={c.priority} />
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        {billing && <BillingBadge status={billing.billing_status} />}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-right text-sm font-medium">
-                        {billing ? fmt(billing.amount) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <CaseActions caseData={c} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {filtered.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">
-                      {cases.length === 0
-                        ? "Nenhuma demanda cadastrada ainda."
-                        : "Nenhuma demanda encontrada com os filtros aplicados."}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                        <StatusBadge status={c.status} />
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </InternalLayout>
   );
