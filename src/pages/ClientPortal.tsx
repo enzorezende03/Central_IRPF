@@ -338,7 +338,22 @@ export default function ClientPortal() {
           </motion.div>
         )}
 
-        {/* ── 5. Final Deliverables ── */}
+        {/* ── 5a. Preview Declaration (for client approval) ── */}
+        {deliverable && (deliverable as any).preview_file_url && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+            <PreviewApprovalCard
+              deliverable={deliverable}
+              caseId={caseId!}
+              onSuccess={() => {
+                queryClient.invalidateQueries({ queryKey: ["portal-deliverable", caseId] });
+                queryClient.invalidateQueries({ queryKey: ["portal-timeline", caseId] });
+                queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
+              }}
+            />
+          </motion.div>
+        )}
+
+        {/* ── 5b. Final Deliverables ── */}
         {deliverable && deliverable.sent_to_client && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
             <Card className="border-success/40">
