@@ -174,10 +174,25 @@ export function NewCaseDialog() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="nd-fee">Honorário (R$)</Label>
-              <Input id="nd-fee" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} placeholder="1.500,00" />
+              <Label>Tipo de Cobrança</Label>
+              <Select value={billingType} onValueChange={setBillingType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="incluso_mensalidade">Incluso na mensalidade</SelectItem>
+                  <SelectItem value="cobranca_extra">Cobrança extra</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
+          {billingType === "cobranca_extra" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="nd-fee">Valor do Honorário (R$)</Label>
+              <Input id="nd-fee" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} placeholder="1.500,00" />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="nd-msg">Mensagem para o cliente</Label>
