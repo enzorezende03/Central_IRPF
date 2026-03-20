@@ -74,7 +74,7 @@ export default function Cobranca() {
             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <StatCard label="Honorários Previstos" value={fmt(totalFees)} icon={TrendingUp} color="text-primary" />
             <StatCard label="Já Recebido" value={fmt(totalPaid)} icon={DollarSign} color="text-success" />
             <StatCard label="A Receber" value={fmt(totalPending)} icon={Ban} color="text-warning" />
