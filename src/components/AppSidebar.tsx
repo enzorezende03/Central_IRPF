@@ -20,18 +20,18 @@ import {
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Demandas IRPF", url: "/demandas", icon: FileText },
-  { title: "Kanban Operacional", url: "/kanban", icon: Kanban },
-  { title: "Cobrança", url: "/cobranca", icon: DollarSign },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, permission: null },
+  { title: "Demandas IRPF", url: "/demandas", icon: FileText, permission: "acesso_demandas" },
+  { title: "Kanban Operacional", url: "/kanban", icon: Kanban, permission: "acesso_demandas" },
+  { title: "Cobrança", url: "/cobranca", icon: DollarSign, permission: "acesso_cobranca" },
+  { title: "Clientes", url: "/clientes", icon: Users, permission: "acesso_demandas" },
+  { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "acesso_configuracao" },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { user, role, profileName, signOut } = useAuth();
+  const { user, role, profileName, signOut, hasPermission } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -40,6 +40,10 @@ export function AppSidebar() {
   };
 
   const roleLabel = role === "admin" ? "Administrador" : role === "operacional" ? "Operacional" : "Usuário";
+
+  const visibleItems = menuItems.filter((item) =>
+    item.permission === null || hasPermission(item.permission)
+  );
 
   return (
     <Sidebar collapsible="icon">
@@ -67,7 +71,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
