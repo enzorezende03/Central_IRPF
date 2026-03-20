@@ -252,6 +252,9 @@ export type Database = {
           case_id: string
           id: string
           irpf_file_url: string | null
+          preview_feedback: string | null
+          preview_file_url: string | null
+          preview_status: Database["public"]["Enums"]["preview_status"] | null
           receipt_file_url: string | null
           sent_to_client: boolean
           uploaded_at: string
@@ -260,6 +263,9 @@ export type Database = {
           case_id: string
           id?: string
           irpf_file_url?: string | null
+          preview_feedback?: string | null
+          preview_file_url?: string | null
+          preview_status?: Database["public"]["Enums"]["preview_status"] | null
           receipt_file_url?: string | null
           sent_to_client?: boolean
           uploaded_at?: string
@@ -268,6 +274,9 @@ export type Database = {
           case_id?: string
           id?: string
           irpf_file_url?: string | null
+          preview_feedback?: string | null
+          preview_file_url?: string | null
+          preview_status?: Database["public"]["Enums"]["preview_status"] | null
           receipt_file_url?: string | null
           sent_to_client?: boolean
           uploaded_at?: string
@@ -415,6 +424,7 @@ export type Database = {
         | "pendencia"
         | "finalizado"
       document_status: "pendente" | "enviado" | "aprovado" | "rejeitado"
+      preview_status: "aguardando_revisao" | "aprovado" | "ajustes_solicitados"
       uploaded_by_type: "client" | "office"
     }
     CompositeTypes: {
@@ -554,6 +564,7 @@ export const Constants = {
         "finalizado",
       ],
       document_status: ["pendente", "enviado", "aprovado", "rejeitado"],
+      preview_status: ["aguardando_revisao", "aprovado", "ajustes_solicitados"],
       uploaded_by_type: ["client", "office"],
     },
   },

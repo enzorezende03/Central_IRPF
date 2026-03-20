@@ -578,9 +578,9 @@ export default function ClientDetail() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Download className="h-4 w-4 text-primary" />
-                  Entrega Final
+                  Prévia e Entrega Final
                 </CardTitle>
-                <CardDescription>Declaração e recibo de entrega</CardDescription>
+                <CardDescription>Prévia para aprovação, declaração e recibo</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <DeliverableUploadSection
@@ -853,28 +853,40 @@ function DeliverableUploadSection({
 }) {
   const irpfRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState<"irpf" | "receipt" | null>(null);
+  const previewRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<"irpf" | "receipt" | "preview" | null>(null);
 
-  const handleUpload = async (type: "irpf" | "receipt", file: File) => {
+  const del = deliverable as any; // extended columns not yet in generated types
+
+  const handleUpload = async (type: "irpf" | "receipt" | "preview", file: File) => {
     const err = validateFile(file);
     if (err) { toast.error(err); return; }
 
     setUploading(type);
-    const bucket = type === "irpf" ? "declaracoes_finais" : "recibos_entrega";
-    const path = buildStoragePath(caseId, file.name);
+    const bucketMap = { irpf: "declaracoes_finais", receipt: "recibos_entrega", preview: "declaracoes_finais" };
+    const bucket = bucketMap[type];
+    const path = buildStoragePath(caseId, file.name, type === "preview" ? "preview" : undefined);
 
     try {
       const url = await uploadFileToBucket(bucket, path, file);
-      const field = type === "irpf" ? "irpf_file_url" : "receipt_file_url";
+      const fieldMap = { irpf: "irpf_file_url", receipt: "receipt_file_url", preview: "preview_file_url" };
+      const field = fieldMap[type];
 
-      if (deliverable) {
-        await supabase.from("final_deliverables").update({ [field]: url }).eq("id", deliverable.id);
-      } else {
-        await supabase.from("final_deliverables").insert({ case_id: caseId, [field]: url });
+      const updates: Record<string, any> = { [field]: url };
+      if (type === "preview") {
+        updates.preview_status = "aguardando_revisao";
+        updates.preview_feedback = null;
       }
 
-      const label = type === "irpf" ? "Declaração IRPF" : "Recibo de Entrega";
-      await logTimelineEvent(caseId, `${label} enviada`, `Arquivo: ${file.name}`);
+      if (deliverable) {
+        await supabase.from("final_deliverables").update(updates).eq("id", deliverable.id);
+      } else {
+        await supabase.from("final_deliverables").insert({ case_id: caseId, ...updates } as any);
+      }
+
+      const labelMap = { irpf: "Declaração IRPF", receipt: "Recibo de Entrega", preview: "Prévia da Declaração" };
+      const label = labelMap[type];
+      await logTimelineEvent(caseId, `${label} enviada`, `Arquivo: ${file.name}`, type === "preview");
       toast.success(`${label} enviada com sucesso!`);
       onRefresh();
     } catch {
@@ -893,12 +905,53 @@ function DeliverableUploadSection({
     onRefresh();
   };
 
+  const previewStatusLabel: Record<string, { text: string; color: string }> = {
+    aguardando_revisao: { text: "Aguardando revisão do cliente", color: "text-warning" },
+    aprovado: { text: "Aprovado pelo cliente ✓", color: "text-success" },
+    ajustes_solicitados: { text: "Ajustes solicitados", color: "text-destructive" },
+  };
+
+  const pStatus = del?.preview_status as string | null;
+
   return (
     <div className="space-y-3">
-      {/* IRPF */}
+      {/* Preview Declaration */}
+      <div className="p-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Prévia da Declaração</p>
+        <div className="flex items-center gap-2">
+          <FileText className={`h-4 w-4 shrink-0 ${del?.preview_file_url ? "text-primary" : "text-muted-foreground"}`} />
+          <span className="text-sm flex-1">{del?.preview_file_url ? "Prévia enviada" : "Enviar prévia para aprovação"}</span>
+          {del?.preview_file_url && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+              <a href={del.preview_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
+            </Button>
+          )}
+          <input ref={previewRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload("preview", e.target.files[0])} />
+          <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === "preview"} onClick={() => previewRef.current?.click()}>
+            {uploading === "preview" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {del?.preview_file_url ? "Substituir" : "Upload"}</>}
+          </Button>
+        </div>
+        {pStatus && del?.preview_file_url && (
+          <div className="space-y-1">
+            <p className={`text-xs font-medium ${previewStatusLabel[pStatus]?.color ?? "text-muted-foreground"}`}>
+              {previewStatusLabel[pStatus]?.text ?? pStatus}
+            </p>
+            {pStatus === "ajustes_solicitados" && del?.preview_feedback && (
+              <div className="p-2 rounded bg-destructive/10 border border-destructive/20">
+                <p className="text-xs font-medium text-destructive mb-0.5">Feedback do cliente:</p>
+                <p className="text-sm">{del.preview_feedback}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <Separator />
+
+      {/* IRPF Final */}
       <div className="flex items-center gap-2 p-2.5 rounded-lg border">
         <FileText className={`h-4 w-4 shrink-0 ${deliverable?.irpf_file_url ? "text-success" : "text-muted-foreground"}`} />
-        <span className="text-sm flex-1">{deliverable?.irpf_file_url ? "Declaração IRPF" : "Enviar Declaração IRPF"}</span>
+        <span className="text-sm flex-1">{deliverable?.irpf_file_url ? "Declaração IRPF Final" : "Enviar Declaração IRPF Final"}</span>
         {deliverable?.irpf_file_url && (
           <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
             <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
