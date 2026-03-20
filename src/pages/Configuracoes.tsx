@@ -16,7 +16,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const AVAILABLE_PERMISSIONS = [
+const PERMISSIONS_BY_ROLE: Record<string, { key: string; label: string }[]> = {
+  operacional: [
+    { key: "acesso_demandas", label: "Acesso a Demandas" },
+    { key: "acesso_configuracao", label: "Acesso a Configuração" },
+  ],
+  financeiro: [
+    { key: "acesso_cobranca", label: "Acesso a Cobrança" },
+    { key: "acesso_configuracao", label: "Acesso a Configuração" },
+  ],
+};
+
+const ALL_PERMISSIONS = [
   { key: "acesso_demandas", label: "Acesso a Demandas" },
   { key: "acesso_cobranca", label: "Acesso a Cobrança" },
   { key: "acesso_configuracao", label: "Acesso a Configuração" },
@@ -495,7 +506,7 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
           user_id: u.id,
           full_name: fullName.trim(),
           role,
-          permissions: isAdminRole ? AVAILABLE_PERMISSIONS.map((p) => p.key) : permissions,
+          permissions: isAdminRole ? ALL_PERMISSIONS.map((p) => p.key) : permissions,
         },
       });
       if (error) throw error;
@@ -538,6 +549,7 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
               <SelectContent>
                 <SelectItem value="admin">Administrador — Acesso total</SelectItem>
                 <SelectItem value="operacional">Operacional — Acesso a Demandas</SelectItem>
+                <SelectItem value="financeiro">Financeiro — Acesso a Cobrança</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -545,7 +557,7 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
             <div className="space-y-2">
               <Label>Permissões</Label>
               <div className="space-y-2 rounded-lg border p-3">
-                {AVAILABLE_PERMISSIONS.map((p) => (
+                {(PERMISSIONS_BY_ROLE[role] ?? ALL_PERMISSIONS).map((p) => (
                   <div key={p.key} className="flex items-center gap-2">
                     <Checkbox
                       id={`edit-perm-${p.key}`}
@@ -598,7 +610,7 @@ function InviteUserDialog() {
           password,
           full_name: fullName.trim(),
           role,
-          permissions: isAdminRole ? AVAILABLE_PERMISSIONS.map((p) => p.key) : permissions,
+          permissions: isAdminRole ? ALL_PERMISSIONS.map((p) => p.key) : permissions,
         },
       });
       if (error) throw error;
@@ -648,6 +660,7 @@ function InviteUserDialog() {
               <SelectContent>
                 <SelectItem value="admin">Administrador — Acesso total</SelectItem>
                 <SelectItem value="operacional">Operacional — Acesso a Demandas</SelectItem>
+                <SelectItem value="financeiro">Financeiro — Acesso a Cobrança</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -655,7 +668,7 @@ function InviteUserDialog() {
             <div className="space-y-2">
               <Label>Permissões</Label>
               <div className="space-y-2 rounded-lg border p-3">
-                {AVAILABLE_PERMISSIONS.map((p) => (
+                {(PERMISSIONS_BY_ROLE[role] ?? ALL_PERMISSIONS).map((p) => (
                   <div key={p.key} className="flex items-center gap-2">
                     <Checkbox
                       id={`inv-perm-${p.key}`}

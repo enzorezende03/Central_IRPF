@@ -649,7 +649,7 @@ export type Database = {
     }
     Enums: {
       answer_type: "text" | "yes_no" | "number" | "date" | "file"
-      app_role: "admin" | "operacional"
+      app_role: "admin" | "operacional" | "financeiro"
       billing_status: "nao_cobrado" | "cobrado" | "pago"
       billing_type: "incluso_mensalidade" | "cobranca_extra"
       case_priority: "baixa" | "media" | "alta" | "urgente"
@@ -790,7 +790,7 @@ export const Constants = {
   public: {
     Enums: {
       answer_type: ["text", "yes_no", "number", "date", "file"],
-      app_role: ["admin", "operacional"],
+      app_role: ["admin", "operacional", "financeiro"],
       billing_status: ["nao_cobrado", "cobrado", "pago"],
       billing_type: ["incluso_mensalidade", "cobranca_extra"],
       case_priority: ["baixa", "media", "alta", "urgente"],
