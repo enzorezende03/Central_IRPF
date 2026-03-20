@@ -124,7 +124,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <StatCard label="Total de Demandas" value={total} icon={Users} color="text-primary" />
               <StatCard label="Aguardando Cliente" value={byStatus("aguardando_cliente")} icon={Clock} color="text-warning" />
               <StatCard label="Em Andamento" value={byStatus("em_andamento") + byStatus("documentos_em_analise")} icon={PlayCircle} color="text-info" />
