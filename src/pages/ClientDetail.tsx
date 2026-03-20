@@ -543,24 +543,54 @@ export default function ClientDetail() {
               </CardContent>
             </Card>
 
-            {/* ── 9. Final Deliverables ── */}
+            {/* ── 9a. Prévia ── */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-primary" />
+                  Prévia da Declaração
+                </CardTitle>
+                <CardDescription>Envie a prévia para aprovação do cliente</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PreviewCard caseId={id!} deliverable={deliverable} onRefresh={() => {
+                  queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                  queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                }} />
+              </CardContent>
+            </Card>
+
+            {/* ── 9b. Declaração / Recibo ── */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Download className="h-4 w-4 text-primary" />
-                  Prévia e Entrega Final
+                  Declaração e Recibo
                 </CardTitle>
-                <CardDescription>Prévia para aprovação, declaração e recibo</CardDescription>
+                <CardDescription>Declaração IRPF final e recibo de entrega</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <DeliverableUploadSection
-                  caseId={id!}
-                  deliverable={deliverable}
-                  onRefresh={() => {
-                    queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
-                    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
-                  }}
-                />
+              <CardContent>
+                <DeclarationReceiptCard caseId={id!} deliverable={deliverable} onRefresh={() => {
+                  queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                  queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                }} />
+              </CardContent>
+            </Card>
+
+            {/* ── 9c. Guia DARF ── */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-primary" />
+                  Guia de Pagamento (DARF)
+                </CardTitle>
+                <CardDescription>Link da guia de pagamento para o cliente</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <GuideCard caseId={id!} deliverable={deliverable} onRefresh={() => {
+                  queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                  queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                }} />
               </CardContent>
             </Card>
           </div>
