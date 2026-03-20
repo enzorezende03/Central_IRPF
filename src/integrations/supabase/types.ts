@@ -350,6 +350,27 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       uploaded_documents: {
         Row: {
           case_id: string
@@ -408,16 +429,42 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       get_case_by_token: { Args: { p_token: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       recalc_case_progress: { Args: { p_case_id: string }; Returns: undefined }
     }
     Enums: {
       answer_type: "text" | "yes_no" | "number" | "date" | "file"
+      app_role: "admin" | "operacional"
       billing_status: "nao_cobrado" | "cobrado" | "pago"
       billing_type: "incluso_mensalidade" | "cobranca_extra"
       case_priority: "baixa" | "media" | "alta" | "urgente"
@@ -558,6 +605,7 @@ export const Constants = {
   public: {
     Enums: {
       answer_type: ["text", "yes_no", "number", "date", "file"],
+      app_role: ["admin", "operacional"],
       billing_status: ["nao_cobrado", "cobrado", "pago"],
       billing_type: ["incluso_mensalidade", "cobranca_extra"],
       case_priority: ["baixa", "media", "alta", "urgente"],

@@ -24,6 +24,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles" as any)
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.role ?? null;
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -31,14 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Fetch role using setTimeout to avoid Supabase deadlock
           setTimeout(async () => {
-            const { data } = await supabase
-              .from("user_roles")
-              .select("role")
-              .eq("user_id", session.user.id)
-              .maybeSingle();
-            setRole(data?.role ?? null);
+            const r = await fetchRole(session.user.id);
+            setRole(r);
             setLoading(false);
           }, 0);
         } else {
@@ -52,15 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            setRole(data?.role ?? null);
-            setLoading(false);
-          });
+        fetchRole(session.user.id).then((r) => {
+          setRole(r);
+          setLoading(false);
+        });
       } else {
         setLoading(false);
       }
