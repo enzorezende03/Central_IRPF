@@ -30,6 +30,7 @@ export function NewCaseDialog() {
   const [owner, setOwner] = useState("");
   const [priority, setPriority] = useState("media");
   const [feeAmount, setFeeAmount] = useState("");
+  const [billingType, setBillingType] = useState("cobranca_extra");
   const [clientMessage, setClientMessage] = useState("");
 
   const { data: clients = [] } = useQuery({
