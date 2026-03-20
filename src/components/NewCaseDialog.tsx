@@ -51,6 +51,14 @@ export function NewCaseDialog() {
     },
   });
 
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["profiles-list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, full_name").order("full_name");
+      return data ?? [];
+    },
+  });
+
   const { data: docTemplates = [] } = useQuery<DocTemplate[]>({
     queryKey: ["checklist-templates"],
     queryFn: async () => {
@@ -217,8 +225,19 @@ export function NewCaseDialog() {
                 <Input id="nd-year" type="number" value={baseYear} onChange={(e) => setBaseYear(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="nd-owner">Responsável</Label>
-                <Input id="nd-owner" value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Nome do responsável" />
+                <Label>Responsável</Label>
+                <Select value={owner} onValueChange={setOwner}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.id} value={p.full_name ?? p.id}>
+                        {p.full_name || "Sem nome"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

@@ -62,6 +62,15 @@ export default function ClientDetail() {
     enabled: !!id,
   });
 
+  // ── Fetch profiles for owner select ──
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["profiles-list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, full_name").order("full_name");
+      return data ?? [];
+    },
+  });
+
   // ── Fetch related data ──
   const { data: docRequests = [] } = useQuery({
     queryKey: ["doc-requests", id],
@@ -353,7 +362,17 @@ export default function ClientDetail() {
 
         {/* ── Info Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <InfoCard icon={User} label="Responsável" value={caseData.internal_owner ?? "Não definido"} />
+          <OwnerCard
+            currentOwner={caseData.internal_owner}
+            profiles={profiles}
+            onChangeOwner={(name) => {
+              supabase.from("irpf_cases").update({ internal_owner: name }).eq("id", id!).then(() => {
+                queryClient.invalidateQueries({ queryKey: ["case-detail", id] });
+                queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
+                toast.success("Responsável atualizado!");
+              });
+            }}
+          />
           <InfoCard icon={Phone} label="Celular" value={client?.phone ?? "—"} />
           <InfoCard icon={Mail} label="E-mail" value={client?.email ?? "—"} />
           <InfoCard icon={DollarSign} label="Honorário" value={billing ? fmt(billing.amount) : "—"} />
@@ -622,6 +641,43 @@ function InfoCard({ icon: Icon, label, value }: { icon: React.ElementType; label
         <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
           <p className="text-sm font-medium truncate">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OwnerCard({
+  currentOwner,
+  profiles,
+  onChangeOwner,
+}: {
+  currentOwner: string | null;
+  profiles: { id: string; full_name: string | null }[];
+  onChangeOwner: (name: string | null) => void;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-3.5 flex items-center gap-3">
+        <User className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Responsável</p>
+          <Select
+            value={currentOwner ?? "__none__"}
+            onValueChange={(v) => onChangeOwner(v === "__none__" ? null : v)}
+          >
+            <SelectTrigger className="h-auto p-0 border-0 shadow-none text-sm font-medium">
+              <SelectValue placeholder="Selecionar..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Não definido</SelectItem>
+              {profiles.map((p) => (
+                <SelectItem key={p.id} value={p.full_name ?? p.id}>
+                  {p.full_name || "Sem nome"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </CardContent>
     </Card>
