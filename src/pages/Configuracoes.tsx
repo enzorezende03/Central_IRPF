@@ -218,7 +218,9 @@ function OfficeSettingsCard() {
         .select("*")
         .limit(1)
         .single();
-      return data as OfficeData | null;
+      return (data as any) as OfficeData | null;
+    },
+  });
     },
   });
 
