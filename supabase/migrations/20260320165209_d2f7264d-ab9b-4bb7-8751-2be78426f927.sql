@@ -1,0 +1,1 @@
+UPDATE public.irpf_cases SET portal_slug = 'grupo2m/ana-moura-3zn0' WHERE id = '15216cef-c0a8-4f08-b550-db53197aceb7';
