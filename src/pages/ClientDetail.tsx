@@ -640,6 +640,12 @@ function BillingBlock({
 
   return (
     <div className="space-y-3">
+      {isIncluso && (
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-success/10 border border-success/30">
+          <CheckCircle className="h-4 w-4 text-success shrink-0" />
+          <p className="text-xs text-success font-medium">IRPF incluso na mensalidade</p>
+        </div>
+      )}
       {isPending && (
         <div className="flex items-center gap-2 p-2.5 rounded-lg bg-warning/10 border border-warning/30">
           <AlertCircle className="h-4 w-4 text-warning shrink-0" />
@@ -648,6 +654,30 @@ function BillingBlock({
           </p>
         </div>
       )}
+      <div>
+        <label className="text-xs font-medium text-muted-foreground">Tipo de Cobrança</label>
+        <Select
+          value={billingType}
+          onValueChange={(v) => {
+            setBillingType(v);
+            const updates: any = { billing_type: v };
+            if (v === "incluso_mensalidade") {
+              updates.billing_status = "pago";
+              setStatus("pago");
+            }
+            onUpdate(updates);
+          }}
+        >
+          <SelectTrigger className="mt-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(BILLING_TYPE_LABELS).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div>
         <label className="text-xs font-medium text-muted-foreground">Status</label>
         <Select
