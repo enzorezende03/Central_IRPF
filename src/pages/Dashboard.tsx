@@ -44,11 +44,7 @@ export default function Dashboard() {
       const { data } = await supabase
         .from("case_timeline")
         .select("*, irpf_cases!inner(id, clients(full_name))")
-        .in("event_type", [
-          "Documento enviado",
-          "Documento marcado como não possui",
-          "Resposta enviada",
-        ])
+        .eq("event_type", "Documentação completa")
         .eq("created_by", "Cliente")
         .order("created_at", { ascending: false })
         .limit(10);
@@ -239,20 +235,19 @@ export default function Dashboard() {
                 <Badge variant="secondary" className="text-xs">{recentActivity.length} recentes</Badge>
               )}
             </div>
-            <CardDescription>Documentos enviados e respostas dos clientes</CardDescription>
+            <CardDescription>Clientes que concluíram o envio de todos os documentos</CardDescription>
           </CardHeader>
           <CardContent>
             {recentActivity.length === 0 ? (
               <div className="text-center py-8">
                 <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Nenhuma atividade recente dos clientes.</p>
+                <p className="text-sm text-muted-foreground">Nenhum cliente finalizou o envio ainda.</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {recentActivity.map((item: any) => {
                   const clientName = item.irpf_cases?.clients?.full_name ?? "Cliente";
                   const caseId = item.irpf_cases?.id ?? item.case_id;
-                  const isNotHave = item.event_type === "Documento marcado como não possui";
                   const timeAgo = formatTimeAgo(item.created_at);
 
                   return (
@@ -261,14 +256,8 @@ export default function Dashboard() {
                       to={`/demandas/${caseId}`}
                       className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                     >
-                      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${
-                        isNotHave ? "bg-warning/10" : "bg-primary/10"
-                      }`}>
-                        {isNotHave ? (
-                          <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-                        ) : (
-                          <FileText className="h-3.5 w-3.5 text-primary" />
-                        )}
+                      <div className="mt-0.5 rounded-full p-1.5 shrink-0 bg-success/10">
+                        <CheckCircle className="h-3.5 w-3.5 text-success" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{clientName}</p>
