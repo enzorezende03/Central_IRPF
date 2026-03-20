@@ -643,7 +643,10 @@ function DocumentRow({
   const handleNotHave = async () => {
     setMarkingNotHave(true);
     try {
-      await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
+      await supabase
+        .from("document_requests")
+        .update({ status: "enviado" as DocumentStatus, category: "nao_possui" })
+        .eq("id", doc.id);
       await supabase.from("case_timeline").insert({
         case_id: caseId,
         event_type: "Documento marcado como não possui",
