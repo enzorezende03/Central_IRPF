@@ -124,11 +124,11 @@ export default function Demandas() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead className="min-w-[120px]">Cliente</TableHead>
                   <TableHead className="hidden md:table-cell">CPF</TableHead>
                   <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Status Interno</TableHead>
+                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
                   <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
                   <TableHead className="hidden lg:table-cell">Progresso</TableHead>
                   <TableHead className="hidden md:table-cell">Prioridade</TableHead>
