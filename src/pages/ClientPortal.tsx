@@ -681,6 +681,7 @@ function DocumentRow({
         created_by: "Cliente",
       });
       toast.success(`Documento "${doc.title}" marcado como "Não tenho".`);
+      await checkAllDocsComplete();
       onSuccess();
     } catch {
       toast.error("Erro ao marcar documento. Tente novamente.");
