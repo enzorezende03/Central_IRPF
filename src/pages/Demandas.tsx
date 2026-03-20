@@ -39,7 +39,8 @@ export default function Demandas() {
       const name = c.clients?.full_name?.toLowerCase() ?? "";
       const cpf = c.clients?.cpf ?? "";
       const matchSearch = !q || name.includes(q) || cpf.includes(q);
-      const matchStatus = statusFilter === "all" || c.status === statusFilter;
+      const internalStatus = (c as any).internal_status ?? c.status;
+      const matchStatus = statusFilter === "all" || internalStatus === statusFilter;
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
       const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
       const billing = c.billing?.[0];
