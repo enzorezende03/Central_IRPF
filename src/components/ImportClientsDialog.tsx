@@ -9,7 +9,6 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { REQUIRED_DOCUMENTS } from "@/lib/types";
 import { logTimelineEvent, generateSlug } from "@/lib/portal-utils";
 import * as XLSX from "xlsx";
 
@@ -185,14 +184,21 @@ export function ImportClientsDialog() {
 
         if (caseErr) throw caseErr;
 
-        // Create default document requests
-        const docInserts = REQUIRED_DOCUMENTS.map((title, idx) => ({
+        // Fetch document templates from settings
+        const { data: templates } = await supabase
+          .from("document_checklist_templates" as any)
+          .select("title, is_required, sort_order")
+          .order("sort_order");
+
+        const docInserts = (templates ?? []).map((t: any) => ({
           case_id: newCase.id,
-          title,
-          is_required: idx < 3,
+          title: t.title,
+          is_required: t.is_required,
           status: "pendente" as const,
         }));
-        await supabase.from("document_requests").insert(docInserts);
+        if (docInserts.length > 0) {
+          await supabase.from("document_requests").insert(docInserts);
+        }
 
         // Create billing record
         await supabase.from("billing").insert({

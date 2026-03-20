@@ -215,6 +215,30 @@ export type Database = {
         }
         Relationships: []
       }
+      document_checklist_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
       document_requests: {
         Row: {
           case_id: string
