@@ -45,9 +45,12 @@ export default function Clientes() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar por nome ou CPF..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <Badge variant="secondary" className="shrink-0">
-            <Users className="h-3 w-3 mr-1" /> {clients.length} clientes
-          </Badge>
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant="secondary">
+              <Users className="h-3 w-3 mr-1" /> {clients.length} clientes
+            </Badge>
+            <NewClientDialog />
+          </div>
         </div>
 
         {isLoading ? (
