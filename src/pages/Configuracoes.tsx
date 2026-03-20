@@ -392,9 +392,45 @@ function OfficeSettingsCard() {
             <Label htmlFor="of-cnpj">CNPJ</Label>
             <Input id="of-cnpj" value={form.cnpj} onChange={(e) => set("cnpj", e.target.value)} placeholder="00.000.000/0001-00" />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="of-cep">CEP</Label>
+            <div className="relative">
+              <Input
+                id="of-cep"
+                value={form.cep}
+                onChange={(e) => {
+                  set("cep", e.target.value);
+                  const clean = e.target.value.replace(/\D/g, "");
+                  if (clean.length === 8) fetchCep(clean);
+                }}
+                placeholder="00000-000"
+              />
+              {cepLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+            </div>
+          </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="of-addr">Endereço</Label>
-            <Input id="of-addr" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Rua, número, bairro, cidade - UF" />
+            <Label htmlFor="of-addr">Logradouro</Label>
+            <Input id="of-addr" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Rua, Avenida..." />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="of-number">Número</Label>
+            <Input id="of-number" value={form.number} onChange={(e) => set("number", e.target.value)} placeholder="123" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="of-comp">Complemento</Label>
+            <Input id="of-comp" value={form.complement} onChange={(e) => set("complement", e.target.value)} placeholder="Sala 1" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="of-neigh">Bairro</Label>
+            <Input id="of-neigh" value={form.neighborhood} onChange={(e) => set("neighborhood", e.target.value)} placeholder="Centro" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="of-city">Cidade</Label>
+            <Input id="of-city" value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="São Paulo" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="of-state">Estado</Label>
+            <Input id="of-state" value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="SP" maxLength={2} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="of-phone">Telefone</Label>
