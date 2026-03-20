@@ -17,6 +17,11 @@ export const BILLING_LABELS: Record<BillingStatus, string> = {
   pago: 'Pago',
 };
 
+export const BILLING_TYPE_LABELS: Record<BillingType, string> = {
+  incluso_mensalidade: 'Incluso na Mensalidade',
+  cobranca_extra: 'Cobrança Extra',
+};
+
 export const PRIORITY_LABELS: Record<Priority, string> = {
   baixa: 'Baixa',
   media: 'Média',
