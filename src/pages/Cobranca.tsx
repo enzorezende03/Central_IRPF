@@ -67,14 +67,14 @@ export default function Cobranca() {
 
   return (
     <InternalLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Stats */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <StatCard label="Honorários Previstos" value={fmt(totalFees)} icon={TrendingUp} color="text-primary" />
             <StatCard label="Já Recebido" value={fmt(totalPaid)} icon={DollarSign} color="text-success" />
             <StatCard label="A Receber" value={fmt(totalPending)} icon={Ban} color="text-warning" />
@@ -105,18 +105,18 @@ export default function Cobranca() {
         {isLoading ? (
           <Skeleton className="h-96 rounded-xl" />
         ) : (
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Honorário</TableHead>
-                  <TableHead>Status Cobrança</TableHead>
-                  <TableHead className="hidden md:table-cell">Data Pagamento</TableHead>
-                  <TableHead className="hidden md:table-cell">Forma</TableHead>
-                  <TableHead>Ação Rápida</TableHead>
+                  <TableHead className="min-w-[120px]">Cliente</TableHead>
+                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tipo</TableHead>
+                  <TableHead className="min-w-[90px]">Honorário</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="hidden md:table-cell">Data Pgto</TableHead>
+                  <TableHead className="hidden lg:table-cell">Forma</TableHead>
+                  <TableHead className="min-w-[90px]">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -132,8 +132,8 @@ export default function Cobranca() {
                           {c.clients?.full_name}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{c.internal_owner ?? "—"}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{c.internal_owner ?? "—"}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isIncluso ? "bg-success/10 text-success" : "bg-primary/10 text-primary"}`}>
                           {isIncluso ? "Mensalidade" : "Extra"}
                         </span>
@@ -153,7 +153,7 @@ export default function Cobranca() {
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                         {billing?.payment_date ? new Date(billing.payment_date).toLocaleDateString("pt-BR") : "—"}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                         {billing?.payment_method ?? "—"}
                       </TableCell>
                       <TableCell>

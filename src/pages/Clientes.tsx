@@ -40,7 +40,7 @@ export default function Clientes() {
 
   return (
     <InternalLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -58,12 +58,12 @@ export default function Clientes() {
         {isLoading ? (
           <Skeleton className="h-96 rounded-xl" />
         ) : (
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome Completo</TableHead>
-                  <TableHead>CPF</TableHead>
+                  <TableHead className="min-w-[120px]">Nome</TableHead>
+                  <TableHead className="min-w-[110px]">CPF</TableHead>
                   <TableHead className="hidden md:table-cell">Telefone</TableHead>
                   <TableHead className="hidden md:table-cell">E-mail</TableHead>
                   <TableHead>Demandas</TableHead>

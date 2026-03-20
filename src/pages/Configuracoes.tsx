@@ -109,14 +109,14 @@ export default function Configuracoes() {
 
   return (
     <InternalLayout>
-      <div className="p-6 space-y-6 max-w-4xl">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-4xl">
         <div>
           <p className="text-sm text-muted-foreground">Gerencie as configurações do sistema</p>
         </div>
 
         {isAdmin && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Shield className="h-4 w-4 text-primary" />
@@ -132,13 +132,13 @@ export default function Configuracoes() {
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                <Table>
+                <div className="overflow-x-auto"><Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>E-mail</TableHead>
+                      <TableHead className="min-w-[100px]">Nome</TableHead>
+                      <TableHead className="hidden sm:table-cell">E-mail</TableHead>
                       <TableHead>Perfil</TableHead>
-                      <TableHead>Cadastro</TableHead>
+                      <TableHead className="hidden md:table-cell">Cadastro</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -146,13 +146,13 @@ export default function Configuracoes() {
                     {users.map((u) => (
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{u.email}</TableCell>
                         <TableCell>
                           <Badge variant={u.role === "admin" ? "default" : u.role === "operacional" ? "secondary" : "outline"} className="text-xs">
                             {u.role === "admin" ? "Administrador" : u.role === "operacional" ? "Operacional" : "Sem perfil"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                           {new Date(u.created_at).toLocaleDateString("pt-BR")}
                         </TableCell>
                         <TableCell className="text-right">
@@ -196,7 +196,7 @@ export default function Configuracoes() {
                       </TableRow>
                     )}
                   </TableBody>
-                </Table>
+                </Table></div>
               )}
             </CardContent>
           </Card>
@@ -206,7 +206,7 @@ export default function Configuracoes() {
 
         <DocumentChecklistCard />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">

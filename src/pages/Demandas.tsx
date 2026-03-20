@@ -53,7 +53,7 @@ export default function Demandas() {
 
   return (
     <InternalLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Filters */}
         <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
           <NewCaseDialog />
@@ -120,15 +120,15 @@ export default function Demandas() {
         {isLoading ? (
           <Skeleton className="h-96 rounded-xl" />
         ) : (
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead className="min-w-[120px]">Cliente</TableHead>
                   <TableHead className="hidden md:table-cell">CPF</TableHead>
                   <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Status Interno</TableHead>
+                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
                   <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
                   <TableHead className="hidden lg:table-cell">Progresso</TableHead>
                   <TableHead className="hidden md:table-cell">Prioridade</TableHead>
@@ -154,7 +154,7 @@ export default function Demandas() {
                       <TableCell className="hidden lg:table-cell text-sm">
                         {c.base_year}
                       </TableCell>
-                      <TableCell className="text-sm">{c.internal_owner ?? "—"}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell>
                         <StatusBadge status={internalStatus} />
                       </TableCell>

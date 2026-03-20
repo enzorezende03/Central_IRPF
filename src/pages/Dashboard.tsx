@@ -87,48 +87,50 @@ export default function Dashboard() {
 
   return (
     <InternalLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Filter bar */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Filter className="h-4 w-4" />
             <span>Responsável:</span>
           </div>
-          <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-            <SelectTrigger className="w-[220px] h-9">
-              <SelectValue placeholder="Todos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os responsáveis</SelectItem>
-              <SelectItem value="sem_responsavel">Sem responsável</SelectItem>
-              {owners.map((o) => (
-                <SelectItem key={o} value={o}>{o}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {ownerFilter !== "todos" && (
-            <Button variant="ghost" size="sm" onClick={() => setOwnerFilter("todos")} className="text-xs h-8">
-              Limpar filtro
-            </Button>
-          )}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+              <SelectTrigger className="w-full sm:w-[220px] h-9">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os responsáveis</SelectItem>
+                <SelectItem value="sem_responsavel">Sem responsável</SelectItem>
+                {owners.map((o) => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {ownerFilter !== "todos" && (
+              <Button variant="ghost" size="sm" onClick={() => setOwnerFilter("todos")} className="text-xs h-8 shrink-0">
+                Limpar
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Stat Cards */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <StatCard label="Total de Demandas" value={total} icon={Users} color="text-primary" />
               <StatCard label="Aguardando Cliente" value={byStatus("aguardando_cliente")} icon={Clock} color="text-warning" />
               <StatCard label="Em Andamento" value={byStatus("em_andamento") + byStatus("documentos_em_analise")} icon={PlayCircle} color="text-info" />
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" />
               <StatCard label="Cobrança Pendente" value={billingPending} icon={Ban} color="text-warning" />
               <StatCard label="Honorários Previstos" value={fmt(totalFees)} icon={TrendingUp} color="text-primary" subtitle="Total previsto" />
@@ -138,7 +140,7 @@ export default function Dashboard() {
         )}
 
         {/* Quick Access Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">

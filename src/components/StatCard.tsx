@@ -16,16 +16,16 @@ export function StatCard({ label, value, icon: Icon, color = "text-primary", sub
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="rounded-xl border bg-card p-5 shadow-sm hover:shadow-md transition-shadow"
+      className="rounded-xl border bg-card p-3 sm:p-5 shadow-sm hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
-          <p className={cn("text-2xl font-bold", color)}>{value}</p>
+          <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider leading-tight">{label}</p>
+          <p className={cn("text-lg sm:text-2xl font-bold", color)}>{value}</p>
           {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
         </div>
-        <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center bg-muted", color)}>
-          <Icon className="h-5 w-5" />
+        <div className={cn("h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex items-center justify-center bg-muted shrink-0", color)}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </div>
     </motion.div>
