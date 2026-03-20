@@ -879,68 +879,28 @@ function InternalDocRow({
   );
 }
 
-// ── Deliverable Upload Section ──
-function DeliverableUploadSection({
-  caseId,
-  deliverable,
-  onRefresh,
-}: {
-  caseId: string;
-  deliverable: Tables<"final_deliverables"> | null | undefined;
-  onRefresh: () => void;
-}) {
-  const irpfRef = useRef<HTMLInputElement>(null);
-  const receiptRef = useRef<HTMLInputElement>(null);
+// ── Preview Card ──
+function PreviewCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
   const previewRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState<"irpf" | "receipt" | "preview" | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const del = deliverable as any;
 
-  const del = deliverable as any; // extended columns not yet in generated types
-
-  const handleUpload = async (type: "irpf" | "receipt" | "preview", file: File) => {
+  const handleUpload = async (file: File) => {
     const err = validateFile(file);
     if (err) { toast.error(err); return; }
-
-    setUploading(type);
-    const bucketMap = { irpf: "declaracoes_finais", receipt: "recibos_entrega", preview: "declaracoes_finais" };
-    const bucket = bucketMap[type];
-    const path = buildStoragePath(caseId, file.name, type === "preview" ? "preview" : undefined);
-
+    setUploading(true);
     try {
-      const url = await uploadFileToBucket(bucket, path, file);
-      const fieldMap = { irpf: "irpf_file_url", receipt: "receipt_file_url", preview: "preview_file_url" };
-      const field = fieldMap[type];
-
-      const updates: Record<string, any> = { [field]: url };
-      if (type === "preview") {
-        updates.preview_status = "aguardando_revisao";
-        updates.preview_feedback = null;
-      }
-
+      const url = await uploadFileToBucket("declaracoes_finais", buildStoragePath(caseId, file.name, "preview"), file);
+      const updates: any = { preview_file_url: url, preview_status: "aguardando_revisao", preview_feedback: null };
       if (deliverable) {
         await supabase.from("final_deliverables").update(updates).eq("id", deliverable.id);
       } else {
         await supabase.from("final_deliverables").insert({ case_id: caseId, ...updates } as any);
       }
-
-      const labelMap = { irpf: "Declaração IRPF", receipt: "Recibo de Entrega", preview: "Prévia da Declaração" };
-      const label = labelMap[type];
-      await logTimelineEvent(caseId, `${label} enviada`, `Arquivo: ${file.name}`, type === "preview");
-      toast.success(`${label} enviada com sucesso!`);
+      await logTimelineEvent(caseId, "Prévia da Declaração enviada", `Arquivo: ${file.name}`, true);
+      toast.success("Prévia enviada!");
       onRefresh();
-    } catch {
-      toast.error("Erro ao enviar arquivo.");
-    } finally {
-      setUploading(null);
-    }
-  };
-
-  const toggleRelease = async () => {
-    if (!deliverable) return;
-    const newVal = !deliverable.sent_to_client;
-    await supabase.from("final_deliverables").update({ sent_to_client: newVal }).eq("id", deliverable.id);
-    await logTimelineEvent(caseId, newVal ? "Entrega liberada" : "Entrega bloqueada", newVal ? "Arquivos finais liberados para o cliente" : "Arquivos finais bloqueados", true);
-    toast.success(newVal ? "Arquivos liberados ao cliente!" : "Liberação revogada.");
-    onRefresh();
+    } catch { toast.error("Erro ao enviar."); } finally { setUploading(false); }
   };
 
   const previewStatusLabel: Record<string, { text: string; color: string }> = {
@@ -948,48 +908,80 @@ function DeliverableUploadSection({
     aprovado: { text: "Aprovado pelo cliente ✓", color: "text-success" },
     ajustes_solicitados: { text: "Ajustes solicitados", color: "text-destructive" },
   };
-
   const pStatus = del?.preview_status as string | null;
 
   return (
-    <div className="space-y-3">
-      {/* Preview Declaration */}
-      <div className="p-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Prévia da Declaração</p>
-        <div className="flex items-center gap-2">
-          <FileText className={`h-4 w-4 shrink-0 ${del?.preview_file_url ? "text-primary" : "text-muted-foreground"}`} />
-          <span className="text-sm flex-1">{del?.preview_file_url ? "Prévia enviada" : "Enviar prévia para aprovação"}</span>
-          {del?.preview_file_url && (
-            <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-              <a href={del.preview_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
-            </Button>
-          )}
-          <input ref={previewRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload("preview", e.target.files[0])} />
-          <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === "preview"} onClick={() => previewRef.current?.click()}>
-            {uploading === "preview" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {del?.preview_file_url ? "Substituir" : "Upload"}</>}
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <FileText className={`h-4 w-4 shrink-0 ${del?.preview_file_url ? "text-primary" : "text-muted-foreground"}`} />
+        <span className="text-sm flex-1">{del?.preview_file_url ? "Prévia enviada" : "Enviar prévia para aprovação"}</span>
+        {del?.preview_file_url && (
+          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+            <a href={del.preview_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
           </Button>
-        </div>
-        {pStatus && del?.preview_file_url && (
-          <div className="space-y-1">
-            <p className={`text-xs font-medium ${previewStatusLabel[pStatus]?.color ?? "text-muted-foreground"}`}>
-              {previewStatusLabel[pStatus]?.text ?? pStatus}
-            </p>
-            {pStatus === "ajustes_solicitados" && del?.preview_feedback && (
-              <div className="p-2 rounded bg-destructive/10 border border-destructive/20">
-                <p className="text-xs font-medium text-destructive mb-0.5">Feedback do cliente:</p>
-                <p className="text-sm">{del.preview_feedback}</p>
-              </div>
-            )}
-          </div>
         )}
+        <input ref={previewRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
+        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading} onClick={() => previewRef.current?.click()}>
+          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {del?.preview_file_url ? "Substituir" : "Upload"}</>}
+        </Button>
       </div>
+      {pStatus && del?.preview_file_url && (
+        <div className="space-y-1">
+          <p className={`text-xs font-medium ${previewStatusLabel[pStatus]?.color ?? "text-muted-foreground"}`}>
+            {previewStatusLabel[pStatus]?.text ?? pStatus}
+          </p>
+          {pStatus === "ajustes_solicitados" && del?.preview_feedback && (
+            <div className="p-2 rounded bg-destructive/10 border border-destructive/20">
+              <p className="text-xs font-medium text-destructive mb-0.5">Feedback do cliente:</p>
+              <p className="text-sm">{del.preview_feedback}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
-      <Separator />
+// ── Declaration & Receipt Card ──
+function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
+  const irpfRef = useRef<HTMLInputElement>(null);
+  const receiptRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<"irpf" | "receipt" | null>(null);
 
-      {/* IRPF Final */}
+  const handleUpload = async (type: "irpf" | "receipt", file: File) => {
+    const err = validateFile(file);
+    if (err) { toast.error(err); return; }
+    setUploading(type);
+    const bucket = type === "irpf" ? "declaracoes_finais" : "recibos_entrega";
+    try {
+      const url = await uploadFileToBucket(bucket, buildStoragePath(caseId, file.name), file);
+      const field = type === "irpf" ? "irpf_file_url" : "receipt_file_url";
+      if (deliverable) {
+        await supabase.from("final_deliverables").update({ [field]: url }).eq("id", deliverable.id);
+      } else {
+        await supabase.from("final_deliverables").insert({ case_id: caseId, [field]: url } as any);
+      }
+      const label = type === "irpf" ? "Declaração IRPF" : "Recibo de Entrega";
+      await logTimelineEvent(caseId, `${label} enviada`, `Arquivo: ${file.name}`, true);
+      toast.success(`${label} enviada!`);
+      onRefresh();
+    } catch { toast.error("Erro ao enviar."); } finally { setUploading(null); }
+  };
+
+  const toggleRelease = async () => {
+    if (!deliverable) return;
+    const newVal = !deliverable.sent_to_client;
+    await supabase.from("final_deliverables").update({ sent_to_client: newVal }).eq("id", deliverable.id);
+    await logTimelineEvent(caseId, newVal ? "Entrega liberada" : "Entrega bloqueada", newVal ? "Arquivos finais liberados para o cliente" : "Arquivos finais bloqueados", true);
+    toast.success(newVal ? "Arquivos liberados!" : "Liberação revogada.");
+    onRefresh();
+  };
+
+  return (
+    <div className="space-y-3">
       <div className="flex items-center gap-2 p-2.5 rounded-lg border">
         <FileText className={`h-4 w-4 shrink-0 ${deliverable?.irpf_file_url ? "text-success" : "text-muted-foreground"}`} />
-        <span className="text-sm flex-1">{deliverable?.irpf_file_url ? "Declaração IRPF Final" : "Enviar Declaração IRPF Final"}</span>
+        <span className="text-sm flex-1">{deliverable?.irpf_file_url ? "Declaração IRPF Final" : "Enviar Declaração IRPF"}</span>
         {deliverable?.irpf_file_url && (
           <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
             <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
@@ -1000,8 +992,6 @@ function DeliverableUploadSection({
           {uploading === "irpf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {deliverable?.irpf_file_url ? "Substituir" : "Upload"}</>}
         </Button>
       </div>
-
-      {/* Receipt */}
       <div className="flex items-center gap-2 p-2.5 rounded-lg border">
         <FileText className={`h-4 w-4 shrink-0 ${deliverable?.receipt_file_url ? "text-success" : "text-muted-foreground"}`} />
         <span className="text-sm flex-1">{deliverable?.receipt_file_url ? "Recibo de Entrega" : "Enviar Recibo de Entrega"}</span>
@@ -1015,8 +1005,6 @@ function DeliverableUploadSection({
           {uploading === "receipt" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {deliverable?.receipt_file_url ? "Substituir" : "Upload"}</>}
         </Button>
       </div>
-
-      {/* Release toggle */}
       {deliverable && (deliverable.irpf_file_url || deliverable.receipt_file_url) && (
         <Button
           variant={deliverable.sent_to_client ? "destructive" : "default"}
@@ -1030,6 +1018,83 @@ function DeliverableUploadSection({
             <><Send className="h-3.5 w-3.5 mr-1.5" /> Liberar para o Cliente</>
           )}
         </Button>
+      )}
+    </div>
+  );
+}
+
+// ── Guide (DARF) Card ──
+import { Link2, ExternalLink as ExternalLinkIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+
+function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
+  const del = deliverable as any;
+  const [hasGuide, setHasGuide] = useState<boolean>(del?.has_guide ?? false);
+  const [guideUrl, setGuideUrl] = useState<string>(del?.guide_url ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const toggleGuide = async (checked: boolean) => {
+    setHasGuide(checked);
+    if (deliverable) {
+      await supabase.from("final_deliverables").update({ has_guide: checked } as any).eq("id", deliverable.id);
+    } else {
+      await supabase.from("final_deliverables").insert({ case_id: caseId, has_guide: checked } as any);
+    }
+    if (!checked) {
+      setGuideUrl("");
+      if (deliverable) {
+        await supabase.from("final_deliverables").update({ guide_url: null } as any).eq("id", deliverable.id);
+      }
+    }
+    onRefresh();
+  };
+
+  const saveGuideUrl = async () => {
+    if (!guideUrl.trim()) { toast.error("Informe o link da guia."); return; }
+    setSaving(true);
+    try {
+      if (deliverable) {
+        await supabase.from("final_deliverables").update({ guide_url: guideUrl.trim() } as any).eq("id", deliverable.id);
+      } else {
+        await supabase.from("final_deliverables").insert({ case_id: caseId, has_guide: true, guide_url: guideUrl.trim() } as any);
+      }
+      await logTimelineEvent(caseId, "Guia DARF enviada", "Link da guia de pagamento adicionado", true);
+      toast.success("Link da guia salvo!");
+      onRefresh();
+    } catch { toast.error("Erro ao salvar."); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium">Possui guia de pagamento?</label>
+        <Switch checked={hasGuide} onCheckedChange={toggleGuide} />
+      </div>
+      {hasGuide && (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              value={guideUrl}
+              onChange={(e) => setGuideUrl(e.target.value)}
+              placeholder="Cole o link da guia DARF..."
+              className="text-sm"
+            />
+            <Button size="sm" disabled={saving || !guideUrl.trim()} onClick={saveGuideUrl}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Save className="h-3.5 w-3.5 mr-1" /> Salvar</>}
+            </Button>
+          </div>
+          {del?.guide_url && (
+            <a
+              href={del.guide_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+            >
+              <ExternalLinkIcon className="h-3 w-3" />
+              Abrir guia de pagamento
+            </a>
+          )}
+        </div>
       )}
     </div>
   );
