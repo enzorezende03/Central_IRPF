@@ -104,6 +104,7 @@ export function NewCaseDialog() {
     setOwner("");
     setPriority("media");
     setFeeAmount("");
+    setBillingType("cobranca_extra");
     setClientMessage("");
   }
 
