@@ -31,7 +31,7 @@ const menuItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { user, role, signOut } = useAuth();
+  const { user, role, profileName, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -95,7 +95,7 @@ export function AppSidebar() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-sidebar-foreground truncate">
-                  {user?.email ?? "Usuário"}
+                  {profileName || user?.user_metadata?.full_name || user?.email || "Usuário"}
                 </p>
                 <p className="text-[10px] text-sidebar-foreground/50">Perfil: {roleLabel}</p>
               </div>
