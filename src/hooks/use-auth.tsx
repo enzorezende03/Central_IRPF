@@ -27,13 +27,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profileName, setProfileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles" as any)
-      .select("role")
-      .eq("user_id", userId)
-      .maybeSingle();
-    return (data as any)?.role ?? null;
+  const fetchUserData = async (userId: string) => {
+    const [roleRes, profileRes] = await Promise.all([
+      supabase.from("user_roles" as any).select("role").eq("user_id", userId).maybeSingle(),
+      supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    ]);
+    setRole((roleRes.data as any)?.role ?? null);
+    setProfileName((profileRes.data as any)?.full_name ?? null);
   };
 
   useEffect(() => {
