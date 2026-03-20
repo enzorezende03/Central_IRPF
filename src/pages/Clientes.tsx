@@ -50,6 +50,7 @@ export default function Clientes() {
             <Badge variant="secondary">
               <Users className="h-3 w-3 mr-1" /> {clients.length} clientes
             </Badge>
+            <ImportClientsDialog />
             <NewClientDialog />
           </div>
         </div>
