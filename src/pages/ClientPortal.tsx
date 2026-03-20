@@ -154,6 +154,20 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  const { data: caseMessages = [] } = useQuery({
+    queryKey: ["portal-messages", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_messages")
+        .select("*")
+        .eq("case_id", caseId!)
+        .eq("visible_to_client", true)
+        .order("created_at", { ascending: true });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!caseId,
+  });
+
   // ── Loading / error states ──
   if (loadingToken || loadingCase) {
     return (
