@@ -29,16 +29,29 @@ const STATUS_STEPS = [
 ] as const;
 
 export default function ClientPortal() {
-  const { token } = useParams<{ token: string }>();
+  const { token, org, slug } = useParams<{ token?: string; org?: string; slug?: string }>();
   const queryClient = useQueryClient();
 
-  // ── Resolve token → case_id ──
+  // Build the identifier: either "org/slug" or plain token
+  const identifier = org && slug ? `${org}/${slug}` : token;
+
+  // ── Resolve token or slug → case_id ──
   const { data: caseId, isLoading: loadingToken, isError } = useQuery({
-    queryKey: ["portal-token", token],
+    queryKey: ["portal-token", identifier],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_case_by_token", { p_token: token! });
-      if (error || !data) throw new Error("Token inválido");
-      return data as string;
+      // Try slug first if it looks like org/slug
+      if (org && slug) {
+        const fullSlug = `${org}/${slug}`;
+        const { data: slugData, error: slugErr } = await supabase.rpc("get_case_by_slug", { p_slug: fullSlug });
+        if (!slugErr && slugData) return slugData as string;
+      }
+      // Fallback to token
+      if (token) {
+        const { data, error } = await supabase.rpc("get_case_by_token", { p_token: token });
+        if (error || !data) throw new Error("Token inválido");
+        return data as string;
+      }
+      throw new Error("Link inválido");
     },
     enabled: !!token,
     retry: false,
