@@ -215,6 +215,63 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Client Activity Notifications */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="h-4 w-4 text-primary" />
+                Atividade dos Clientes
+              </CardTitle>
+              {recentActivity.length > 0 && (
+                <Badge variant="secondary" className="text-xs">{recentActivity.length} recentes</Badge>
+              )}
+            </div>
+            <CardDescription>Documentos enviados e respostas dos clientes</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Nenhuma atividade recente dos clientes.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recentActivity.map((item: any) => {
+                  const clientName = item.irpf_cases?.clients?.full_name ?? "Cliente";
+                  const caseId = item.irpf_cases?.id ?? item.case_id;
+                  const isNotHave = item.event_type === "Documento marcado como não possui";
+                  const timeAgo = formatTimeAgo(item.created_at);
+
+                  return (
+                    <Link
+                      key={item.id}
+                      to={`/demandas/${caseId}`}
+                      className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    >
+                      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${
+                        isNotHave ? "bg-warning/10" : "bg-primary/10"
+                      }`}>
+                        {isNotHave ? (
+                          <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-primary" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{clientName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">{timeAgo}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        </div>
       </div>
     </InternalLayout>
   );
