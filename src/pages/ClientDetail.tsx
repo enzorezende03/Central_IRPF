@@ -510,20 +510,6 @@ export default function ClientDetail() {
                   rows={4}
                   className="text-sm"
                 />
-                <Separator />
-                {/* ── 7. Client Message ── */}
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                    Mensagem visível ao cliente
-                  </p>
-                  <Textarea
-                    value={messageValue}
-                    onChange={(e) => setClientMessage(e.target.value)}
-                    placeholder="Escreva uma mensagem que o cliente verá no portal..."
-                    rows={3}
-                    className="text-sm"
-                  />
-                </div>
                 <Button
                   size="sm"
                   className="w-full"
@@ -535,6 +521,16 @@ export default function ClientDetail() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* ── 7. Messages to Client ── */}
+            <MessagesSection
+              caseId={id!}
+              messages={caseMessages}
+              onRefresh={() => {
+                queryClient.invalidateQueries({ queryKey: ["case-messages", id] });
+                queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+              }}
+            />
 
             {/* ── 10. Billing ── */}
             <Card>
