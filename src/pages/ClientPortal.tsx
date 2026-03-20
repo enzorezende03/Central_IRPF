@@ -640,6 +640,32 @@ function DocumentRow({
   const [uploading, setUploading] = useState(false);
   const [markingNotHave, setMarkingNotHave] = useState(false);
 
+  const checkAllDocsComplete = async () => {
+    const { data: remaining } = await supabase
+      .from("document_requests")
+      .select("id")
+      .eq("case_id", caseId)
+      .in("status", ["pendente", "rejeitado"]);
+    if (remaining && remaining.length === 0) {
+      // Check if we already logged this event to avoid duplicates
+      const { data: existing } = await supabase
+        .from("case_timeline")
+        .select("id")
+        .eq("case_id", caseId)
+        .eq("event_type", "Documentação completa")
+        .limit(1);
+      if (!existing || existing.length === 0) {
+        await supabase.from("case_timeline").insert({
+          case_id: caseId,
+          event_type: "Documentação completa",
+          description: "Cliente concluiu o envio de toda a documentação solicitada",
+          visible_to_client: true,
+          created_by: "Cliente",
+        });
+      }
+    }
+  };
+
   const handleNotHave = async () => {
     setMarkingNotHave(true);
     try {
