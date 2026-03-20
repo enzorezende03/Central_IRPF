@@ -443,56 +443,16 @@ export default function ClientDetail() {
             </Card>
 
             {/* ── 5. Questions ── */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4 text-primary" />
-                  Questionário Complementar
-                </CardTitle>
-                <CardDescription>
-                  {questions.length - unansweredCount} respondidas · {unansweredCount} pendentes
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {questions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Nenhuma pergunta cadastrada.</p>
-                ) : (
-                  questions.map((q) => {
-                    const answer = answers.find((a) => a.question_id === q.id);
-                    return (
-                      <div key={q.id} className="p-3 rounded-lg border space-y-2">
-                        <div className="flex items-start gap-2">
-                          {answer ? (
-                            <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                          ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          )}
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{q.question}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] text-muted-foreground uppercase">{q.answer_type}</span>
-                              {q.is_required && (
-                                <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatória</Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        {answer ? (
-                          <div className="ml-6 bg-success/10 p-2 rounded-md">
-                            <p className="text-sm">{answer.answer_text ?? "Respondida"}</p>
-                            <p className="text-[10px] text-muted-foreground mt-1">
-                              Respondido em {fmtDate(answer.answered_at)}
-                            </p>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground italic ml-6">Aguardando resposta do cliente</p>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </CardContent>
-            </Card>
+            <QuestionsSection
+              questions={questions}
+              answers={answers}
+              caseId={id!}
+              onRefresh={() => {
+                queryClient.invalidateQueries({ queryKey: ["case-questions", id] });
+                queryClient.invalidateQueries({ queryKey: ["case-answers", id] });
+                queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+              }}
+            />
 
             {/* ── 8. Timeline ── */}
             <Card>
