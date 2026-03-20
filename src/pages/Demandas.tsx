@@ -127,6 +127,7 @@ export default function Demandas() {
                   <TableHead>Cliente</TableHead>
                   <TableHead className="hidden md:table-cell">CPF</TableHead>
                   <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
+                  <TableHead>Responsável</TableHead>
                   <TableHead>Status Interno</TableHead>
                   <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
                   <TableHead className="hidden lg:table-cell">Progresso</TableHead>
@@ -139,6 +140,7 @@ export default function Demandas() {
               <TableBody>
                 {filtered.map((c) => {
                   const billing = c.billing?.[0];
+                  const internalStatus = (c as any).internal_status ?? c.status;
                   return (
                     <TableRow key={c.id} className={`hover:bg-muted/50 ${billing && billing.billing_status !== "pago" ? "border-l-2 border-l-warning" : ""}`}>
                       <TableCell className="font-medium">
@@ -154,6 +156,9 @@ export default function Demandas() {
                       </TableCell>
                       <TableCell className="text-sm">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell>
+                        <StatusBadge status={internalStatus} />
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
                         <StatusBadge status={c.status} />
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
