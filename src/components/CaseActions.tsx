@@ -31,7 +31,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   };
 
   const copyWhatsApp = async () => {
-    const msg = getWhatsAppMessage(clientName, caseData.portal_token, caseData.client_message);
+    const msg = getWhatsAppMessage(clientName, linkId, caseData.client_message);
     navigator.clipboard.writeText(msg);
     toast.success("Mensagem WhatsApp copiada!");
     await logTimelineEvent(caseData.id, "WhatsApp copiado", `Mensagem WhatsApp copiada para ${clientName}`, true);
