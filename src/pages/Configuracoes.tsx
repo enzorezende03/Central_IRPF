@@ -506,7 +506,7 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
           user_id: u.id,
           full_name: fullName.trim(),
           role,
-          permissions: isAdminRole ? AVAILABLE_PERMISSIONS.map((p) => p.key) : permissions,
+          permissions: isAdminRole ? ALL_PERMISSIONS.map((p) => p.key) : permissions,
         },
       });
       if (error) throw error;
