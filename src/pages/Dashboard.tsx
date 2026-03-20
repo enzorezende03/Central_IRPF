@@ -26,6 +26,25 @@ export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
   const [ownerFilter, setOwnerFilter] = useState("todos");
 
+  // Fetch recent client activity from timeline
+  const { data: recentActivity = [] } = useQuery({
+    queryKey: ["dashboard-activity"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_timeline")
+        .select("*, irpf_cases!inner(id, clients(full_name))")
+        .in("event_type", [
+          "Documento enviado",
+          "Documento marcado como não possui",
+          "Resposta enviada",
+        ])
+        .eq("created_by", "Cliente")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return (data as any) ?? [];
+    },
+  });
+
   // Extract unique owners
   const owners = useMemo(() => {
     const set = new Set<string>();
