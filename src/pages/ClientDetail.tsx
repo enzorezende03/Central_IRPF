@@ -624,6 +624,8 @@ function BillingBlock({
   billing: Tables<"billing"> | null | undefined;
   onUpdate: (updates: Partial<Tables<"billing">>) => void;
 }) {
+  const bil = billing as any;
+  const [billingType, setBillingType] = useState<string>(bil?.billing_type ?? "cobranca_extra");
   const [status, setStatus] = useState<BillingStatusType | "">(billing?.billing_status ?? "");
   const [amount, setAmount] = useState(billing?.amount?.toString() ?? "");
   const [notes, setNotes] = useState(billing?.notes ?? "");
@@ -632,8 +634,9 @@ function BillingBlock({
 
   const currentStatus = status || billing?.billing_status || "nao_cobrado";
   const currentAmount = amount || billing?.amount?.toString() || "0";
+  const isIncluso = billingType === "incluso_mensalidade";
 
-  const isPending = currentStatus !== "pago";
+  const isPending = currentStatus !== "pago" && !isIncluso;
 
   return (
     <div className="space-y-3">
