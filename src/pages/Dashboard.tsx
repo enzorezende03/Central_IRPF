@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
-  DollarSign, TrendingUp, Ban, ArrowRight,
+  DollarSign, TrendingUp, Ban, ArrowRight, Filter,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { StatCard } from "@/components/StatCard";
@@ -10,7 +10,7 @@ import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBad
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCases } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
@@ -20,32 +20,69 @@ type CaseStatus = Database["public"]["Enums"]["case_status"];
 
 export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
+  const [ownerFilter, setOwnerFilter] = useState("todos");
 
-  const total = cases.length;
-  const byStatus = (s: CaseStatus) => cases.filter((c) => c.status === s).length;
-  const billingPending = cases.filter((c) => {
+  // Extract unique owners
+  const owners = useMemo(() => {
+    const set = new Set<string>();
+    cases.forEach((c) => { if (c.internal_owner) set.add(c.internal_owner); });
+    return Array.from(set).sort();
+  }, [cases]);
+
+  // Filtered cases
+  const filtered = useMemo(() => {
+    if (ownerFilter === "todos") return cases;
+    if (ownerFilter === "sem_responsavel") return cases.filter((c) => !c.internal_owner);
+    return cases.filter((c) => c.internal_owner === ownerFilter);
+  }, [cases, ownerFilter]);
+
+  const total = filtered.length;
+  const byStatus = (s: CaseStatus) => filtered.filter((c) => c.status === s).length;
+  const billingPending = filtered.filter((c) => {
     const b = c.billing?.[0];
     return b && b.billing_status !== "pago";
   }).length;
-  const totalFees = cases.reduce((sum, c) => sum + (c.billing?.[0]?.amount ?? 0), 0);
-  const totalPaid = cases
+  const totalFees = filtered.reduce((sum, c) => sum + (c.billing?.[0]?.amount ?? 0), 0);
+  const totalPaid = filtered
     .filter((c) => c.billing?.[0]?.billing_status === "pago")
     .reduce((sum, c) => sum + (c.billing?.[0]?.amount ?? 0), 0);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  // Recent 5 cases
-  const recentCases = useMemo(() => cases.slice(0, 5), [cases]);
-
-  // Urgent/pending cases
+  const recentCases = useMemo(() => filtered.slice(0, 5), [filtered]);
   const urgentCases = useMemo(
-    () => cases.filter((c) => c.priority === "urgente" || c.status === "pendencia").slice(0, 5),
-    [cases]
+    () => filtered.filter((c) => c.priority === "urgente" || c.status === "pendencia").slice(0, 5),
+    [filtered]
   );
 
   return (
     <InternalLayout>
       <div className="p-6 space-y-6">
+        {/* Filter bar */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Filter className="h-4 w-4" />
+            <span>Responsável:</span>
+          </div>
+          <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+            <SelectTrigger className="w-[220px] h-9">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os responsáveis</SelectItem>
+              <SelectItem value="sem_responsavel">Sem responsável</SelectItem>
+              {owners.map((o) => (
+                <SelectItem key={o} value={o}>{o}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {ownerFilter !== "todos" && (
+            <Button variant="ghost" size="sm" onClick={() => setOwnerFilter("todos")} className="text-xs h-8">
+              Limpar filtro
+            </Button>
+          )}
+        </div>
+
         {/* Stat Cards */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -72,7 +109,6 @@ export default function Dashboard() {
 
         {/* Quick Access Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Cases */}
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -88,7 +124,7 @@ export default function Dashboard() {
               {isLoading ? (
                 <Skeleton className="h-40" />
               ) : recentCases.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Nenhuma demanda cadastrada.</p>
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhuma demanda encontrada.</p>
               ) : (
                 <div className="space-y-2">
                   {recentCases.map((c) => (
@@ -112,7 +148,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Urgent / Pending */}
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -138,23 +173,20 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {urgentCases.map((c) => {
-                    const billing = c.billing?.[0];
-                    return (
-                      <Link
-                        key={c.id}
-                        to={`/demandas/${c.id}`}
-                        className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{c.clients?.full_name}</p>
-                          <p className="text-xs text-muted-foreground">{c.internal_owner ?? "Sem responsável"}</p>
-                        </div>
-                        <PriorityBadge priority={c.priority} />
-                        <StatusBadge status={c.status} />
-                      </Link>
-                    );
-                  })}
+                  {urgentCases.map((c) => (
+                    <Link
+                      key={c.id}
+                      to={`/demandas/${c.id}`}
+                      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{c.clients?.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{c.internal_owner ?? "Sem responsável"}</p>
+                      </div>
+                      <PriorityBadge priority={c.priority} />
+                      <StatusBadge status={c.status} />
+                    </Link>
+                  ))}
                 </div>
               )}
             </CardContent>
