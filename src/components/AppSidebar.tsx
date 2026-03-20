@@ -1,8 +1,9 @@
 import {
-  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings,
+  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +17,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -29,6 +31,15 @@ const menuItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { user, role, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
+  const roleLabel = role === "admin" ? "Administrador" : role === "operacional" ? "Operacional" : "Usuário";
 
   return (
     <Sidebar collapsible="icon">
@@ -75,19 +86,42 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      {!collapsed && (
-        <SidebarFooter className="p-4 border-t border-sidebar-border">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
-              <Users className="h-3.5 w-3.5 text-sidebar-foreground" />
+      <SidebarFooter className="p-4 border-t border-sidebar-border">
+        {!collapsed ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+                <Users className="h-3.5 w-3.5 text-sidebar-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-sidebar-foreground truncate">
+                  {user?.email ?? "Usuário"}
+                </p>
+                <p className="text-[10px] text-sidebar-foreground/50">Perfil: {roleLabel}</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-sidebar-foreground truncate">Administrador</p>
-              <p className="text-[10px] text-sidebar-foreground/50">Perfil: Admin</p>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent text-xs"
+            >
+              <LogOut className="h-3.5 w-3.5 mr-2" />
+              Sair
+            </Button>
           </div>
-        </SidebarFooter>
-      )}
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            className="mx-auto text-sidebar-foreground/60 hover:text-sidebar-foreground"
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }
