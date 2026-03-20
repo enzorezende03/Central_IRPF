@@ -116,7 +116,7 @@ export default function Configuracoes() {
 
         {isAdmin && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Shield className="h-4 w-4 text-primary" />
