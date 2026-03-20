@@ -318,6 +318,8 @@ export type Database = {
       final_deliverables: {
         Row: {
           case_id: string
+          guide_url: string | null
+          has_guide: boolean
           id: string
           irpf_file_url: string | null
           preview_feedback: string | null
@@ -329,6 +331,8 @@ export type Database = {
         }
         Insert: {
           case_id: string
+          guide_url?: string | null
+          has_guide?: boolean
           id?: string
           irpf_file_url?: string | null
           preview_feedback?: string | null
@@ -340,6 +344,8 @@ export type Database = {
         }
         Update: {
           case_id?: string
+          guide_url?: string | null
+          has_guide?: boolean
           id?: string
           irpf_file_url?: string | null
           preview_feedback?: string | null
