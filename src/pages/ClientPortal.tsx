@@ -1008,3 +1008,44 @@ function QuestionRow({
     </div>
   );
 }
+
+// ── Portal Reply Box ──
+function PortalReplyBox({ caseId, onSent }: { caseId: string; onSent: () => void }) {
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    if (!reply.trim()) return;
+    setSending(true);
+    try {
+      await supabase.from("case_messages").insert({
+        case_id: caseId,
+        sender: "client",
+        message: reply.trim(),
+        visible_to_client: true,
+      } as any);
+      setReply("");
+      toast.success("Mensagem enviada!");
+      onSent();
+    } catch {
+      toast.error("Erro ao enviar mensagem.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex gap-2 mt-2">
+      <Input
+        value={reply}
+        onChange={(e) => setReply(e.target.value)}
+        placeholder="Responder ao escritório..."
+        className="text-sm"
+        onKeyDown={(e) => e.key === "Enter" && send()}
+      />
+      <Button size="sm" disabled={sending || !reply.trim()} onClick={send}>
+        <Send className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
