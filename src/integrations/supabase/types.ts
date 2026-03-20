@@ -100,6 +100,41 @@ export type Database = {
           },
         ]
       }
+      case_messages: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          message: string
+          sender: string
+          visible_to_client: boolean
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          message: string
+          sender?: string
+          visible_to_client?: boolean
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender?: string
+          visible_to_client?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_messages_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "irpf_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_questions: {
         Row: {
           answer_type: Database["public"]["Enums"]["answer_type"]

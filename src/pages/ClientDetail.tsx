@@ -152,12 +152,23 @@ export default function ClientDetail() {
     enabled: !!id,
   });
 
+  const { data: caseMessages = [] } = useQuery({
+    queryKey: ["case-messages", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_messages")
+        .select("*")
+        .eq("case_id", id!)
+        .order("created_at", { ascending: true });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
+
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
-  const [clientMessage, setClientMessage] = useState<string | null>(null);
 
   const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
-  const messageValue = clientMessage ?? caseData?.client_message ?? "";
 
   // ── Mutations ──
   const invalidateAll = () => {
@@ -166,6 +177,7 @@ export default function ClientDetail() {
     queryClient.invalidateQueries({ queryKey: ["case-billing", id] });
     queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
     queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+    queryClient.invalidateQueries({ queryKey: ["case-messages", id] });
     queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
   };
 
@@ -173,7 +185,7 @@ export default function ClientDetail() {
     mutationFn: async () => {
       const { error } = await supabase
         .from("irpf_cases")
-        .update({ internal_notes: notesValue, client_message: messageValue })
+        .update({ internal_notes: notesValue })
         .eq("id", id!);
       if (error) throw error;
     },
@@ -429,56 +441,16 @@ export default function ClientDetail() {
             </Card>
 
             {/* ── 5. Questions ── */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4 text-primary" />
-                  Questionário Complementar
-                </CardTitle>
-                <CardDescription>
-                  {questions.length - unansweredCount} respondidas · {unansweredCount} pendentes
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {questions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Nenhuma pergunta cadastrada.</p>
-                ) : (
-                  questions.map((q) => {
-                    const answer = answers.find((a) => a.question_id === q.id);
-                    return (
-                      <div key={q.id} className="p-3 rounded-lg border space-y-2">
-                        <div className="flex items-start gap-2">
-                          {answer ? (
-                            <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                          ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          )}
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{q.question}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] text-muted-foreground uppercase">{q.answer_type}</span>
-                              {q.is_required && (
-                                <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatória</Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        {answer ? (
-                          <div className="ml-6 bg-success/10 p-2 rounded-md">
-                            <p className="text-sm">{answer.answer_text ?? "Respondida"}</p>
-                            <p className="text-[10px] text-muted-foreground mt-1">
-                              Respondido em {fmtDate(answer.answered_at)}
-                            </p>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground italic ml-6">Aguardando resposta do cliente</p>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </CardContent>
-            </Card>
+            <QuestionsSection
+              questions={questions}
+              answers={answers}
+              caseId={id!}
+              onRefresh={() => {
+                queryClient.invalidateQueries({ queryKey: ["case-questions", id] });
+                queryClient.invalidateQueries({ queryKey: ["case-answers", id] });
+                queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+              }}
+            />
 
             {/* ── 8. Timeline ── */}
             <Card>
@@ -536,20 +508,6 @@ export default function ClientDetail() {
                   rows={4}
                   className="text-sm"
                 />
-                <Separator />
-                {/* ── 7. Client Message ── */}
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                    Mensagem visível ao cliente
-                  </p>
-                  <Textarea
-                    value={messageValue}
-                    onChange={(e) => setClientMessage(e.target.value)}
-                    placeholder="Escreva uma mensagem que o cliente verá no portal..."
-                    rows={3}
-                    className="text-sm"
-                  />
-                </div>
                 <Button
                   size="sm"
                   className="w-full"
@@ -561,6 +519,16 @@ export default function ClientDetail() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* ── 7. Messages to Client ── */}
+            <MessagesSection
+              caseId={id!}
+              messages={caseMessages}
+              onRefresh={() => {
+                queryClient.invalidateQueries({ queryKey: ["case-messages", id] });
+                queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+              }}
+            />
 
             {/* ── 10. Billing ── */}
             <Card>
@@ -1034,5 +1002,274 @@ function DeliverableUploadSection({
         </Button>
       )}
     </div>
+  );
+}
+
+// ── Questions Section with CRUD ──
+import { Plus as PlusIcon } from "lucide-react";
+
+function QuestionsSection({
+  questions,
+  answers,
+  caseId,
+  onRefresh,
+}: {
+  questions: Tables<"case_questions">[];
+  answers: Tables<"case_answers">[];
+  caseId: string;
+  onRefresh: () => void;
+}) {
+  const [newQuestion, setNewQuestion] = useState("");
+  const [newRequired, setNewRequired] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  const answeredIds = new Set(answers.map((a) => a.question_id));
+  const unanswered = questions.filter((q) => q.is_required && !answeredIds.has(q.id)).length;
+
+  const addQuestion = async () => {
+    if (!newQuestion.trim()) return;
+    setAdding(true);
+    try {
+      await supabase.from("case_questions").insert({
+        case_id: caseId,
+        question: newQuestion.trim(),
+        is_required: newRequired,
+        sort_order: questions.length,
+      });
+      await logTimelineEvent(caseId, "Pergunta adicionada", `Pergunta: "${newQuestion.trim()}"`, true);
+      setNewQuestion("");
+      setNewRequired(false);
+      toast.success("Pergunta adicionada!");
+      onRefresh();
+    } catch {
+      toast.error("Erro ao adicionar pergunta.");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const updateQuestion = async (qId: string) => {
+    if (!editText.trim()) return;
+    await supabase.from("case_questions").update({ question: editText.trim() }).eq("id", qId);
+    setEditingId(null);
+    toast.success("Pergunta atualizada!");
+    onRefresh();
+  };
+
+  const deleteQuestion = async (qId: string) => {
+    await supabase.from("case_answers").delete().eq("question_id", qId);
+    await supabase.from("case_questions").delete().eq("id", qId);
+    toast.success("Pergunta removida!");
+    onRefresh();
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <MessageCircle className="h-4 w-4 text-primary" />
+          Questionário Complementar
+        </CardTitle>
+        <CardDescription>
+          {questions.length - unanswered} respondidas · {unanswered} pendentes
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {questions.map((q) => {
+          const answer = answers.find((a) => a.question_id === q.id);
+          const isEditing = editingId === q.id;
+          return (
+            <div key={q.id} className="p-3 rounded-lg border space-y-2">
+              <div className="flex items-start gap-2">
+                {answer ? (
+                  <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  {isEditing ? (
+                    <div className="flex gap-2">
+                      <Input
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="text-sm h-8"
+                        onKeyDown={(e) => e.key === "Enter" && updateQuestion(q.id)}
+                      />
+                      <Button size="sm" className="h-8 text-xs" onClick={() => updateQuestion(q.id)}>Salvar</Button>
+                      <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setEditingId(null)}>Cancelar</Button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium">{q.question}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground uppercase">{q.answer_type}</span>
+                        {q.is_required && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatória</Badge>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+                {!isEditing && (
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => { setEditingId(q.id); setEditText(q.question); }}
+                    >
+                      <FileText className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive"
+                      onClick={() => deleteQuestion(q.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {answer ? (
+                <div className="ml-6 bg-success/10 p-2 rounded-md">
+                  <p className="text-sm">{answer.answer_text ?? "Respondida"}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Respondido em {fmtDate(answer.answered_at)}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic ml-6">Aguardando resposta do cliente</p>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Add new question */}
+        <div className="p-3 rounded-lg border border-dashed space-y-2">
+          <Input
+            value={newQuestion}
+            onChange={(e) => setNewQuestion(e.target.value)}
+            placeholder="Digite uma nova pergunta..."
+            className="text-sm"
+            onKeyDown={(e) => e.key === "Enter" && addQuestion()}
+          />
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={newRequired}
+                onChange={(e) => setNewRequired(e.target.checked)}
+                className="rounded"
+              />
+              Obrigatória
+            </label>
+            <Button size="sm" className="h-7 text-xs" disabled={adding || !newQuestion.trim()} onClick={addQuestion}>
+              <PlusIcon className="h-3 w-3 mr-1" />
+              {adding ? "Adicionando..." : "Adicionar Pergunta"}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Messages Section (Chat) ──
+function MessagesSection({
+  caseId,
+  messages,
+  onRefresh,
+}: {
+  caseId: string;
+  messages: any[];
+  onRefresh: () => void;
+}) {
+  const [newMsg, setNewMsg] = useState("");
+  const [sending, setSending] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const sendMessage = async () => {
+    if (!newMsg.trim()) return;
+    setSending(true);
+    try {
+      await supabase.from("case_messages").insert({
+        case_id: caseId,
+        sender: "office",
+        message: newMsg.trim(),
+        visible_to_client: true,
+      } as any);
+      await logTimelineEvent(caseId, "Mensagem enviada", "Escritório enviou mensagem ao cliente", true);
+      setNewMsg("");
+      toast.success("Mensagem enviada!");
+      onRefresh();
+    } catch {
+      toast.error("Erro ao enviar mensagem.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Send className="h-4 w-4 text-primary" />
+          Mensagens ao Cliente
+        </CardTitle>
+        <CardDescription>Visíveis no portal do cliente</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div ref={scrollRef} className="max-h-64 overflow-y-auto space-y-2">
+          {messages.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma mensagem ainda.</p>
+          ) : (
+            messages.map((msg: any) => (
+              <div
+                key={msg.id}
+                className={`p-2.5 rounded-lg text-sm max-w-[85%] ${
+                  msg.sender === "office"
+                    ? "bg-primary/10 ml-auto"
+                    : "bg-muted mr-auto"
+                }`}
+              >
+                <p className="text-[10px] font-medium text-muted-foreground mb-0.5">
+                  {msg.sender === "office" ? "Escritório" : "Cliente"}
+                </p>
+                <p className="leading-relaxed">{msg.message}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">
+                  {fmtDate(msg.created_at)}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Textarea
+            value={newMsg}
+            onChange={(e) => setNewMsg(e.target.value)}
+            placeholder="Escreva uma mensagem para o cliente..."
+            rows={2}
+            className="text-sm flex-1"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+          />
+          <Button
+            size="icon"
+            className="h-auto shrink-0"
+            disabled={sending || !newMsg.trim()}
+            onClick={sendMessage}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

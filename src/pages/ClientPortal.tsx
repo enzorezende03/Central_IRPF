@@ -154,6 +154,20 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  const { data: caseMessages = [] } = useQuery({
+    queryKey: ["portal-messages", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_messages")
+        .select("*")
+        .eq("case_id", caseId!)
+        .eq("visible_to_client", true)
+        .order("created_at", { ascending: true });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!caseId,
+  });
+
   // ── Loading / error states ──
   if (loadingToken || loadingCase) {
     return (
@@ -346,6 +360,33 @@ export default function ClientPortal() {
                     />
                   );
                 })}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* ── Messages from Office ── */}
+        {caseMessages.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Mensagens do Escritório</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {caseMessages.map((msg: any) => (
+                  <div
+                    key={msg.id}
+                    className={`p-3 rounded-lg text-sm ${
+                      msg.sender === "office" ? "bg-primary/5 border border-primary/10" : "bg-muted"
+                    }`}
+                  >
+                    <p className="leading-relaxed">{msg.message}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {msg.sender === "office" ? "Escritório" : "Você"} · {new Date(msg.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                ))}
+                <PortalReplyBox caseId={caseId!} onSent={() => queryClient.invalidateQueries({ queryKey: ["portal-messages", caseId] })} />
               </CardContent>
             </Card>
           </motion.div>
@@ -964,6 +1005,47 @@ function QuestionRow({
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Portal Reply Box ──
+function PortalReplyBox({ caseId, onSent }: { caseId: string; onSent: () => void }) {
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    if (!reply.trim()) return;
+    setSending(true);
+    try {
+      await supabase.from("case_messages").insert({
+        case_id: caseId,
+        sender: "client",
+        message: reply.trim(),
+        visible_to_client: true,
+      } as any);
+      setReply("");
+      toast.success("Mensagem enviada!");
+      onSent();
+    } catch {
+      toast.error("Erro ao enviar mensagem.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex gap-2 mt-2">
+      <Input
+        value={reply}
+        onChange={(e) => setReply(e.target.value)}
+        placeholder="Responder ao escritório..."
+        className="text-sm"
+        onKeyDown={(e) => e.key === "Enter" && send()}
+      />
+      <Button size="sm" disabled={sending || !reply.trim()} onClick={send}>
+        <Send className="h-3.5 w-3.5" />
+      </Button>
     </div>
   );
 }
