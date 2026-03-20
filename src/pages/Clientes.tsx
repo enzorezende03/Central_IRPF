@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useCases } from "@/hooks/use-cases";
 import { NewClientDialog } from "@/components/NewClientDialog";
+import { ImportClientsDialog } from "@/components/ImportClientsDialog";
 
 export default function Clientes() {
   const { data: cases = [], isLoading } = useCases();
