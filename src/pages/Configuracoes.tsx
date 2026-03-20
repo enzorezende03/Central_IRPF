@@ -799,6 +799,8 @@ function NotificationsPanel() {
 
   const iconMap: Record<string, React.ReactNode> = {
     "Documentação completa": <CheckCircle className="h-3.5 w-3.5 text-success" />,
+    "Ajustes solicitados": <AlertCircle className="h-3.5 w-3.5 text-warning" />,
+    "Prévia aprovada": <CheckCircle className="h-3.5 w-3.5 text-primary" />,
     "Documento enviado": <FileText className="h-3.5 w-3.5 text-primary" />,
     "Documento marcado como não possui": <Clock className="h-3.5 w-3.5 text-warning" />,
     "Resposta enviada": <MessageCircle className="h-3.5 w-3.5 text-info" />,
