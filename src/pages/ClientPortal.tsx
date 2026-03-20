@@ -774,19 +774,35 @@ function DocumentRow({
             accept={getAcceptString()}
             onChange={handleUpload}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs h-8 w-full sm:w-auto"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {uploading ? (
-              <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
-            ) : (
-              <><Upload className="h-3.5 w-3.5 mr-1" /> Enviar Arquivo</>
-            )}
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs h-8 flex-1 sm:flex-initial"
+              disabled={uploading || markingNotHave}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? (
+                <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
+              ) : (
+                <><Upload className="h-3.5 w-3.5 mr-1" /> Enviar Arquivo</>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs h-8 text-muted-foreground hover:text-destructive flex-1 sm:flex-initial"
+              disabled={uploading || markingNotHave}
+              onClick={handleNotHave}
+            >
+              {markingNotHave ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+              )}
+              Não Tenho
+            </Button>
+          </div>
           <p className="text-[9px] text-muted-foreground text-right">
             Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
           </p>
