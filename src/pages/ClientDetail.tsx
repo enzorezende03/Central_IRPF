@@ -152,6 +152,19 @@ export default function ClientDetail() {
     enabled: !!id,
   });
 
+  const { data: caseMessages = [] } = useQuery({
+    queryKey: ["case-messages", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_messages")
+        .select("*")
+        .eq("case_id", id!)
+        .order("created_at", { ascending: true });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
+
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
   const [clientMessage, setClientMessage] = useState<string | null>(null);
