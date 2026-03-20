@@ -109,14 +109,14 @@ export default function Cobranca() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Honorário</TableHead>
-                  <TableHead>Status Cobrança</TableHead>
-                  <TableHead className="hidden md:table-cell">Data Pagamento</TableHead>
-                  <TableHead className="hidden md:table-cell">Forma</TableHead>
-                  <TableHead>Ação Rápida</TableHead>
+                  <TableHead className="min-w-[120px]">Cliente</TableHead>
+                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tipo</TableHead>
+                  <TableHead className="min-w-[90px]">Honorário</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="hidden md:table-cell">Data Pgto</TableHead>
+                  <TableHead className="hidden lg:table-cell">Forma</TableHead>
+                  <TableHead className="min-w-[90px]">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
