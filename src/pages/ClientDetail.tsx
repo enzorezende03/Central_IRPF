@@ -578,9 +578,9 @@ export default function ClientDetail() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Download className="h-4 w-4 text-primary" />
-                  Entrega Final
+                  Prévia e Entrega Final
                 </CardTitle>
-                <CardDescription>Declaração e recibo de entrega</CardDescription>
+                <CardDescription>Prévia para aprovação, declaração e recibo</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <DeliverableUploadSection
