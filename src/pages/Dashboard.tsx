@@ -2,8 +2,10 @@ import { useState, useMemo } from "react";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   DollarSign, TrendingUp, Ban, ArrowRight, Filter,
+  FileText, Bell,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { StatCard } from "@/components/StatCard";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
@@ -11,16 +13,48 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCases } from "@/hooks/use-cases";
+import { supabase } from "@/integrations/supabase/client";
 import { STATUS_LABELS } from "@/lib/types";
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
+function formatTimeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "agora";
+  if (mins < 60) return `${mins}min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
+}
+
 export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
   const [ownerFilter, setOwnerFilter] = useState("todos");
+
+  // Fetch recent client activity from timeline
+  const { data: recentActivity = [] } = useQuery({
+    queryKey: ["dashboard-activity"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_timeline")
+        .select("*, irpf_cases!inner(id, clients(full_name))")
+        .in("event_type", [
+          "Documento enviado",
+          "Documento marcado como não possui",
+          "Resposta enviada",
+        ])
+        .eq("created_by", "Cliente")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return (data as any) ?? [];
+    },
+  });
 
   // Extract unique owners
   const owners = useMemo(() => {
@@ -192,6 +226,62 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Client Activity Notifications */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="h-4 w-4 text-primary" />
+                Atividade dos Clientes
+              </CardTitle>
+              {recentActivity.length > 0 && (
+                <Badge variant="secondary" className="text-xs">{recentActivity.length} recentes</Badge>
+              )}
+            </div>
+            <CardDescription>Documentos enviados e respostas dos clientes</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Nenhuma atividade recente dos clientes.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recentActivity.map((item: any) => {
+                  const clientName = item.irpf_cases?.clients?.full_name ?? "Cliente";
+                  const caseId = item.irpf_cases?.id ?? item.case_id;
+                  const isNotHave = item.event_type === "Documento marcado como não possui";
+                  const timeAgo = formatTimeAgo(item.created_at);
+
+                  return (
+                    <Link
+                      key={item.id}
+                      to={`/demandas/${caseId}`}
+                      className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    >
+                      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${
+                        isNotHave ? "bg-warning/10" : "bg-primary/10"
+                      }`}>
+                        {isNotHave ? (
+                          <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-primary" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{clientName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">{timeAgo}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </InternalLayout>
   );
