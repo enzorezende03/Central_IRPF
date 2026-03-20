@@ -111,6 +111,7 @@ export default function Cobranca() {
                 <TableRow>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Responsável</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Honorário</TableHead>
                   <TableHead>Status Cobrança</TableHead>
                   <TableHead className="hidden md:table-cell">Data Pagamento</TableHead>
