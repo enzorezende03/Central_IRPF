@@ -133,7 +133,7 @@ export default function Cobranca() {
                         </Link>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{c.internal_owner ?? "—"}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isIncluso ? "bg-success/10 text-success" : "bg-primary/10 text-primary"}`}>
                           {isIncluso ? "Mensalidade" : "Extra"}
                         </span>
