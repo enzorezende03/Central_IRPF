@@ -353,7 +353,17 @@ export default function ClientDetail() {
 
         {/* ── Info Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <InfoCard icon={User} label="Responsável" value={caseData.internal_owner ?? "Não definido"} />
+          <OwnerCard
+            currentOwner={caseData.internal_owner}
+            profiles={profiles}
+            onChangeOwner={(name) => {
+              supabase.from("irpf_cases").update({ internal_owner: name }).eq("id", id!).then(() => {
+                queryClient.invalidateQueries({ queryKey: ["case-detail", id] });
+                queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
+                toast.success("Responsável atualizado!");
+              });
+            }}
+          />
           <InfoCard icon={Phone} label="Celular" value={client?.phone ?? "—"} />
           <InfoCard icon={Mail} label="E-mail" value={client?.email ?? "—"} />
           <InfoCard icon={DollarSign} label="Honorário" value={billing ? fmt(billing.amount) : "—"} />
