@@ -174,6 +174,8 @@ export default function Configuracoes() {
 
         <OfficeSettingsCard />
 
+        <DocumentChecklistCard />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
