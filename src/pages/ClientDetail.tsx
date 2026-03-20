@@ -62,6 +62,15 @@ export default function ClientDetail() {
     enabled: !!id,
   });
 
+  // ── Fetch profiles for owner select ──
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["profiles-list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, full_name").order("full_name");
+      return data ?? [];
+    },
+  });
+
   // ── Fetch related data ──
   const { data: docRequests = [] } = useQuery({
     queryKey: ["doc-requests", id],
