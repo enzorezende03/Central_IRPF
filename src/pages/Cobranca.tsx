@@ -105,7 +105,7 @@ export default function Cobranca() {
         {isLoading ? (
           <Skeleton className="h-96 rounded-xl" />
         ) : (
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
