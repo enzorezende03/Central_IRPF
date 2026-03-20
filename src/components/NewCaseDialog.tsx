@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { NewClientDialog } from "./NewClientDialog";
@@ -17,6 +20,13 @@ function generateToken() {
   const arr = new Uint8Array(32);
   crypto.getRandomValues(arr);
   return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+interface DocTemplate {
+  id: string;
+  title: string;
+  is_required: boolean;
+  sort_order: number;
 }
 
 export function NewCaseDialog() {
@@ -31,6 +41,7 @@ export function NewCaseDialog() {
   const [feeAmount, setFeeAmount] = useState("");
   const [billingType, setBillingType] = useState("cobranca_extra");
   const [clientMessage, setClientMessage] = useState("");
+  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
 
   const { data: clients = [] } = useQuery({
     queryKey: ["all-clients"],
@@ -39,6 +50,41 @@ export function NewCaseDialog() {
       return data ?? [];
     },
   });
+
+  const { data: docTemplates = [] } = useQuery<DocTemplate[]>({
+    queryKey: ["checklist-templates"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("document_checklist_templates" as any)
+        .select("*")
+        .order("sort_order");
+      return (data as any) ?? [];
+    },
+  });
+
+  // Auto-select all templates when they load or dialog opens
+  useEffect(() => {
+    if (docTemplates.length > 0 && open) {
+      setSelectedDocs(new Set(docTemplates.map((d) => d.id)));
+    }
+  }, [docTemplates, open]);
+
+  const toggleDoc = (id: string) => {
+    setSelectedDocs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedDocs.size === docTemplates.length) {
+      setSelectedDocs(new Set());
+    } else {
+      setSelectedDocs(new Set(docTemplates.map((d) => d.id)));
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -65,19 +111,15 @@ export function NewCaseDialog() {
         .single();
       if (error) throw error;
 
-      // Fetch document templates from settings
-      const { data: templates } = await supabase
-        .from("document_checklist_templates" as any)
-        .select("title, is_required, sort_order")
-        .order("sort_order");
-
-      const docInserts = (templates ?? []).map((t: any) => ({
-        case_id: newCase.id,
-        title: t.title,
-        is_required: t.is_required,
-        status: "pendente" as const,
-      }));
-      if (docInserts.length > 0) {
+      // Insert only selected documents
+      const selected = docTemplates.filter((t) => selectedDocs.has(t.id));
+      if (selected.length > 0) {
+        const docInserts = selected.map((t) => ({
+          case_id: newCase.id,
+          title: t.title,
+          is_required: t.is_required,
+          status: "pendente" as const,
+        }));
         await supabase.from("document_requests").insert(docInserts);
       }
 
@@ -115,6 +157,7 @@ export function NewCaseDialog() {
     setFeeAmount("");
     setBillingType("cobranca_extra");
     setClientMessage("");
+    setSelectedDocs(new Set());
   }
 
   return (
@@ -125,106 +168,144 @@ export function NewCaseDialog() {
           Nova Demanda
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Nova Demanda IRPF</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-2">
-          {/* Client selection */}
-          <div className="space-y-1.5">
-            <Label>Cliente *</Label>
-            <div className="flex gap-2">
-              <Select value={clientId} onValueChange={(id) => {
-                setClientId(id);
-                const selected = clients.find((c) => c.id === id);
-                if (selected?.billing_type) {
-                  setBillingType(selected.billing_type);
-                  if (selected.billing_type === "incluso_mensalidade") setFeeAmount("");
-                }
-              }}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.full_name} — {c.cpf}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <NewClientDialog
-                trigger={<Button variant="outline" size="icon" title="Cadastrar novo cliente"><Plus className="h-4 w-4" /></Button>}
-                onCreated={(id, bt) => {
-                  queryClient.invalidateQueries({ queryKey: ["all-clients"] });
+        <ScrollArea className="flex-1 pr-3">
+          <div className="space-y-4 py-2">
+            {/* Client selection */}
+            <div className="space-y-1.5">
+              <Label>Cliente *</Label>
+              <div className="flex gap-2">
+                <Select value={clientId} onValueChange={(id) => {
                   setClientId(id);
-                  if (bt) {
-                    setBillingType(bt);
-                    if (bt === "incluso_mensalidade") setFeeAmount("");
+                  const selected = clients.find((c) => c.id === id);
+                  if (selected?.billing_type) {
+                    setBillingType(selected.billing_type);
+                    if (selected.billing_type === "incluso_mensalidade") setFeeAmount("");
                   }
-                }}
+                }}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecione o cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.full_name} — {c.cpf}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <NewClientDialog
+                  trigger={<Button variant="outline" size="icon" title="Cadastrar novo cliente"><Plus className="h-4 w-4" /></Button>}
+                  onCreated={(id, bt) => {
+                    queryClient.invalidateQueries({ queryKey: ["all-clients"] });
+                    setClientId(id);
+                    if (bt) {
+                      setBillingType(bt);
+                      if (bt === "incluso_mensalidade") setFeeAmount("");
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="nd-year">Ano-base</Label>
+                <Input id="nd-year" type="number" value={baseYear} onChange={(e) => setBaseYear(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="nd-owner">Responsável</Label>
+                <Input id="nd-owner" value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Nome do responsável" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Prioridade</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">Baixa</SelectItem>
+                    <SelectItem value="media">Média</SelectItem>
+                    <SelectItem value="alta">Alta</SelectItem>
+                    <SelectItem value="urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tipo de Cobrança</Label>
+                <Select value={billingType} onValueChange={setBillingType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="incluso_mensalidade">Incluso na mensalidade</SelectItem>
+                    <SelectItem value="cobranca_extra">Cobrança extra</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {billingType === "cobranca_extra" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="nd-fee">Valor do Honorário (R$)</Label>
+                <Input id="nd-fee" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} placeholder="1.500,00" />
+              </div>
+            )}
+
+            {/* Document selection */}
+            {docTemplates.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Documentos Solicitados</Label>
+                  <button
+                    type="button"
+                    className="text-xs text-primary hover:underline"
+                    onClick={toggleAll}
+                  >
+                    {selectedDocs.size === docTemplates.length ? "Desmarcar todos" : "Selecionar todos"}
+                  </button>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3 space-y-1.5 max-h-44 overflow-y-auto">
+                  {docTemplates.map((doc) => (
+                    <label
+                      key={doc.id}
+                      className="flex items-center gap-2.5 py-1 px-1 rounded hover:bg-muted/50 cursor-pointer text-sm transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedDocs.has(doc.id)}
+                        onCheckedChange={() => toggleDoc(doc.id)}
+                      />
+                      <span className="flex-1">{doc.title}</span>
+                      {doc.is_required && (
+                        <Badge variant="secondary" className="text-[10px] py-0 shrink-0">obrigatório</Badge>
+                      )}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {selectedDocs.size} de {docTemplates.length} selecionado(s)
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="nd-msg">Mensagem para o cliente</Label>
+              <Textarea
+                id="nd-msg"
+                value={clientMessage}
+                onChange={(e) => setClientMessage(e.target.value)}
+                rows={2}
+                placeholder="Mensagem que aparecerá no portal do cliente..."
               />
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="nd-year">Ano-base</Label>
-              <Input id="nd-year" type="number" value={baseYear} onChange={(e) => setBaseYear(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="nd-owner">Responsável</Label>
-              <Input id="nd-owner" value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Nome do responsável" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Prioridade</Label>
-              <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="baixa">Baixa</SelectItem>
-                  <SelectItem value="media">Média</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
-                  <SelectItem value="urgente">Urgente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Tipo de Cobrança</Label>
-              <Select value={billingType} onValueChange={setBillingType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="incluso_mensalidade">Incluso na mensalidade</SelectItem>
-                  <SelectItem value="cobranca_extra">Cobrança extra</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {billingType === "cobranca_extra" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="nd-fee">Valor do Honorário (R$)</Label>
-              <Input id="nd-fee" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} placeholder="1.500,00" />
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label htmlFor="nd-msg">Mensagem para o cliente</Label>
-            <Textarea
-              id="nd-msg"
-              value={clientMessage}
-              onChange={(e) => setClientMessage(e.target.value)}
-              rows={2}
-              placeholder="Mensagem que aparecerá no portal do cliente..."
-            />
-          </div>
-        </div>
+        </ScrollArea>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
