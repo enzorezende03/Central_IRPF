@@ -180,7 +180,7 @@ export default function Cobranca() {
                 })}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                       Nenhuma cobrança encontrada.
                     </TableCell>
                   </TableRow>
