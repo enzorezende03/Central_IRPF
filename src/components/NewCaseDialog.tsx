@@ -244,7 +244,7 @@ export function NewCaseDialog() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label>Prioridade</Label>
                 <Select value={priority} onValueChange={setPriority}>
@@ -256,6 +256,18 @@ export function NewCaseDialog() {
                     <SelectItem value="media">Média</SelectItem>
                     <SelectItem value="alta">Alta</SelectItem>
                     <SelectItem value="urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tipo de Declaração</Label>
+                <Select value={declarationType} onValueChange={setDeclarationType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="simples">Simples</SelectItem>
+                    <SelectItem value="complexa">Complexa</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
