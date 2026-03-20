@@ -221,8 +221,6 @@ function OfficeSettingsCard() {
       return (data as any) as OfficeData | null;
     },
   });
-    },
-  });
 
   const [form, setForm] = useState({
     name: "", cnpj: "", address: "", phone: "", email: "",
