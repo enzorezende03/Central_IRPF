@@ -750,6 +750,7 @@ function DocumentRow({
       });
 
       toast.success(`✅ Documento "${doc.title}" enviado com sucesso!`);
+      await checkAllDocsComplete();
       onSuccess();
     } catch (err: any) {
       console.error(err);
