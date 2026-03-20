@@ -122,7 +122,9 @@ export default function Cobranca() {
               <TableBody>
                 {filtered.map((c) => {
                   const billing = c.billing?.[0];
-                  const isPending = billing && billing.billing_status !== "pago";
+                  const bil = billing as any;
+                  const isIncluso = bil?.billing_type === "incluso_mensalidade";
+                  const isPending = billing && billing.billing_status !== "pago" && !isIncluso;
                   return (
                     <TableRow key={c.id} className={isPending ? "border-l-2 border-l-warning" : ""}>
                       <TableCell className="font-medium">
@@ -131,9 +133,22 @@ export default function Cobranca() {
                         </Link>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{c.internal_owner ?? "—"}</TableCell>
+                      <TableCell>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isIncluso ? "bg-success/10 text-success" : "bg-primary/10 text-primary"}`}>
+                          {isIncluso ? "Mensalidade" : "Extra"}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-sm font-medium">{billing ? fmt(billing.amount) : "—"}</TableCell>
                       <TableCell>
-                        {billing ? <BillingBadge status={billing.billing_status} /> : <span className="text-xs text-muted-foreground">Sem cobrança</span>}
+                        {isIncluso ? (
+                          <span className="text-xs text-success flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" /> Incluso
+                          </span>
+                        ) : billing ? (
+                          <BillingBadge status={billing.billing_status} />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Sem cobrança</span>
+                        )}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                         {billing?.payment_date ? new Date(billing.payment_date).toLocaleDateString("pt-BR") : "—"}
@@ -142,7 +157,7 @@ export default function Cobranca() {
                         {billing?.payment_method ?? "—"}
                       </TableCell>
                       <TableCell>
-                        {billing && billing.billing_status !== "pago" && (
+                        {!isIncluso && billing && billing.billing_status !== "pago" && (
                           <div className="flex gap-1">
                             {billing.billing_status === "nao_cobrado" && (
                               <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => handleQuickStatusChange(billing.id, "cobrado")}>
@@ -154,7 +169,7 @@ export default function Cobranca() {
                             </Button>
                           </div>
                         )}
-                        {billing?.billing_status === "pago" && (
+                        {(isIncluso || billing?.billing_status === "pago") && !isIncluso && (
                           <span className="text-xs text-success flex items-center gap-1">
                             <CheckCircle className="h-3 w-3" /> Quitado
                           </span>
