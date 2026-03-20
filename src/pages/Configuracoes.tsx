@@ -578,6 +578,13 @@ function InviteUserDialog() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("admin");
+  const [permissions, setPermissions] = useState<string[]>(["acesso_demandas"]);
+
+  const togglePerm = (key: string) => {
+    setPermissions((prev) => prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]);
+  };
+
+  const isAdminRole = role === "admin";
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -585,7 +592,14 @@ function InviteUserDialog() {
       if (password.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres.");
 
       const { data, error } = await supabase.functions.invoke("create-user", {
-        body: { action: "create", email: email.trim(), password, full_name: fullName.trim(), role },
+        body: {
+          action: "create",
+          email: email.trim(),
+          password,
+          full_name: fullName.trim(),
+          role,
+          permissions: isAdminRole ? AVAILABLE_PERMISSIONS.map((p) => p.key) : permissions,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -595,7 +609,7 @@ function InviteUserDialog() {
       toast.success("Usuário convidado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setOpen(false);
-      setEmail(""); setPassword(""); setFullName(""); setRole("admin");
+      setEmail(""); setPassword(""); setFullName(""); setRole("admin"); setPermissions(["acesso_demandas"]);
     },
     onError: (err: any) => toast.error(err.message || "Erro ao convidar usuário."),
   });
@@ -633,10 +647,28 @@ function InviteUserDialog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador — Acesso total</SelectItem>
-                <SelectItem value="operacional">Operacional — Gerencia demandas</SelectItem>
+                <SelectItem value="operacional">Operacional — Acesso a Demandas</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          {!isAdminRole && (
+            <div className="space-y-2">
+              <Label>Permissões</Label>
+              <div className="space-y-2 rounded-lg border p-3">
+                {AVAILABLE_PERMISSIONS.map((p) => (
+                  <div key={p.key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`inv-perm-${p.key}`}
+                      checked={permissions.includes(p.key)}
+                      onCheckedChange={() => togglePerm(p.key)}
+                    />
+                    <label htmlFor={`inv-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Selecione as áreas que este usuário pode acessar.</p>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
