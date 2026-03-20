@@ -269,8 +269,9 @@ export default function ClientDetail() {
   }
 
   const client = caseData.clients as Tables<"clients"> | null;
-  const portalUrl = getPortalUrl(caseData.portal_token);
-  const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", caseData.portal_token, caseData.client_message);
+  const linkId = caseData.portal_slug || caseData.portal_token;
+  const portalUrl = getPortalUrl(linkId);
+  const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", linkId, caseData.client_message);
 
   const answeredIds = new Set(answers.map((a) => a.question_id));
   const unansweredCount = questions.filter((q) => q.is_required && !answeredIds.has(q.id)).length;
