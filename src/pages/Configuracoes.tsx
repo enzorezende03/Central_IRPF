@@ -549,6 +549,7 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
               <SelectContent>
                 <SelectItem value="admin">Administrador — Acesso total</SelectItem>
                 <SelectItem value="operacional">Operacional — Acesso a Demandas</SelectItem>
+                <SelectItem value="financeiro">Financeiro — Acesso a Cobrança</SelectItem>
               </SelectContent>
             </Select>
           </div>
