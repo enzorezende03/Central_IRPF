@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { NewClientDialog } from "./NewClientDialog";
-import { REQUIRED_DOCUMENTS } from "@/lib/types";
+import { logTimelineEvent, generateSlug } from "@/lib/portal-utils";
 import { logTimelineEvent, generateSlug } from "@/lib/portal-utils";
 
 function generateToken() {
