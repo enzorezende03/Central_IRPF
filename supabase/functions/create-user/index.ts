@@ -38,6 +38,16 @@ async function verifyAdmin(req: Request) {
   return { adminClient, callerId: caller.id };
 }
 
+async function syncPermissions(adminClient: any, userId: string, permissions: string[]) {
+  // Delete existing permissions
+  await adminClient.from("user_permissions").delete().eq("user_id", userId);
+  // Insert new ones
+  if (permissions.length > 0) {
+    const rows = permissions.map((p: string) => ({ user_id: userId, permission: p }));
+    await adminClient.from("user_permissions").insert(rows);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -50,7 +60,7 @@ Deno.serve(async (req) => {
 
     // CREATE
     if (action === "create") {
-      const { email, password, full_name, role } = body;
+      const { email, password, full_name, role, permissions } = body;
       if (!email || !password) return json({ error: "E-mail e senha são obrigatórios." }, 400);
 
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
@@ -64,12 +74,18 @@ Deno.serve(async (req) => {
       if (newUser.user && role) {
         await adminClient.from("user_roles").insert({ user_id: newUser.user.id, role });
       }
+
+      // Sync permissions
+      if (newUser.user && Array.isArray(permissions)) {
+        await syncPermissions(adminClient, newUser.user.id, permissions);
+      }
+
       return json({ success: true, user_id: newUser.user?.id });
     }
 
     // UPDATE
     if (action === "update") {
-      const { user_id, full_name, role } = body;
+      const { user_id, full_name, role, permissions } = body;
       if (!user_id) return json({ error: "user_id é obrigatório." }, 400);
 
       // Update user metadata
@@ -84,6 +100,11 @@ Deno.serve(async (req) => {
       if (role) {
         await adminClient.from("user_roles").delete().eq("user_id", user_id);
         await adminClient.from("user_roles").insert({ user_id, role });
+      }
+
+      // Sync permissions
+      if (Array.isArray(permissions)) {
+        await syncPermissions(adminClient, user_id, permissions);
       }
 
       return json({ success: true });

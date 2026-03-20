@@ -7,8 +7,10 @@ interface AuthContextType {
   user: User | null;
   role: string | null;
   profileName: string | null;
+  permissions: string[];
   loading: boolean;
   signOut: () => Promise<void>;
+  hasPermission: (perm: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -16,8 +18,10 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   role: null,
   profileName: null,
+  permissions: [],
   loading: true,
   signOut: async () => {},
+  hasPermission: () => false,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -25,15 +29,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchUserData = async (userId: string) => {
-    const [roleRes, profileRes] = await Promise.all([
+    const [roleRes, profileRes, permsRes] = await Promise.all([
       supabase.from("user_roles" as any).select("role").eq("user_id", userId).maybeSingle(),
       supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+      supabase.from("user_permissions" as any).select("permission").eq("user_id", userId),
     ]);
-    setRole((roleRes.data as any)?.role ?? null);
+    const userRole = (roleRes.data as any)?.role ?? null;
+    setRole(userRole);
     setProfileName((profileRes.data as any)?.full_name ?? null);
+    const perms = ((permsRes.data as any[]) ?? []).map((p: any) => p.permission);
+    setPermissions(perms);
   };
 
   useEffect(() => {
@@ -50,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setRole(null);
           setProfileName(null);
+          setPermissions([]);
           setLoading(false);
         }
       }
@@ -74,10 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setRole(null);
     setProfileName(null);
+    setPermissions([]);
+  };
+
+  const hasPermission = (perm: string) => {
+    if (role === "admin") return true;
+    return permissions.includes(perm);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, role, profileName, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, role, profileName, permissions, loading, signOut, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

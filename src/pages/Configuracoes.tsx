@@ -16,12 +16,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Checkbox } from "@/components/ui/checkbox";
 
+const AVAILABLE_PERMISSIONS = [
+  { key: "acesso_demandas", label: "Acesso a Demandas" },
+  { key: "acesso_cobranca", label: "Acesso a Cobrança" },
+  { key: "acesso_configuracao", label: "Acesso a Configuração" },
+] as const;
+
 interface UserRow {
   id: string;
   full_name: string;
   email: string;
   created_at: string;
   role: string;
+  permissions: string[];
 }
 
 interface OfficeData {
@@ -51,12 +58,24 @@ export default function Configuracoes() {
         .from("user_roles" as any)
         .select("user_id, role");
 
+      const { data: perms } = await supabase
+        .from("user_permissions" as any)
+        .select("user_id, permission");
+
       const roleMap = new Map<string, string>();
       (roles ?? []).forEach((r: any) => roleMap.set(r.user_id, r.role));
+
+      const permMap = new Map<string, string[]>();
+      (perms ?? []).forEach((p: any) => {
+        const arr = permMap.get(p.user_id) ?? [];
+        arr.push(p.permission);
+        permMap.set(p.user_id, arr);
+      });
 
       return (profiles as any[]).map((p) => ({
         ...p,
         role: roleMap.get(p.id) ?? "sem_perfil",
+        permissions: permMap.get(p.id) ?? [],
       }));
     },
     enabled: isAdmin,
@@ -460,11 +479,24 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
   const queryClient = useQueryClient();
   const [fullName, setFullName] = useState(u.full_name || "");
   const [role, setRole] = useState(u.role);
+  const [permissions, setPermissions] = useState<string[]>(u.permissions);
+
+  const togglePerm = (key: string) => {
+    setPermissions((prev) => prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]);
+  };
+
+  const isAdminRole = role === "admin";
 
   const mutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("create-user", {
-        body: { action: "update", user_id: u.id, full_name: fullName.trim(), role },
+        body: {
+          action: "update",
+          user_id: u.id,
+          full_name: fullName.trim(),
+          role,
+          permissions: isAdminRole ? AVAILABLE_PERMISSIONS.map((p) => p.key) : permissions,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -478,7 +510,7 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
   });
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setFullName(u.full_name || ""); setRole(u.role); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setFullName(u.full_name || ""); setRole(u.role); setPermissions(u.permissions); } }}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar">
           <Pencil className="h-3.5 w-3.5" />
@@ -505,10 +537,28 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador — Acesso total</SelectItem>
-                <SelectItem value="operacional">Operacional — Gerencia demandas</SelectItem>
+                <SelectItem value="operacional">Operacional — Acesso a Demandas</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          {!isAdminRole && (
+            <div className="space-y-2">
+              <Label>Permissões</Label>
+              <div className="space-y-2 rounded-lg border p-3">
+                {AVAILABLE_PERMISSIONS.map((p) => (
+                  <div key={p.key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`edit-perm-${p.key}`}
+                      checked={permissions.includes(p.key)}
+                      onCheckedChange={() => togglePerm(p.key)}
+                    />
+                    <label htmlFor={`edit-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Selecione as áreas que este usuário pode acessar.</p>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -528,6 +578,13 @@ function InviteUserDialog() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("admin");
+  const [permissions, setPermissions] = useState<string[]>(["acesso_demandas"]);
+
+  const togglePerm = (key: string) => {
+    setPermissions((prev) => prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]);
+  };
+
+  const isAdminRole = role === "admin";
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -535,7 +592,14 @@ function InviteUserDialog() {
       if (password.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres.");
 
       const { data, error } = await supabase.functions.invoke("create-user", {
-        body: { action: "create", email: email.trim(), password, full_name: fullName.trim(), role },
+        body: {
+          action: "create",
+          email: email.trim(),
+          password,
+          full_name: fullName.trim(),
+          role,
+          permissions: isAdminRole ? AVAILABLE_PERMISSIONS.map((p) => p.key) : permissions,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -545,7 +609,7 @@ function InviteUserDialog() {
       toast.success("Usuário convidado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setOpen(false);
-      setEmail(""); setPassword(""); setFullName(""); setRole("admin");
+      setEmail(""); setPassword(""); setFullName(""); setRole("admin"); setPermissions(["acesso_demandas"]);
     },
     onError: (err: any) => toast.error(err.message || "Erro ao convidar usuário."),
   });
@@ -583,10 +647,28 @@ function InviteUserDialog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador — Acesso total</SelectItem>
-                <SelectItem value="operacional">Operacional — Gerencia demandas</SelectItem>
+                <SelectItem value="operacional">Operacional — Acesso a Demandas</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          {!isAdminRole && (
+            <div className="space-y-2">
+              <Label>Permissões</Label>
+              <div className="space-y-2 rounded-lg border p-3">
+                {AVAILABLE_PERMISSIONS.map((p) => (
+                  <div key={p.key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`inv-perm-${p.key}`}
+                      checked={permissions.includes(p.key)}
+                      onCheckedChange={() => togglePerm(p.key)}
+                    />
+                    <label htmlFor={`inv-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Selecione as áreas que este usuário pode acessar.</p>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
