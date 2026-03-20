@@ -230,14 +230,46 @@ function OfficeSettingsCard() {
   useEffect(() => {
     if (office) {
       setForm({
-        name: office.name || "",
-        cnpj: office.cnpj || "",
-        address: office.address || "",
-        phone: office.phone || "",
-        email: office.email || "",
+        name: (office as any).name || "",
+        cnpj: (office as any).cnpj || "",
+        cep: (office as any).cep || "",
+        address: (office as any).address || "",
+        number: (office as any).number || "",
+        complement: (office as any).complement || "",
+        neighborhood: (office as any).neighborhood || "",
+        city: (office as any).city || "",
+        state: (office as any).state || "",
+        phone: (office as any).phone || "",
+        email: (office as any).email || "",
       });
     }
   }, [office]);
+
+  const fetchCep = async (cep: string) => {
+    const clean = cep.replace(/\D/g, "");
+    if (clean.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setForm((p) => ({
+          ...p,
+          address: data.logradouro || "",
+          neighborhood: data.bairro || "",
+          city: data.localidade || "",
+          state: data.uf || "",
+          complement: data.complemento || p.complement,
+        }));
+      } else {
+        toast.error("CEP não encontrado.");
+      }
+    } catch {
+      toast.error("Erro ao buscar CEP.");
+    } finally {
+      setCepLoading(false);
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
