@@ -41,6 +41,7 @@ export function NewCaseDialog() {
   const [feeAmount, setFeeAmount] = useState("");
   const [billingType, setBillingType] = useState("cobranca_extra");
   const [clientMessage, setClientMessage] = useState("");
+  const [declarationType, setDeclarationType] = useState("simples");
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
 
   const { data: clients = [] } = useQuery({
@@ -112,6 +113,7 @@ export function NewCaseDialog() {
           portal_token: token,
           portal_slug: slug,
           client_message: clientMessage.trim() || null,
+          declaration_type: declarationType,
           status: "aguardando_cliente" as any,
           progress_percent: 0,
         })
@@ -165,6 +167,7 @@ export function NewCaseDialog() {
     setFeeAmount("");
     setBillingType("cobranca_extra");
     setClientMessage("");
+    setDeclarationType("simples");
     setSelectedDocs(new Set());
   }
 
@@ -241,7 +244,7 @@ export function NewCaseDialog() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label>Prioridade</Label>
                 <Select value={priority} onValueChange={setPriority}>
@@ -253,6 +256,18 @@ export function NewCaseDialog() {
                     <SelectItem value="media">Média</SelectItem>
                     <SelectItem value="alta">Alta</SelectItem>
                     <SelectItem value="urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tipo de Declaração</Label>
+                <Select value={declarationType} onValueChange={setDeclarationType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="simples">Simples</SelectItem>
+                    <SelectItem value="complexa">Complexa</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
