@@ -21,7 +21,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { STATUS_LABELS, BILLING_LABELS, PRIORITY_LABELS } from "@/lib/types";
+import { STATUS_LABELS, BILLING_LABELS, PRIORITY_LABELS, BILLING_TYPE_LABELS } from "@/lib/types";
+import type { BillingType } from "@/lib/types";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Database } from "@/integrations/supabase/types";
 
