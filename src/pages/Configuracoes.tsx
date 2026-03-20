@@ -223,8 +223,9 @@ function OfficeSettingsCard() {
   });
 
   const [form, setForm] = useState({
-    name: "", cnpj: "", address: "", phone: "", email: "",
+    name: "", cnpj: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", phone: "", email: "",
   });
+  const [cepLoading, setCepLoading] = useState(false);
 
   useEffect(() => {
     if (office) {
