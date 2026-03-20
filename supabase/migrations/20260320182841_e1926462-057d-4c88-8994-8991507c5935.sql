@@ -1,0 +1,1 @@
+ALTER TABLE public.irpf_cases ADD COLUMN declaration_type text NOT NULL DEFAULT 'simples';

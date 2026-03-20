@@ -406,6 +406,7 @@ export type Database = {
           client_id: string
           client_message: string | null
           created_at: string
+          declaration_type: string
           id: string
           internal_notes: string | null
           internal_owner: string | null
@@ -423,6 +424,7 @@ export type Database = {
           client_id: string
           client_message?: string | null
           created_at?: string
+          declaration_type?: string
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
@@ -440,6 +442,7 @@ export type Database = {
           client_id?: string
           client_message?: string | null
           created_at?: string
+          declaration_type?: string
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
