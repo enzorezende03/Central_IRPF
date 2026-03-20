@@ -179,6 +179,7 @@ export default function ClientDetail() {
     queryClient.invalidateQueries({ queryKey: ["case-billing", id] });
     queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
     queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+    queryClient.invalidateQueries({ queryKey: ["case-messages", id] });
     queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
   };
 
