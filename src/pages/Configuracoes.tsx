@@ -109,7 +109,7 @@ export default function Configuracoes() {
 
   return (
     <InternalLayout>
-      <div className="p-6 space-y-6 max-w-4xl">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-4xl">
         <div>
           <p className="text-sm text-muted-foreground">Gerencie as configurações do sistema</p>
         </div>
