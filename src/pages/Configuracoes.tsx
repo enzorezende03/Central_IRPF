@@ -610,7 +610,7 @@ function InviteUserDialog() {
           password,
           full_name: fullName.trim(),
           role,
-          permissions: isAdminRole ? AVAILABLE_PERMISSIONS.map((p) => p.key) : permissions,
+          permissions: isAdminRole ? ALL_PERMISSIONS.map((p) => p.key) : permissions,
         },
       });
       if (error) throw error;
