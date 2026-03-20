@@ -185,7 +185,7 @@ export default function ClientDetail() {
     mutationFn: async () => {
       const { error } = await supabase
         .from("irpf_cases")
-        .update({ internal_notes: notesValue, client_message: messageValue })
+        .update({ internal_notes: notesValue })
         .eq("id", id!);
       if (error) throw error;
     },
