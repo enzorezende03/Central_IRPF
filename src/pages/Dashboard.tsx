@@ -89,28 +89,30 @@ export default function Dashboard() {
     <InternalLayout>
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Filter bar */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Filter className="h-4 w-4" />
             <span>Responsável:</span>
           </div>
-          <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-            <SelectTrigger className="w-[220px] h-9">
-              <SelectValue placeholder="Todos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os responsáveis</SelectItem>
-              <SelectItem value="sem_responsavel">Sem responsável</SelectItem>
-              {owners.map((o) => (
-                <SelectItem key={o} value={o}>{o}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {ownerFilter !== "todos" && (
-            <Button variant="ghost" size="sm" onClick={() => setOwnerFilter("todos")} className="text-xs h-8">
-              Limpar filtro
-            </Button>
-          )}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+              <SelectTrigger className="w-full sm:w-[220px] h-9">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os responsáveis</SelectItem>
+                <SelectItem value="sem_responsavel">Sem responsável</SelectItem>
+                {owners.map((o) => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {ownerFilter !== "todos" && (
+              <Button variant="ghost" size="sm" onClick={() => setOwnerFilter("todos")} className="text-xs h-8 shrink-0">
+                Limpar
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Stat Cards */}
