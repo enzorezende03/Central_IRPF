@@ -44,12 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (session?.user) {
           setTimeout(async () => {
-            const r = await fetchRole(session.user.id);
-            setRole(r);
+            await fetchUserData(session.user.id);
             setLoading(false);
           }, 0);
         } else {
           setRole(null);
+          setProfileName(null);
           setLoading(false);
         }
       }
