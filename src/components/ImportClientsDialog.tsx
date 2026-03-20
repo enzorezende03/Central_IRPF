@@ -166,6 +166,7 @@ export function ImportClientsDialog() {
 
         // Create IRPF case
         const token = generateToken();
+        const slug = generateSlug(c.full_name);
         const { data: newCase, error: caseErr } = await supabase
           .from("irpf_cases")
           .insert({
@@ -175,6 +176,7 @@ export function ImportClientsDialog() {
             internal_owner: c.responsavel || null,
             priority: "media" as any,
             portal_token: token,
+            portal_slug: slug,
             status: "aguardando_cliente" as any,
             progress_percent: 0,
           })

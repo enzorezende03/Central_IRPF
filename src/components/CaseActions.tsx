@@ -39,7 +39,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   };
 
   const openPortal = async () => {
-    window.open(getPortalUrl(caseData.portal_token), "_blank");
+    window.open(getPortalUrl(linkId), "_blank");
     await logTimelineEvent(caseData.id, "Portal aberto", `Portal aberto pelo escritório`);
     queryClient.invalidateQueries({ queryKey: ["case-timeline", caseData.id] });
   };
