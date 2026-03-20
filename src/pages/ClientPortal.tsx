@@ -53,7 +53,7 @@ export default function ClientPortal() {
       }
       throw new Error("Link inválido");
     },
-    enabled: !!token,
+    enabled: !!(token || (org && slug)),
     retry: false,
   });
 
