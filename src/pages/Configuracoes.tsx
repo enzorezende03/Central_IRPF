@@ -186,7 +186,7 @@ export default function Configuracoes() {
               <CardDescription>Alertas de novas entregas e pendências</CardDescription>
             </CardHeader>
             <CardContent>
-              <Badge variant="secondary" className="text-xs">Em breve</Badge>
+              <NotificationsPanel />
             </CardContent>
           </Card>
 
