@@ -51,6 +51,14 @@ export function NewCaseDialog() {
     },
   });
 
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["profiles-list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, full_name").order("full_name");
+      return data ?? [];
+    },
+  });
+
   const { data: docTemplates = [] } = useQuery<DocTemplate[]>({
     queryKey: ["checklist-templates"],
     queryFn: async () => {
