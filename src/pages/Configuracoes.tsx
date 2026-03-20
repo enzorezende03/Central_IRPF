@@ -763,7 +763,7 @@ function DocumentChecklistCard() {
 
 // ── Notifications Panel ──
 import { Link } from "react-router-dom";
-import { FileText, CheckCircle, MessageCircle, Clock } from "lucide-react";
+import { CheckCircle, MessageCircle, Clock } from "lucide-react";
 
 function formatTimeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
