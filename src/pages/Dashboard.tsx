@@ -2,8 +2,10 @@ import { useState, useMemo } from "react";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   DollarSign, TrendingUp, Ban, ArrowRight, Filter,
+  FileText, Bell,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { StatCard } from "@/components/StatCard";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
@@ -11,8 +13,10 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCases } from "@/hooks/use-cases";
+import { supabase } from "@/integrations/supabase/client";
 import { STATUS_LABELS } from "@/lib/types";
 import type { Database } from "@/integrations/supabase/types";
 
