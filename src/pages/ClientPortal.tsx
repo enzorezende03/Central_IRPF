@@ -444,6 +444,169 @@ function PortalShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ── Preview Approval Card ──
+function PreviewApprovalCard({
+  deliverable,
+  caseId,
+  onSuccess,
+}: {
+  deliverable: Tables<"final_deliverables">;
+  caseId: string;
+  onSuccess: () => void;
+}) {
+  const [feedback, setFeedback] = useState("");
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const del = deliverable as any;
+
+  const previewStatus = del.preview_status as string;
+  const isApproved = previewStatus === "aprovado";
+  const isAdjustments = previewStatus === "ajustes_solicitados";
+
+  const handleApprove = async () => {
+    setSubmitting(true);
+    try {
+      await supabase.from("final_deliverables").update({
+        preview_status: "aprovado",
+        preview_feedback: null,
+      } as any).eq("id", deliverable.id);
+      await supabase.from("case_timeline").insert({
+        case_id: caseId,
+        event_type: "Prévia aprovada",
+        description: "Cliente aprovou a prévia da declaração",
+        visible_to_client: true,
+        created_by: "Cliente",
+      });
+      toast.success("Prévia aprovada com sucesso!");
+      onSuccess();
+    } catch {
+      toast.error("Erro ao aprovar.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRequestAdjustments = async () => {
+    if (!feedback.trim()) {
+      toast.error("Descreva os ajustes necessários.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await supabase.from("final_deliverables").update({
+        preview_status: "ajustes_solicitados",
+        preview_feedback: feedback.trim(),
+      } as any).eq("id", deliverable.id);
+      await supabase.from("case_timeline").insert({
+        case_id: caseId,
+        event_type: "Ajustes solicitados",
+        description: `Cliente solicitou ajustes: ${feedback.trim()}`,
+        visible_to_client: true,
+        created_by: "Cliente",
+      });
+      toast.success("Solicitação de ajustes enviada!");
+      setShowFeedback(false);
+      setFeedback("");
+      onSuccess();
+    } catch {
+      toast.error("Erro ao enviar solicitação.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Card className={`border-primary/30 ${isApproved ? "border-success/40" : isAdjustments ? "border-warning/40" : ""}`}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Eye className="h-4 w-4 text-primary" />
+          Prévia da Declaração
+        </CardTitle>
+        <CardDescription>
+          {isApproved
+            ? "Você aprovou esta prévia. O escritório dará andamento à versão final."
+            : isAdjustments
+              ? "Ajustes solicitados. O escritório enviará uma nova versão."
+              : "Verifique a prévia da sua declaração e aprove ou solicite ajustes."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Button variant="outline" className="w-full justify-start" asChild>
+          <a href={del.preview_file_url} target="_blank" rel="noopener noreferrer">
+            <Download className="h-4 w-4 mr-2" /> Visualizar Prévia da Declaração
+          </a>
+        </Button>
+
+        {isApproved && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-success/10 text-success">
+            <CheckCircle className="h-5 w-5 shrink-0" />
+            <p className="text-sm font-medium">Prévia aprovada</p>
+          </div>
+        )}
+
+        {isAdjustments && del.preview_feedback && (
+          <div className="p-3 rounded-lg bg-warning/10 border border-warning/30">
+            <p className="text-xs font-medium text-warning mb-1">Seus ajustes solicitados:</p>
+            <p className="text-sm">{del.preview_feedback}</p>
+          </div>
+        )}
+
+        {!isApproved && (
+          <div className="flex flex-col gap-2">
+            <Button
+              onClick={handleApprove}
+              disabled={submitting}
+              className="w-full"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+              Aprovar Prévia
+            </Button>
+
+            {!showFeedback ? (
+              <Button
+                variant="outline"
+                onClick={() => setShowFeedback(true)}
+                className="w-full"
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" /> Solicitar Ajustes
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <Textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Descreva os ajustes necessários..."
+                  rows={3}
+                  className="text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setShowFeedback(false); setFeedback(""); }}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleRequestAdjustments}
+                    disabled={submitting}
+                    className="flex-1"
+                  >
+                    {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                    Enviar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Document Row ──
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 
