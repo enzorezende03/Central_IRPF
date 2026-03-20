@@ -41,6 +41,7 @@ export function NewCaseDialog() {
   const [feeAmount, setFeeAmount] = useState("");
   const [billingType, setBillingType] = useState("cobranca_extra");
   const [clientMessage, setClientMessage] = useState("");
+  const [declarationType, setDeclarationType] = useState("simples");
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
 
   const { data: clients = [] } = useQuery({
