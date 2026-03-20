@@ -668,7 +668,7 @@ function InviteUserDialog() {
             <div className="space-y-2">
               <Label>Permissões</Label>
               <div className="space-y-2 rounded-lg border p-3">
-                {AVAILABLE_PERMISSIONS.map((p) => (
+                {(PERMISSIONS_BY_ROLE[role] ?? ALL_PERMISSIONS).map((p) => (
                   <div key={p.key} className="flex items-center gap-2">
                     <Checkbox
                       id={`inv-perm-${p.key}`}
