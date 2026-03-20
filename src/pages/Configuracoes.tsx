@@ -16,12 +16,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Checkbox } from "@/components/ui/checkbox";
 
+const AVAILABLE_PERMISSIONS = [
+  { key: "acesso_demandas", label: "Acesso a Demandas" },
+  { key: "acesso_cobranca", label: "Acesso a Cobrança" },
+  { key: "acesso_configuracao", label: "Acesso a Configuração" },
+] as const;
+
 interface UserRow {
   id: string;
   full_name: string;
   email: string;
   created_at: string;
   role: string;
+  permissions: string[];
 }
 
 interface OfficeData {
