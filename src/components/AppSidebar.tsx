@@ -39,7 +39,7 @@ export function AppSidebar() {
     navigate("/login");
   };
 
-  const roleLabel = role === "admin" ? "Administrador" : role === "operacional" ? "Operacional" : "Usuário";
+  const roleLabel = role === "admin" ? "Administrador" : role === "operacional" ? "Operacional" : role === "financeiro" ? "Financeiro" : "Usuário";
 
   const visibleItems = menuItems.filter((item) =>
     item.permission === null || hasPermission(item.permission)
