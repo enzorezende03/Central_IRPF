@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import {
   FileText, Upload, CheckCircle, Circle, AlertTriangle, Download,
-  MessageSquare, Send, Loader2, Phone, Mail, Clock,
+  MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
