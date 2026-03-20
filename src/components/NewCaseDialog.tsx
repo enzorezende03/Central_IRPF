@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { NewClientDialog } from "./NewClientDialog";
 import { logTimelineEvent, generateSlug } from "@/lib/portal-utils";
-import { logTimelineEvent, generateSlug } from "@/lib/portal-utils";
 
 function generateToken() {
   const arr = new Uint8Array(32);
