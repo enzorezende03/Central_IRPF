@@ -22,8 +22,9 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   const queryClient = useQueryClient();
   const clientName = caseData.clients?.full_name ?? "Cliente";
 
+  const linkId = caseData.portal_slug || caseData.portal_token;
   const copyLink = async () => {
-    navigator.clipboard.writeText(getPortalUrl(caseData.portal_token));
+    navigator.clipboard.writeText(getPortalUrl(linkId));
     toast.success("Link copiado!");
     await logTimelineEvent(caseData.id, "Link copiado", `Link do portal copiado para ${clientName}`);
     queryClient.invalidateQueries({ queryKey: ["case-timeline", caseData.id] });
