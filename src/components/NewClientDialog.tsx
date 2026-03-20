@@ -7,8 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+const AVAILABLE_TAGS = ["2M Saúde", "2M Contabilidade"] as const;
 
 interface NewClientDialogProps {
   trigger?: React.ReactNode;
@@ -18,6 +21,7 @@ interface NewClientDialogProps {
 export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const [tags, setTags] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     full_name: "",
@@ -27,6 +31,10 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
     notes: "",
     billing_type: "cobranca_extra",
   });
+
+  const toggleTag = (tag: string) => {
+    setTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -42,6 +50,7 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
           phone: form.phone.trim() || null,
           notes: form.notes.trim() || null,
           billing_type: form.billing_type,
+          tags,
         })
         .select("id")
         .single();
@@ -54,6 +63,7 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
       queryClient.invalidateQueries({ queryKey: ["all-clients"] });
       const billingType = form.billing_type;
       setForm({ full_name: "", cpf: "", email: "", phone: "", notes: "", billing_type: "cobranca_extra" });
+      setTags([]);
       setOpen(false);
       onCreated?.(clientId, billingType);
     },
@@ -95,6 +105,17 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
             <div className="space-y-1.5">
               <Label htmlFor="nc-phone">Telefone</Label>
               <Input id="nc-phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(11) 99999-0000" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Empresa</Label>
+            <div className="flex gap-4">
+              {AVAILABLE_TAGS.map((tag) => (
+                <label key={tag} className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Checkbox checked={tags.includes(tag)} onCheckedChange={() => toggleTag(tag)} />
+                  {tag}
+                </label>
+              ))}
             </div>
           </div>
           <div className="space-y-1.5">
