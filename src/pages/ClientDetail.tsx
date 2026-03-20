@@ -638,6 +638,43 @@ function InfoCard({ icon: Icon, label, value }: { icon: React.ElementType; label
   );
 }
 
+function OwnerCard({
+  currentOwner,
+  profiles,
+  onChangeOwner,
+}: {
+  currentOwner: string | null;
+  profiles: { id: string; full_name: string | null }[];
+  onChangeOwner: (name: string | null) => void;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-3.5 flex items-center gap-3">
+        <User className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Responsável</p>
+          <Select
+            value={currentOwner ?? "__none__"}
+            onValueChange={(v) => onChangeOwner(v === "__none__" ? null : v)}
+          >
+            <SelectTrigger className="h-auto p-0 border-0 shadow-none text-sm font-medium">
+              <SelectValue placeholder="Selecionar..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Não definido</SelectItem>
+              {profiles.map((p) => (
+                <SelectItem key={p.id} value={p.full_name ?? p.id}>
+                  {p.full_name || "Sem nome"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function BillingBlock({
   billing,
   onUpdate,
