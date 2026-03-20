@@ -14,6 +14,7 @@ import { Shield, Bell, Building2, CreditCard, UserPlus, Trash2, Pencil, Loader2,
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UserRow {
   id: string;
