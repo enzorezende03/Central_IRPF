@@ -5,6 +5,7 @@ import {
   ArrowLeft, Copy, MessageCircle, CheckCircle, Circle, FileText, Clock,
   User, Mail, Phone, DollarSign, ExternalLink, Upload, Send, Eye,
   AlertCircle, Calendar, CreditCard, Save, RefreshCw, Download, Loader2, Trash2,
+  Plus, X, ListChecks,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -519,6 +520,9 @@ export default function ClientDetail() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* ── Internal Checklist ── */}
+            <InternalChecklistCard caseId={id!} />
 
             {/* ── 7. Messages to Client ── */}
             <MessagesSection
@@ -1364,6 +1368,113 @@ function MessagesSection({
             <Send className="h-4 w-4" />
           </Button>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ── Internal Checklist Card ── */
+function InternalChecklistCard({ caseId }: { caseId: string }) {
+  const queryClient = useQueryClient();
+  const [newItem, setNewItem] = useState("");
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["internal-checklist", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("internal_checklist")
+        .select("*")
+        .eq("case_id", caseId)
+        .order("sort_order")
+        .order("created_at");
+      return (data as any[]) ?? [];
+    },
+  });
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["internal-checklist", caseId] });
+
+  const addItem = async () => {
+    const label = newItem.trim();
+    if (!label) return;
+    await supabase.from("internal_checklist").insert({
+      case_id: caseId,
+      label,
+      sort_order: items.length,
+    });
+    setNewItem("");
+    refresh();
+  };
+
+  const toggleItem = async (itemId: string, checked: boolean) => {
+    await supabase.from("internal_checklist").update({ checked: !checked }).eq("id", itemId);
+    refresh();
+  };
+
+  const deleteItem = async (itemId: string) => {
+    await supabase.from("internal_checklist").delete().eq("id", itemId);
+    refresh();
+  };
+
+  const completed = items.filter((i: any) => i.checked).length;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <ListChecks className="h-4 w-4 text-primary" />
+          Checklist Interno
+        </CardTitle>
+        <CardDescription>
+          {items.length > 0 ? `${completed} de ${items.length} concluídos` : "Visível apenas para a equipe"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {isLoading ? (
+          <Skeleton className="h-20 w-full" />
+        ) : (
+          <>
+            {items.map((item: any) => (
+              <div key={item.id} className="flex items-center gap-2 group">
+                <button
+                  onClick={() => toggleItem(item.id, item.checked)}
+                  className="shrink-0 transition-colors"
+                >
+                  {item.checked ? (
+                    <CheckCircle className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+                <span className={`text-sm flex-1 ${item.checked ? "line-through text-muted-foreground" : ""}`}>
+                  {item.label}
+                </span>
+                <button
+                  onClick={() => deleteItem(item.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                >
+                  <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-2 pt-1">
+              <Input
+                value={newItem}
+                onChange={(e) => setNewItem(e.target.value)}
+                placeholder="Novo item..."
+                className="text-sm h-8"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addItem();
+                  }
+                }}
+              />
+              <Button size="sm" variant="outline" className="h-8 shrink-0" onClick={addItem} disabled={!newItem.trim()}>
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

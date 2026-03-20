@@ -365,6 +365,41 @@ export type Database = {
           },
         ]
       }
+      internal_checklist: {
+        Row: {
+          case_id: string
+          checked: boolean
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          case_id: string
+          checked?: boolean
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          case_id?: string
+          checked?: boolean
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_checklist_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "irpf_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       irpf_cases: {
         Row: {
           base_year: number
