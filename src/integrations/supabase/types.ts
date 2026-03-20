@@ -359,35 +359,53 @@ export type Database = {
       office_settings: {
         Row: {
           address: string
+          cep: string
+          city: string
           cnpj: string
+          complement: string
           created_at: string
           email: string
           id: string
           logo_url: string | null
           name: string
+          neighborhood: string
+          number: string
           phone: string
+          state: string
           updated_at: string
         }
         Insert: {
           address?: string
+          cep?: string
+          city?: string
           cnpj?: string
+          complement?: string
           created_at?: string
           email?: string
           id?: string
           logo_url?: string | null
           name?: string
+          neighborhood?: string
+          number?: string
           phone?: string
+          state?: string
           updated_at?: string
         }
         Update: {
           address?: string
+          cep?: string
+          city?: string
           cnpj?: string
+          complement?: string
           created_at?: string
           email?: string
           id?: string
           logo_url?: string | null
           name?: string
+          neighborhood?: string
+          number?: string
           phone?: string
+          state?: string
           updated_at?: string
         }
         Relationships: []
