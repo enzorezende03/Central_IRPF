@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN billing_type text NOT NULL DEFAULT 'cobranca_extra';

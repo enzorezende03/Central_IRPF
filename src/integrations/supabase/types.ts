@@ -178,6 +178,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          billing_type: string
           cpf: string
           created_at: string
           email: string | null
@@ -188,6 +189,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          billing_type?: string
           cpf: string
           created_at?: string
           email?: string | null
@@ -198,6 +200,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          billing_type?: string
           cpf?: string
           created_at?: string
           email?: string | null

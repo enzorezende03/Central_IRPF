@@ -6,12 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 interface NewClientDialogProps {
   trigger?: React.ReactNode;
-  onCreated?: (clientId: string) => void;
+  onCreated?: (clientId: string, billingType?: string) => void;
 }
 
 export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
@@ -24,6 +25,7 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
     email: "",
     phone: "",
     notes: "",
+    billing_type: "cobranca_extra",
   });
 
   const mutation = useMutation({
@@ -39,6 +41,7 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,
           notes: form.notes.trim() || null,
+          billing_type: form.billing_type,
         })
         .select("id")
         .single();
@@ -48,9 +51,11 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
     onSuccess: (clientId) => {
       toast.success("Cliente cadastrado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
-      setForm({ full_name: "", cpf: "", email: "", phone: "", notes: "" });
+      queryClient.invalidateQueries({ queryKey: ["all-clients"] });
+      const billingType = form.billing_type;
+      setForm({ full_name: "", cpf: "", email: "", phone: "", notes: "", billing_type: "cobranca_extra" });
       setOpen(false);
-      onCreated?.(clientId);
+      onCreated?.(clientId, billingType);
     },
     onError: (err: any) => {
       toast.error(err.message || "Erro ao cadastrar cliente.");
@@ -91,6 +96,18 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
               <Label htmlFor="nc-phone">Telefone</Label>
               <Input id="nc-phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(11) 99999-0000" />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Tipo de Cobrança</Label>
+            <Select value={form.billing_type} onValueChange={(v) => set("billing_type", v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="incluso_mensalidade">Incluso na mensalidade</SelectItem>
+                <SelectItem value="cobranca_extra">Cobrança extra</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="nc-notes">Observações</Label>

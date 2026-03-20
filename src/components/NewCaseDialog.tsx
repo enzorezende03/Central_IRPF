@@ -36,7 +36,7 @@ export function NewCaseDialog() {
   const { data: clients = [] } = useQuery({
     queryKey: ["all-clients"],
     queryFn: async () => {
-      const { data } = await supabase.from("clients").select("id, full_name, cpf").order("full_name");
+      const { data } = await supabase.from("clients").select("id, full_name, cpf, billing_type").order("full_name");
       return data ?? [];
     },
   });
@@ -125,7 +125,14 @@ export function NewCaseDialog() {
           <div className="space-y-1.5">
             <Label>Cliente *</Label>
             <div className="flex gap-2">
-              <Select value={clientId} onValueChange={setClientId}>
+              <Select value={clientId} onValueChange={(id) => {
+                setClientId(id);
+                const selected = clients.find((c) => c.id === id);
+                if (selected?.billing_type) {
+                  setBillingType(selected.billing_type);
+                  if (selected.billing_type === "incluso_mensalidade") setFeeAmount("");
+                }
+              }}>
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Selecione o cliente" />
                 </SelectTrigger>
@@ -139,9 +146,13 @@ export function NewCaseDialog() {
               </Select>
               <NewClientDialog
                 trigger={<Button variant="outline" size="icon" title="Cadastrar novo cliente"><Plus className="h-4 w-4" /></Button>}
-                onCreated={(id) => {
+                onCreated={(id, bt) => {
                   queryClient.invalidateQueries({ queryKey: ["all-clients"] });
                   setClientId(id);
+                  if (bt) {
+                    setBillingType(bt);
+                    if (bt === "incluso_mensalidade") setFeeAmount("");
+                  }
                 }}
               />
             </div>
