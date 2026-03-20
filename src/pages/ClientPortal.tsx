@@ -638,6 +638,27 @@ function DocumentRow({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [markingNotHave, setMarkingNotHave] = useState(false);
+
+  const handleNotHave = async () => {
+    setMarkingNotHave(true);
+    try {
+      await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
+      await supabase.from("case_timeline").insert({
+        case_id: caseId,
+        event_type: "Documento marcado como não possui",
+        description: `Cliente informou que não possui "${doc.title}"`,
+        visible_to_client: true,
+        created_by: "Cliente",
+      });
+      toast.success(`Documento "${doc.title}" marcado como "Não tenho".`);
+      onSuccess();
+    } catch {
+      toast.error("Erro ao marcar documento. Tente novamente.");
+    } finally {
+      setMarkingNotHave(false);
+    }
+  };
 
   const statusIcon = {
     pendente: <Circle className="h-5 w-5 text-muted-foreground shrink-0" />,
