@@ -186,7 +186,7 @@ export default function Configuracoes() {
               <CardDescription>Alertas de novas entregas e pendências</CardDescription>
             </CardHeader>
             <CardContent>
-              <Badge variant="secondary" className="text-xs">Em breve</Badge>
+              <NotificationsPanel />
             </CardContent>
           </Card>
 
@@ -758,5 +758,73 @@ function DocumentChecklistCard() {
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Notifications Panel ──
+import { Link } from "react-router-dom";
+import { CheckCircle, MessageCircle, Clock } from "lucide-react";
+
+function formatTimeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "agora";
+  if (mins < 60) return `${mins}min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
+}
+
+function NotificationsPanel() {
+  const { data: notifications = [], isLoading } = useQuery({
+    queryKey: ["config-notifications"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_timeline")
+        .select("*, irpf_cases!inner(id, clients(full_name))")
+        .eq("created_by", "Cliente")
+        .order("created_at", { ascending: false })
+        .limit(15);
+      return (data as any[]) ?? [];
+    },
+  });
+
+  if (isLoading) return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mx-auto" />;
+
+  if (notifications.length === 0) {
+    return <p className="text-sm text-muted-foreground text-center py-4">Nenhuma notificação recente.</p>;
+  }
+
+  const iconMap: Record<string, React.ReactNode> = {
+    "Documentação completa": <CheckCircle className="h-3.5 w-3.5 text-success" />,
+    "Documento enviado": <FileText className="h-3.5 w-3.5 text-primary" />,
+    "Documento marcado como não possui": <Clock className="h-3.5 w-3.5 text-warning" />,
+    "Resposta enviada": <MessageCircle className="h-3.5 w-3.5 text-info" />,
+  };
+
+  return (
+    <div className="space-y-2 max-h-80 overflow-y-auto">
+      {notifications.map((item: any) => {
+        const clientName = item.irpf_cases?.clients?.full_name ?? "Cliente";
+        const caseId = item.irpf_cases?.id ?? item.case_id;
+        const icon = iconMap[item.event_type] || <Bell className="h-3.5 w-3.5 text-muted-foreground" />;
+
+        return (
+          <Link
+            key={item.id}
+            to={`/demandas/${caseId}`}
+            className="flex items-start gap-3 p-2.5 rounded-lg border hover:bg-muted/50 transition-colors"
+          >
+            <div className="mt-0.5 shrink-0">{icon}</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{clientName}</p>
+              <p className="text-xs text-muted-foreground truncate">{item.description ?? item.event_type}</p>
+            </div>
+            <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">{formatTimeAgo(item.created_at)}</span>
+          </Link>
+        );
+      })}
+    </div>
   );
 }
