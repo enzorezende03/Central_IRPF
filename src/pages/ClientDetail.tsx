@@ -831,7 +831,12 @@ function InternalDocRow({
             {doc.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            {doc.category && <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{doc.category}</span>}
+            {doc.category === "nao_possui" && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-warning/15 text-warning border-warning/30">
+                Cliente não possui
+              </Badge>
+            )}
+            {doc.category && doc.category !== "nao_possui" && <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{doc.category}</span>}
             {doc.is_required && <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>}
           </div>
         </div>
