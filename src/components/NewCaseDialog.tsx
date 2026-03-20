@@ -73,13 +73,12 @@ export function NewCaseDialog() {
       await supabase.from("document_requests").insert(docInserts);
 
       // Create billing record
-      if (feeAmount) {
-        await supabase.from("billing").insert({
-          case_id: newCase.id,
-          amount: Number(feeAmount.replace(",", ".")) || 0,
-          billing_status: "nao_cobrado" as any,
-        });
-      }
+      await supabase.from("billing").insert({
+        case_id: newCase.id,
+        amount: feeAmount ? Number(feeAmount.replace(",", ".")) || 0 : 0,
+        billing_status: billingType === "incluso_mensalidade" ? "pago" as any : "nao_cobrado" as any,
+        billing_type: billingType,
+      } as any);
 
       // Log timeline
       await logTimelineEvent(newCase.id, "criacao", "Demanda criada no sistema.");
