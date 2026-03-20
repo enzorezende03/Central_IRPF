@@ -409,6 +409,7 @@ export type Database = {
           id: string
           internal_notes: string | null
           internal_owner: string | null
+          internal_status: string
           portal_slug: string | null
           portal_token: string
           priority: Database["public"]["Enums"]["case_priority"]
@@ -425,6 +426,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
+          internal_status?: string
           portal_slug?: string | null
           portal_token: string
           priority?: Database["public"]["Enums"]["case_priority"]
@@ -441,6 +443,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
+          internal_status?: string
           portal_slug?: string | null
           portal_token?: string
           priority?: Database["public"]["Enums"]["case_priority"]
