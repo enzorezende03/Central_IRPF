@@ -319,16 +319,24 @@ export default function ClientDetail() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 items-center">
-            <Select value={caseData.status} onValueChange={(v) => updateStatus.mutate(v as CaseStatus)}>
-              <SelectTrigger className="w-auto gap-1 border-0 p-0 h-auto shadow-none">
-                <StatusBadge status={caseData.status} />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Interno:</span>
+              <Select value={(caseData as any).internal_status ?? caseData.status} onValueChange={(v) => updateStatus.mutate(v as CaseStatus)}>
+                <SelectTrigger className="w-auto gap-1 border-0 p-0 h-auto shadow-none">
+                  <StatusBadge status={((caseData as any).internal_status ?? caseData.status) as any} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Separator orientation="vertical" className="h-5 hidden sm:block" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Cliente:</span>
+              <StatusBadge status={caseData.status} />
+            </div>
             <Select value={caseData.priority} onValueChange={(v) => updatePriority.mutate(v as CasePriority)}>
               <SelectTrigger className="w-auto gap-1 border-0 p-0 h-auto shadow-none">
                 <PriorityBadge priority={caseData.priority} />
