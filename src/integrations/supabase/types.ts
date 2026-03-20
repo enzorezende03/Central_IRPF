@@ -356,6 +356,42 @@ export type Database = {
           },
         ]
       }
+      office_settings: {
+        Row: {
+          address: string
+          cnpj: string
+          created_at: string
+          email: string
+          id: string
+          logo_url: string | null
+          name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          cnpj?: string
+          created_at?: string
+          email?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          cnpj?: string
+          created_at?: string
+          email?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
