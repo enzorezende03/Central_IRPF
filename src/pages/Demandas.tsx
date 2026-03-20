@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NewCaseDialog } from "@/components/NewCaseDialog";
 import { useCases } from "@/hooks/use-cases";
 import { STATUS_LABELS, BILLING_LABELS, PRIORITY_LABELS } from "@/lib/types";
 import type { Database } from "@/integrations/supabase/types";
@@ -53,6 +54,9 @@ export default function Demandas() {
     <InternalLayout>
       <div className="p-6 space-y-6">
         {/* Filters */}
+        <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
+          <NewCaseDialog />
+        </div>
         <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
