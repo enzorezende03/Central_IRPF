@@ -763,7 +763,7 @@ function DocumentChecklistCard() {
 
 // ── Notifications Panel ──
 import { Link } from "react-router-dom";
-import { CheckCircle, MessageCircle, Clock } from "lucide-react";
+import { CheckCircle, MessageCircle, Clock, AlertCircle } from "lucide-react";
 
 function formatTimeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -783,7 +783,7 @@ function NotificationsPanel() {
       const { data } = await supabase
         .from("case_timeline")
         .select("*, irpf_cases!inner(id, clients(full_name))")
-        .eq("event_type", "Documentação completa")
+        .in("event_type", ["Documentação completa", "Ajustes solicitados", "Prévia aprovada"])
         .eq("created_by", "Cliente")
         .order("created_at", { ascending: false })
         .limit(15);
@@ -799,6 +799,8 @@ function NotificationsPanel() {
 
   const iconMap: Record<string, React.ReactNode> = {
     "Documentação completa": <CheckCircle className="h-3.5 w-3.5 text-success" />,
+    "Ajustes solicitados": <AlertCircle className="h-3.5 w-3.5 text-warning" />,
+    "Prévia aprovada": <CheckCircle className="h-3.5 w-3.5 text-primary" />,
     "Documento enviado": <FileText className="h-3.5 w-3.5 text-primary" />,
     "Documento marcado como não possui": <Clock className="h-3.5 w-3.5 text-warning" />,
     "Resposta enviada": <MessageCircle className="h-3.5 w-3.5 text-info" />,

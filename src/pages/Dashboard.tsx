@@ -44,7 +44,7 @@ export default function Dashboard() {
       const { data } = await supabase
         .from("case_timeline")
         .select("*, irpf_cases!inner(id, clients(full_name))")
-        .eq("event_type", "Documentação completa")
+        .in("event_type", ["Documentação completa", "Ajustes solicitados", "Prévia aprovada"])
         .eq("created_by", "Cliente")
         .order("created_at", { ascending: false })
         .limit(10);
@@ -235,7 +235,7 @@ export default function Dashboard() {
                 <Badge variant="secondary" className="text-xs">{recentActivity.length} recentes</Badge>
               )}
             </div>
-            <CardDescription>Clientes que concluíram o envio de todos os documentos</CardDescription>
+            <CardDescription>Ações recentes dos clientes no portal</CardDescription>
           </CardHeader>
           <CardContent>
             {recentActivity.length === 0 ? (
@@ -256,8 +256,17 @@ export default function Dashboard() {
                       to={`/demandas/${caseId}`}
                       className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                     >
-                      <div className="mt-0.5 rounded-full p-1.5 shrink-0 bg-success/10">
-                        <CheckCircle className="h-3.5 w-3.5 text-success" />
+                      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${
+                        item.event_type === "Ajustes solicitados" ? "bg-warning/10" :
+                        item.event_type === "Prévia aprovada" ? "bg-primary/10" : "bg-success/10"
+                      }`}>
+                        {item.event_type === "Ajustes solicitados" ? (
+                          <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+                        ) : item.event_type === "Prévia aprovada" ? (
+                          <CheckCircle className="h-3.5 w-3.5 text-primary" />
+                        ) : (
+                          <CheckCircle className="h-3.5 w-3.5 text-success" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{clientName}</p>
