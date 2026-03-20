@@ -279,7 +279,13 @@ function OfficeSettingsCard() {
         .update({
           name: form.name.trim(),
           cnpj: form.cnpj.trim(),
+          cep: form.cep.trim(),
           address: form.address.trim(),
+          number: form.number.trim(),
+          complement: form.complement.trim(),
+          neighborhood: form.neighborhood.trim(),
+          city: form.city.trim(),
+          state: form.state.trim(),
           phone: form.phone.trim(),
           email: form.email.trim(),
         })
