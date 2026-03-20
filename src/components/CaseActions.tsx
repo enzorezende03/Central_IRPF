@@ -22,15 +22,16 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   const queryClient = useQueryClient();
   const clientName = caseData.clients?.full_name ?? "Cliente";
 
+  const linkId = caseData.portal_slug || caseData.portal_token;
   const copyLink = async () => {
-    navigator.clipboard.writeText(getPortalUrl(caseData.portal_token));
+    navigator.clipboard.writeText(getPortalUrl(linkId));
     toast.success("Link copiado!");
     await logTimelineEvent(caseData.id, "Link copiado", `Link do portal copiado para ${clientName}`);
     queryClient.invalidateQueries({ queryKey: ["case-timeline", caseData.id] });
   };
 
   const copyWhatsApp = async () => {
-    const msg = getWhatsAppMessage(clientName, caseData.portal_token, caseData.client_message);
+    const msg = getWhatsAppMessage(clientName, linkId, caseData.client_message);
     navigator.clipboard.writeText(msg);
     toast.success("Mensagem WhatsApp copiada!");
     await logTimelineEvent(caseData.id, "WhatsApp copiado", `Mensagem WhatsApp copiada para ${clientName}`, true);
@@ -38,7 +39,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   };
 
   const openPortal = async () => {
-    window.open(getPortalUrl(caseData.portal_token), "_blank");
+    window.open(getPortalUrl(linkId), "_blank");
     await logTimelineEvent(caseData.id, "Portal aberto", `Portal aberto pelo escritório`);
     queryClient.invalidateQueries({ queryKey: ["case-timeline", caseData.id] });
   };

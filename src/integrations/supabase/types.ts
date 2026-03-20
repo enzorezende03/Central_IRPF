@@ -309,6 +309,7 @@ export type Database = {
           id: string
           internal_notes: string | null
           internal_owner: string | null
+          portal_slug: string | null
           portal_token: string
           priority: Database["public"]["Enums"]["case_priority"]
           progress_percent: number
@@ -324,6 +325,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
+          portal_slug?: string | null
           portal_token: string
           priority?: Database["public"]["Enums"]["case_priority"]
           progress_percent?: number
@@ -339,6 +341,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
+          portal_slug?: string | null
           portal_token?: string
           priority?: Database["public"]["Enums"]["case_priority"]
           progress_percent?: number
@@ -512,6 +515,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_case_by_slug: { Args: { p_slug: string }; Returns: string }
       get_case_by_token: { Args: { p_token: string }; Returns: string }
       has_role: {
         Args: {

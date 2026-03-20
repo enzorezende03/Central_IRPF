@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { NewClientDialog } from "./NewClientDialog";
 import { REQUIRED_DOCUMENTS } from "@/lib/types";
-import { logTimelineEvent } from "@/lib/portal-utils";
+import { logTimelineEvent, generateSlug } from "@/lib/portal-utils";
 
 function generateToken() {
   const arr = new Uint8Array(32);
@@ -44,7 +44,9 @@ export function NewCaseDialog() {
   const mutation = useMutation({
     mutationFn: async () => {
       if (!clientId) throw new Error("Selecione um cliente.");
+      const selectedClient = clients.find((c) => c.id === clientId);
       const token = generateToken();
+      const slug = generateSlug(selectedClient?.full_name ?? "cliente");
       // Create case
       const { data: newCase, error } = await supabase
         .from("irpf_cases")
@@ -55,6 +57,7 @@ export function NewCaseDialog() {
           internal_owner: owner.trim() || null,
           priority: priority as any,
           portal_token: token,
+          portal_slug: slug,
           client_message: clientMessage.trim() || null,
           status: "aguardando_cliente" as any,
           progress_percent: 0,

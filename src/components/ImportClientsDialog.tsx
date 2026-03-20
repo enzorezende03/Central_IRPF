@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { REQUIRED_DOCUMENTS } from "@/lib/types";
-import { logTimelineEvent } from "@/lib/portal-utils";
+import { logTimelineEvent, generateSlug } from "@/lib/portal-utils";
 import * as XLSX from "xlsx";
 
 interface ParsedClient {
@@ -166,6 +166,7 @@ export function ImportClientsDialog() {
 
         // Create IRPF case
         const token = generateToken();
+        const slug = generateSlug(c.full_name);
         const { data: newCase, error: caseErr } = await supabase
           .from("irpf_cases")
           .insert({
@@ -175,6 +176,7 @@ export function ImportClientsDialog() {
             internal_owner: c.responsavel || null,
             priority: "media" as any,
             portal_token: token,
+            portal_slug: slug,
             status: "aguardando_cliente" as any,
             progress_percent: 0,
           })

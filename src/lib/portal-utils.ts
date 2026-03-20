@@ -1,13 +1,25 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export function getPortalUrl(token: string) {
-  return `${window.location.origin}/portal/${token}`;
+export function generateSlug(clientName: string): string {
+  const base = clientName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+  const suffix = Math.random().toString(36).slice(2, 6);
+  return `grupo2m/${base}-${suffix}`;
 }
 
-export function getWhatsAppMessage(clientName: string, token: string, customMessage?: string | null) {
-  const link = getPortalUrl(token);
+export function getPortalUrl(slugOrToken: string) {
+  return `${window.location.origin}/portal/${slugOrToken}`;
+}
+
+export function getWhatsAppMessage(clientName: string, slugOrToken: string, customMessage?: string | null) {
+  const link = getPortalUrl(slugOrToken);
   if (customMessage) {
-    // Replace placeholders in custom message
     return customMessage
       .replace("[nome]", clientName)
       .replace("[link]", link);
