@@ -16,7 +16,7 @@ export function StatCard({ label, value, icon: Icon, color = "text-primary", sub
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="rounded-xl border bg-card p-5 shadow-sm hover:shadow-md transition-shadow"
+      className="rounded-xl border bg-card p-3 sm:p-5 shadow-sm hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
