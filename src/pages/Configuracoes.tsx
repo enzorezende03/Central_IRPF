@@ -8,19 +8,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Shield, Bell, Building2, CreditCard, UserPlus, Trash2, Loader2 } from "lucide-react";
+import { Shield, Bell, Building2, CreditCard, UserPlus, Trash2, Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
+interface UserRow {
+  id: string;
+  full_name: string;
+  email: string;
+  created_at: string;
+  role: string;
+}
+
 export default function Configuracoes() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = role === "admin";
 
-  // Fetch users with roles
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading } = useQuery<UserRow[]>({
     queryKey: ["admin-users"],
     queryFn: async () => {
       const { data: profiles } = await supabase
@@ -43,6 +51,21 @@ export default function Configuracoes() {
     enabled: isAdmin,
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: { action: "delete", user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      toast.success("Usuário excluído com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Erro ao excluir usuário."),
+  });
+
   return (
     <InternalLayout>
       <div className="p-6 space-y-6 max-w-4xl">
@@ -50,7 +73,6 @@ export default function Configuracoes() {
           <p className="text-sm text-muted-foreground">Gerencie as configurações do sistema</p>
         </div>
 
-        {/* Users section - admin only */}
         {isAdmin && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -76,10 +98,11 @@ export default function Configuracoes() {
                       <TableHead>E-mail</TableHead>
                       <TableHead>Perfil</TableHead>
                       <TableHead>Cadastro</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((u: any) => (
+                    {users.map((u) => (
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
@@ -91,11 +114,42 @@ export default function Configuracoes() {
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(u.created_at).toLocaleDateString("pt-BR")}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <EditUserDialog user={u} />
+                            {u.id !== user?.id && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Excluir">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Tem certeza que deseja excluir <strong>{u.full_name || u.email}</strong>? Esta ação não pode ser desfeita.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteMutation.mutate(u.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {users.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                           Nenhum usuário cadastrado.
                         </TableCell>
                       </TableRow>
@@ -152,6 +206,72 @@ export default function Configuracoes() {
   );
 }
 
+function EditUserDialog({ user: u }: { user: UserRow }) {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const [fullName, setFullName] = useState(u.full_name || "");
+  const [role, setRole] = useState(u.role);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: { action: "update", user_id: u.id, full_name: fullName.trim(), role },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      toast.success("Usuário atualizado!");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setOpen(false);
+    },
+    onError: (err: any) => toast.error(err.message || "Erro ao atualizar."),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setFullName(u.full_name || ""); setRole(u.role); } }}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar">
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Editar Usuário</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>E-mail</Label>
+            <Input value={u.email} disabled className="opacity-60" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-name">Nome Completo</Label>
+            <Input id="edit-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Perfil de Acesso</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Administrador — Acesso total</SelectItem>
+                <SelectItem value="operacional">Operacional — Gerencia demandas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+            {mutation.isPending ? "Salvando..." : "Salvar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function InviteUserDialog() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -162,18 +282,12 @@ function InviteUserDialog() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!email.trim() || !password.trim()) {
-        throw new Error("E-mail e senha são obrigatórios.");
-      }
-      if (password.length < 6) {
-        throw new Error("A senha deve ter pelo menos 6 caracteres.");
-      }
+      if (!email.trim() || !password.trim()) throw new Error("E-mail e senha são obrigatórios.");
+      if (password.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres.");
 
-      // Sign up the new user via edge function to avoid logging out current user
       const { data, error } = await supabase.functions.invoke("create-user", {
-        body: { email: email.trim(), password, full_name: fullName.trim(), role },
+        body: { action: "create", email: email.trim(), password, full_name: fullName.trim(), role },
       });
-
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
@@ -182,14 +296,9 @@ function InviteUserDialog() {
       toast.success("Usuário convidado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setOpen(false);
-      setEmail("");
-      setPassword("");
-      setFullName("");
-      setRole("admin");
+      setEmail(""); setPassword(""); setFullName(""); setRole("admin");
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Erro ao convidar usuário.");
-    },
+    onError: (err: any) => toast.error(err.message || "Erro ao convidar usuário."),
   });
 
   return (
