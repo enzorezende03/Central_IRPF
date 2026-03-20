@@ -113,6 +113,7 @@ export function NewCaseDialog() {
           portal_token: token,
           portal_slug: slug,
           client_message: clientMessage.trim() || null,
+          declaration_type: declarationType,
           status: "aguardando_cliente" as any,
           progress_percent: 0,
         })
