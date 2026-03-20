@@ -31,7 +31,7 @@ const menuItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { user, role, signOut } = useAuth();
+  const { user, role, profileName, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
