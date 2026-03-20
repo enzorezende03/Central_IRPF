@@ -201,13 +201,13 @@ export default function ClientDetail() {
     mutationFn: async (status: CaseStatus) => {
       const { error } = await supabase
         .from("irpf_cases")
-        .update({ status })
+        .update({ internal_status: status })
         .eq("id", id!);
       if (error) throw error;
     },
     onSuccess: async (_, status) => {
-      toast.success("Status atualizado!");
-      await logTimelineEvent(id!, "Status alterado", `Status alterado para ${STATUS_LABELS[status]}`, true);
+      toast.success("Status interno atualizado!");
+      await logTimelineEvent(id!, "Status interno alterado", `Status interno alterado para ${STATUS_LABELS[status]}`, false);
       invalidateAll();
     },
   });
