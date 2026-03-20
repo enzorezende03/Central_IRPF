@@ -58,12 +58,24 @@ export default function Configuracoes() {
         .from("user_roles" as any)
         .select("user_id, role");
 
+      const { data: perms } = await supabase
+        .from("user_permissions" as any)
+        .select("user_id, permission");
+
       const roleMap = new Map<string, string>();
       (roles ?? []).forEach((r: any) => roleMap.set(r.user_id, r.role));
+
+      const permMap = new Map<string, string[]>();
+      (perms ?? []).forEach((p: any) => {
+        const arr = permMap.get(p.user_id) ?? [];
+        arr.push(p.permission);
+        permMap.set(p.user_id, arr);
+      });
 
       return (profiles as any[]).map((p) => ({
         ...p,
         role: roleMap.get(p.id) ?? "sem_perfil",
+        permissions: permMap.get(p.id) ?? [],
       }));
     },
     enabled: isAdmin,
