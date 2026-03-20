@@ -235,7 +235,7 @@ export default function Dashboard() {
                 <Badge variant="secondary" className="text-xs">{recentActivity.length} recentes</Badge>
               )}
             </div>
-            <CardDescription>Clientes que concluíram o envio de todos os documentos</CardDescription>
+            <CardDescription>Ações recentes dos clientes no portal</CardDescription>
           </CardHeader>
           <CardContent>
             {recentActivity.length === 0 ? (
