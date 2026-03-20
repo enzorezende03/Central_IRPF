@@ -375,7 +375,7 @@ export default function ClientDetail() {
           />
           <InfoCard icon={Phone} label="Celular" value={client?.phone ?? "—"} />
           <InfoCard icon={Mail} label="E-mail" value={client?.email ?? "—"} />
-          <InfoCard icon={DollarSign} label="Honorário" value={billing ? fmt(billing.amount) : "—"} />
+          
           <InfoCard icon={Calendar} label="Criado em" value={fmtDate(caseData.created_at)} />
         </div>
 
