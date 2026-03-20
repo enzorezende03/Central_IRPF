@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           amount: number
           billing_status: Database["public"]["Enums"]["billing_status"]
+          billing_type: Database["public"]["Enums"]["billing_type"]
           case_id: string
           created_at: string
           id: string
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           amount?: number
           billing_status?: Database["public"]["Enums"]["billing_status"]
+          billing_type?: Database["public"]["Enums"]["billing_type"]
           case_id: string
           created_at?: string
           id?: string
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           amount?: number
           billing_status?: Database["public"]["Enums"]["billing_status"]
+          billing_type?: Database["public"]["Enums"]["billing_type"]
           case_id?: string
           created_at?: string
           id?: string
@@ -416,6 +419,7 @@ export type Database = {
     Enums: {
       answer_type: "text" | "yes_no" | "number" | "date" | "file"
       billing_status: "nao_cobrado" | "cobrado" | "pago"
+      billing_type: "incluso_mensalidade" | "cobranca_extra"
       case_priority: "baixa" | "media" | "alta" | "urgente"
       case_status:
         | "aguardando_cliente"
@@ -555,6 +559,7 @@ export const Constants = {
     Enums: {
       answer_type: ["text", "yes_no", "number", "date", "file"],
       billing_status: ["nao_cobrado", "cobrado", "pago"],
+      billing_type: ["incluso_mensalidade", "cobranca_extra"],
       case_priority: ["baixa", "media", "alta", "urgente"],
       case_status: [
         "aguardando_cliente",

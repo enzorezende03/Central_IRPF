@@ -1,5 +1,6 @@
 export type DemandStatus = 'aguardando_cliente' | 'documentos_em_analise' | 'em_andamento' | 'pendencia' | 'finalizado';
 export type BillingStatus = 'nao_cobrado' | 'cobrado' | 'pago';
+export type BillingType = 'incluso_mensalidade' | 'cobranca_extra';
 export type Priority = 'baixa' | 'media' | 'alta' | 'urgente';
 
 export const STATUS_LABELS: Record<DemandStatus, string> = {
@@ -14,6 +15,11 @@ export const BILLING_LABELS: Record<BillingStatus, string> = {
   nao_cobrado: 'Não Cobrado',
   cobrado: 'Cobrado',
   pago: 'Pago',
+};
+
+export const BILLING_TYPE_LABELS: Record<BillingType, string> = {
+  incluso_mensalidade: 'Incluso na Mensalidade',
+  cobranca_extra: 'Cobrança Extra',
 };
 
 export const PRIORITY_LABELS: Record<Priority, string> = {

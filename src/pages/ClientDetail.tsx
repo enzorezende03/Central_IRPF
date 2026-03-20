@@ -21,7 +21,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { STATUS_LABELS, BILLING_LABELS, PRIORITY_LABELS } from "@/lib/types";
+import { STATUS_LABELS, BILLING_LABELS, PRIORITY_LABELS, BILLING_TYPE_LABELS } from "@/lib/types";
+import type { BillingType } from "@/lib/types";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -623,6 +624,8 @@ function BillingBlock({
   billing: Tables<"billing"> | null | undefined;
   onUpdate: (updates: Partial<Tables<"billing">>) => void;
 }) {
+  const bil = billing as any;
+  const [billingType, setBillingType] = useState<string>(bil?.billing_type ?? "cobranca_extra");
   const [status, setStatus] = useState<BillingStatusType | "">(billing?.billing_status ?? "");
   const [amount, setAmount] = useState(billing?.amount?.toString() ?? "");
   const [notes, setNotes] = useState(billing?.notes ?? "");
@@ -631,11 +634,18 @@ function BillingBlock({
 
   const currentStatus = status || billing?.billing_status || "nao_cobrado";
   const currentAmount = amount || billing?.amount?.toString() || "0";
+  const isIncluso = billingType === "incluso_mensalidade";
 
-  const isPending = currentStatus !== "pago";
+  const isPending = currentStatus !== "pago" && !isIncluso;
 
   return (
     <div className="space-y-3">
+      {isIncluso && (
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-success/10 border border-success/30">
+          <CheckCircle className="h-4 w-4 text-success shrink-0" />
+          <p className="text-xs text-success font-medium">IRPF incluso na mensalidade</p>
+        </div>
+      )}
       {isPending && (
         <div className="flex items-center gap-2 p-2.5 rounded-lg bg-warning/10 border border-warning/30">
           <AlertCircle className="h-4 w-4 text-warning shrink-0" />
@@ -644,6 +654,30 @@ function BillingBlock({
           </p>
         </div>
       )}
+      <div>
+        <label className="text-xs font-medium text-muted-foreground">Tipo de Cobrança</label>
+        <Select
+          value={billingType}
+          onValueChange={(v) => {
+            setBillingType(v);
+            const updates: any = { billing_type: v };
+            if (v === "incluso_mensalidade") {
+              updates.billing_status = "pago";
+              setStatus("pago");
+            }
+            onUpdate(updates);
+          }}
+        >
+          <SelectTrigger className="mt-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(BILLING_TYPE_LABELS).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div>
         <label className="text-xs font-medium text-muted-foreground">Status</label>
         <Select
