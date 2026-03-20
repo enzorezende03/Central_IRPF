@@ -783,7 +783,7 @@ function NotificationsPanel() {
       const { data } = await supabase
         .from("case_timeline")
         .select("*, irpf_cases!inner(id, clients(full_name))")
-        .eq("event_type", "Documentação completa")
+        .in("event_type", ["Documentação completa", "Ajustes solicitados", "Prévia aprovada"])
         .eq("created_by", "Cliente")
         .order("created_at", { ascending: false })
         .limit(15);
