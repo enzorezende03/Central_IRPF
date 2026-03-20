@@ -146,7 +146,7 @@ export default function Configuracoes() {
                     {users.map((u) => (
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{u.email}</TableCell>
                         <TableCell>
                           <Badge variant={u.role === "admin" ? "default" : u.role === "operacional" ? "secondary" : "outline"} className="text-xs">
                             {u.role === "admin" ? "Administrador" : u.role === "operacional" ? "Operacional" : "Sem perfil"}
