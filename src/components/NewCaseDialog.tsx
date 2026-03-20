@@ -167,6 +167,7 @@ export function NewCaseDialog() {
     setFeeAmount("");
     setBillingType("cobranca_extra");
     setClientMessage("");
+    setDeclarationType("simples");
     setSelectedDocs(new Set());
   }
 
