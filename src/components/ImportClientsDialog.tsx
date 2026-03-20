@@ -157,6 +157,7 @@ export function ImportClientsDialog() {
             cpf: c.cpf,
             email: c.email || null,
             phone: c.phone || null,
+            billing_type: c.tipo_cobranca,
           })
           .select("id")
           .single();
