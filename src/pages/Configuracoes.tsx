@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { InternalLayout } from "@/components/InternalLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, Bell, Building2, CreditCard, UserPlus, Trash2, Pencil, Loader2 } from "lucide-react";
+import { Shield, Bell, Building2, CreditCard, UserPlus, Trash2, Pencil, Loader2, Upload, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,6 +21,16 @@ interface UserRow {
   email: string;
   created_at: string;
   role: string;
+}
+
+interface OfficeData {
+  id: string;
+  name: string;
+  cnpj: string;
+  address: string;
+  phone: string;
+  email: string;
+  logo_url: string | null;
 }
 
 export default function Configuracoes() {
@@ -161,20 +171,9 @@ export default function Configuracoes() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" />
-                Dados do Escritório
-              </CardTitle>
-              <CardDescription>Nome, CNPJ, endereço e dados de contato</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Badge variant="secondary" className="text-xs">Em breve</Badge>
-            </CardContent>
-          </Card>
+        <OfficeSettingsCard />
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -203,6 +202,178 @@ export default function Configuracoes() {
         </div>
       </div>
     </InternalLayout>
+  );
+}
+
+function OfficeSettingsCard() {
+  const queryClient = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const { data: office, isLoading } = useQuery<OfficeData | null>({
+    queryKey: ["office-settings"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("office_settings" as any)
+        .select("*")
+        .limit(1)
+        .single();
+      return (data as any) as OfficeData | null;
+    },
+  });
+
+  const [form, setForm] = useState({
+    name: "", cnpj: "", address: "", phone: "", email: "",
+  });
+
+  useEffect(() => {
+    if (office) {
+      setForm({
+        name: office.name || "",
+        cnpj: office.cnpj || "",
+        address: office.address || "",
+        phone: office.phone || "",
+        email: office.email || "",
+      });
+    }
+  }, [office]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!office?.id) return;
+      const { error } = await supabase
+        .from("office_settings" as any)
+        .update({
+          name: form.name.trim(),
+          cnpj: form.cnpj.trim(),
+          address: form.address.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+        })
+        .eq("id", office.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Dados do escritório salvos!");
+      queryClient.invalidateQueries({ queryKey: ["office-settings"] });
+    },
+    onError: () => toast.error("Erro ao salvar dados."),
+  });
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !office?.id) return;
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `logo.${ext}`;
+
+      // Remove old file if exists
+      await supabase.storage.from("office-assets").remove([path]);
+
+      const { error: uploadErr } = await supabase.storage
+        .from("office-assets")
+        .upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage
+        .from("office-assets")
+        .getPublicUrl(path);
+
+      const logoUrl = urlData.publicUrl + "?t=" + Date.now();
+
+      await supabase
+        .from("office_settings" as any)
+        .update({ logo_url: logoUrl })
+        .eq("id", office.id);
+
+      queryClient.invalidateQueries({ queryKey: ["office-settings"] });
+      toast.success("Logo atualizada!");
+    } catch {
+      toast.error("Erro ao enviar logo.");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-8 flex justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-primary" />
+          Dados do Escritório
+        </CardTitle>
+        <CardDescription>Nome, CNPJ, endereço, contato e logo</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Logo */}
+        <div className="flex items-center gap-5">
+          <div
+            className="h-20 w-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors shrink-0"
+            onClick={() => fileRef.current?.click()}
+          >
+            {office?.logo_url ? (
+              <img src={office.logo_url} alt="Logo" className="h-full w-full object-contain" />
+            ) : (
+              <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+            )}
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Logo do Escritório</p>
+            <p className="text-xs text-muted-foreground">Clique na área ao lado ou use o botão para enviar</p>
+            <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+              {uploading ? "Enviando..." : "Enviar Logo"}
+            </Button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+          </div>
+        </div>
+
+        {/* Form fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="of-name">Nome do Escritório</Label>
+            <Input id="of-name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="2M Contabilidade" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="of-cnpj">CNPJ</Label>
+            <Input id="of-cnpj" value={form.cnpj} onChange={(e) => set("cnpj", e.target.value)} placeholder="00.000.000/0001-00" />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="of-addr">Endereço</Label>
+            <Input id="of-addr" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Rua, número, bairro, cidade - UF" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="of-phone">Telefone</Label>
+            <Input id="of-phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(11) 3000-0000" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="of-email">E-mail</Label>
+            <Input id="of-email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="contato@escritorio.com" />
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            {saveMutation.isPending ? "Salvando..." : "Salvar Dados"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
