@@ -135,10 +135,10 @@ export default function Configuracoes() {
                 <div className="overflow-x-auto"><Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>E-mail</TableHead>
+                      <TableHead className="min-w-[100px]">Nome</TableHead>
+                      <TableHead className="hidden sm:table-cell">E-mail</TableHead>
                       <TableHead>Perfil</TableHead>
-                      <TableHead>Cadastro</TableHead>
+                      <TableHead className="hidden md:table-cell">Cadastro</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
