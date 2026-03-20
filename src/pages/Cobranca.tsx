@@ -153,7 +153,7 @@ export default function Cobranca() {
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                         {billing?.payment_date ? new Date(billing.payment_date).toLocaleDateString("pt-BR") : "—"}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                         {billing?.payment_method ?? "—"}
                       </TableCell>
                       <TableCell>

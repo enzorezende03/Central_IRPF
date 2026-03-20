@@ -52,11 +52,11 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-3 px-3 sm:mx-0 sm:px-0">
       {COLUMNS.map((status) => (
         <div
           key={status}
-          className={`flex-shrink-0 w-72 rounded-xl border border-t-4 ${columnColors[status]} bg-card`}
+          className={`flex-shrink-0 w-64 sm:w-72 rounded-xl border border-t-4 ${columnColors[status]} bg-card`}
         >
           <div className="p-3 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">

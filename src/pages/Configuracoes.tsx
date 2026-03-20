@@ -206,7 +206,7 @@ export default function Configuracoes() {
 
         <DocumentChecklistCard />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">

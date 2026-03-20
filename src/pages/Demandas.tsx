@@ -154,7 +154,7 @@ export default function Demandas() {
                       <TableCell className="hidden lg:table-cell text-sm">
                         {c.base_year}
                       </TableCell>
-                      <TableCell className="text-sm">{c.internal_owner ?? "—"}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell>
                         <StatusBadge status={internalStatus} />
                       </TableCell>

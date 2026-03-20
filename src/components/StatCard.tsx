@@ -24,8 +24,8 @@ export function StatCard({ label, value, icon: Icon, color = "text-primary", sub
           <p className={cn("text-lg sm:text-2xl font-bold", color)}>{value}</p>
           {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
         </div>
-        <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center bg-muted", color)}>
-          <Icon className="h-5 w-5" />
+        <div className={cn("h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex items-center justify-center bg-muted shrink-0", color)}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </div>
     </motion.div>
