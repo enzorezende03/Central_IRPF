@@ -196,7 +196,7 @@ export default function Configuracoes() {
                       </TableRow>
                     )}
                   </TableBody>
-                </Table>
+                </Table></div>
               )}
             </CardContent>
           </Card>
