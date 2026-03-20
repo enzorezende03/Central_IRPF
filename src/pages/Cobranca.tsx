@@ -28,12 +28,14 @@ export default function Cobranca() {
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  const totalFees = cases.reduce((sum, c) => sum + (c.billing?.[0]?.amount ?? 0), 0);
-  const totalPaid = cases
+  const extraCases = cases.filter((c) => (c.billing?.[0] as any)?.billing_type !== "incluso_mensalidade");
+  const inclusoCases = cases.filter((c) => (c.billing?.[0] as any)?.billing_type === "incluso_mensalidade");
+  const totalFees = extraCases.reduce((sum, c) => sum + (c.billing?.[0]?.amount ?? 0), 0);
+  const totalPaid = extraCases
     .filter((c) => c.billing?.[0]?.billing_status === "pago")
     .reduce((sum, c) => sum + (c.billing?.[0]?.amount ?? 0), 0);
   const totalPending = totalFees - totalPaid;
-  const pendingCount = cases.filter((c) => {
+  const pendingCount = extraCases.filter((c) => {
     const b = c.billing?.[0];
     return b && b.billing_status !== "pago";
   }).length;
