@@ -16,7 +16,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const AVAILABLE_PERMISSIONS = [
+const PERMISSIONS_BY_ROLE: Record<string, { key: string; label: string }[]> = {
+  operacional: [
+    { key: "acesso_demandas", label: "Acesso a Demandas" },
+    { key: "acesso_configuracao", label: "Acesso a Configuração" },
+  ],
+  financeiro: [
+    { key: "acesso_cobranca", label: "Acesso a Cobrança" },
+    { key: "acesso_configuracao", label: "Acesso a Configuração" },
+  ],
+};
+
+const ALL_PERMISSIONS = [
   { key: "acesso_demandas", label: "Acesso a Demandas" },
   { key: "acesso_cobranca", label: "Acesso a Cobrança" },
   { key: "acesso_configuracao", label: "Acesso a Configuração" },
