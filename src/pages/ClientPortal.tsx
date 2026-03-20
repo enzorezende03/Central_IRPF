@@ -746,7 +746,9 @@ function DocumentRow({
             {doc.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span className="text-[10px] text-muted-foreground">{statusLabel[doc.status]}</span>
+            <span className="text-[10px] text-muted-foreground">
+              {doc.category === "nao_possui" ? "Informado — Não possuo" : statusLabel[doc.status]}
+            </span>
             {doc.is_required && (
               <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>
             )}
