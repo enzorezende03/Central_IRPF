@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useCases } from "@/hooks/use-cases";
-import { BILLING_LABELS } from "@/lib/types";
+import { BILLING_LABELS, BILLING_TYPE_LABELS } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/integrations/supabase/types";
