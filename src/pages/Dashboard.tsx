@@ -130,7 +130,7 @@ export default function Dashboard() {
               <StatCard label="Em Andamento" value={byStatus("em_andamento") + byStatus("documentos_em_analise")} icon={PlayCircle} color="text-info" />
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" />
               <StatCard label="Cobrança Pendente" value={billingPending} icon={Ban} color="text-warning" />
               <StatCard label="Honorários Previstos" value={fmt(totalFees)} icon={TrendingUp} color="text-primary" subtitle="Total previsto" />
