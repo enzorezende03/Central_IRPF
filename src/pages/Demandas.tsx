@@ -53,7 +53,7 @@ export default function Demandas() {
 
   return (
     <InternalLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Filters */}
         <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
           <NewCaseDialog />
