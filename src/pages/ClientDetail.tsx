@@ -167,10 +167,8 @@ export default function ClientDetail() {
 
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
-  const [clientMessage, setClientMessage] = useState<string | null>(null);
 
   const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
-  const messageValue = clientMessage ?? caseData?.client_message ?? "";
 
   // ── Mutations ──
   const invalidateAll = () => {
