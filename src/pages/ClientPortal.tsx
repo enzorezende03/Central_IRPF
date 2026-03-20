@@ -638,6 +638,27 @@ function DocumentRow({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [markingNotHave, setMarkingNotHave] = useState(false);
+
+  const handleNotHave = async () => {
+    setMarkingNotHave(true);
+    try {
+      await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
+      await supabase.from("case_timeline").insert({
+        case_id: caseId,
+        event_type: "Documento marcado como não possui",
+        description: `Cliente informou que não possui "${doc.title}"`,
+        visible_to_client: true,
+        created_by: "Cliente",
+      });
+      toast.success(`Documento "${doc.title}" marcado como "Não tenho".`);
+      onSuccess();
+    } catch {
+      toast.error("Erro ao marcar documento. Tente novamente.");
+    } finally {
+      setMarkingNotHave(false);
+    }
+  };
 
   const statusIcon = {
     pendente: <Circle className="h-5 w-5 text-muted-foreground shrink-0" />,
@@ -753,19 +774,35 @@ function DocumentRow({
             accept={getAcceptString()}
             onChange={handleUpload}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs h-8 w-full sm:w-auto"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {uploading ? (
-              <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
-            ) : (
-              <><Upload className="h-3.5 w-3.5 mr-1" /> Enviar Arquivo</>
-            )}
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs h-8 flex-1 sm:flex-initial"
+              disabled={uploading || markingNotHave}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? (
+                <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
+              ) : (
+                <><Upload className="h-3.5 w-3.5 mr-1" /> Enviar Arquivo</>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs h-8 text-muted-foreground hover:text-destructive flex-1 sm:flex-initial"
+              disabled={uploading || markingNotHave}
+              onClick={handleNotHave}
+            >
+              {markingNotHave ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+              )}
+              Não Tenho
+            </Button>
+          </div>
           <p className="text-[9px] text-muted-foreground text-right">
             Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
           </p>
