@@ -36,7 +36,7 @@ export function NewCaseDialog() {
   const { data: clients = [] } = useQuery({
     queryKey: ["all-clients"],
     queryFn: async () => {
-      const { data } = await supabase.from("clients").select("id, full_name, cpf").order("full_name");
+      const { data } = await supabase.from("clients").select("id, full_name, cpf, billing_type").order("full_name");
       return data ?? [];
     },
   });
