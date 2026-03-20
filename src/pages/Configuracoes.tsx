@@ -598,3 +598,165 @@ function InviteUserDialog() {
     </Dialog>
   );
 }
+
+interface ChecklistTemplate {
+  id: string;
+  title: string;
+  is_required: boolean;
+  sort_order: number;
+}
+
+function DocumentChecklistCard() {
+  const queryClient = useQueryClient();
+  const [newTitle, setNewTitle] = useState("");
+
+  const { data: items = [], isLoading } = useQuery<ChecklistTemplate[]>({
+    queryKey: ["checklist-templates"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("document_checklist_templates" as any)
+        .select("*")
+        .order("sort_order");
+      return (data as any) ?? [];
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      if (!newTitle.trim()) throw new Error("Título obrigatório");
+      const maxOrder = items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
+      const { error } = await supabase
+        .from("document_checklist_templates" as any)
+        .insert({ title: newTitle.trim(), is_required: false, sort_order: maxOrder });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setNewTitle("");
+      queryClient.invalidateQueries({ queryKey: ["checklist-templates"] });
+      toast.success("Documento adicionado!");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const toggleRequired = async (item: ChecklistTemplate) => {
+    await supabase
+      .from("document_checklist_templates" as any)
+      .update({ is_required: !item.is_required })
+      .eq("id", item.id);
+    queryClient.invalidateQueries({ queryKey: ["checklist-templates"] });
+  };
+
+  const deleteItem = async (id: string) => {
+    await supabase
+      .from("document_checklist_templates" as any)
+      .delete()
+      .eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["checklist-templates"] });
+    toast.success("Documento removido.");
+  };
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+
+  const saveEdit = async (id: string) => {
+    if (!editTitle.trim()) return;
+    await supabase
+      .from("document_checklist_templates" as any)
+      .update({ title: editTitle.trim() })
+      .eq("id", id);
+    setEditingId(null);
+    queryClient.invalidateQueries({ queryKey: ["checklist-templates"] });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" />
+          Checklist Documental
+        </CardTitle>
+        <CardDescription>
+          Documentos solicitados automaticamente ao criar uma nova demanda
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-muted/50 group transition-colors"
+              >
+                <Checkbox
+                  checked={item.is_required}
+                  onCheckedChange={() => toggleRequired(item)}
+                  title="Obrigatório"
+                />
+                {editingId === item.id ? (
+                  <div className="flex-1 flex gap-2">
+                    <Input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="h-8 text-sm"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEdit(item.id);
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                    />
+                    <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => saveEdit(item.id)}>
+                      <Check className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <span
+                    className="flex-1 text-sm cursor-pointer"
+                    onClick={() => { setEditingId(item.id); setEditTitle(item.title); }}
+                  >
+                    {item.title}
+                    {item.is_required && (
+                      <Badge variant="secondary" className="ml-2 text-[10px] py-0">obrigatório</Badge>
+                    )}
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive transition-opacity"
+                  onClick={() => deleteItem(item.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))}
+            {items.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhum documento configurado.</p>
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-2 border-t">
+          <Input
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="Novo documento..."
+            className="text-sm"
+            onKeyDown={(e) => { if (e.key === "Enter") addMutation.mutate(); }}
+          />
+          <Button size="sm" onClick={() => addMutation.mutate()} disabled={addMutation.isPending || !newTitle.trim()}>
+            <Plus className="h-4 w-4 mr-1" />
+            Adicionar
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Marque o checkbox para definir como obrigatório. Clique no título para editar.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
