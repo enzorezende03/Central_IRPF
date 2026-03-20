@@ -44,11 +44,7 @@ export default function Dashboard() {
       const { data } = await supabase
         .from("case_timeline")
         .select("*, irpf_cases!inner(id, clients(full_name))")
-        .in("event_type", [
-          "Documento enviado",
-          "Documento marcado como não possui",
-          "Resposta enviada",
-        ])
+        .eq("event_type", "Documentação completa")
         .eq("created_by", "Cliente")
         .order("created_at", { ascending: false })
         .limit(10);
