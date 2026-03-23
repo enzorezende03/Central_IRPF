@@ -174,9 +174,6 @@ export default function Demandas() {
                       <TableCell className="hidden lg:table-cell">
                         {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-right text-sm font-medium">
-                        {billing ? fmt(billing.amount) : "—"}
-                      </TableCell>
                       <TableCell>
                         <CaseActions caseData={c} />
                       </TableCell>
