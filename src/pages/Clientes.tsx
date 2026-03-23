@@ -72,7 +72,7 @@ export default function Clientes() {
     },
   });
 
-
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return allClients.filter((client) => {
       const name = client.full_name.toLowerCase();
