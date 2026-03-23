@@ -134,7 +134,7 @@ export default function Demandas() {
                   <TableHead className="hidden lg:table-cell">Progresso</TableHead>
                   <TableHead className="hidden md:table-cell">Prioridade</TableHead>
                   <TableHead className="hidden lg:table-cell">Cobrança</TableHead>
-                  <TableHead className="hidden lg:table-cell text-right">Honorário</TableHead>
+                  
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -173,9 +173,6 @@ export default function Demandas() {
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-right text-sm font-medium">
-                        {billing ? fmt(billing.amount) : "—"}
                       </TableCell>
                       <TableCell>
                         <CaseActions caseData={c} />
