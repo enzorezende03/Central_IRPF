@@ -1,25 +1,18 @@
 import { useState, useMemo } from "react";
 import { formatCPF } from "@/lib/format-utils";
-import {
-  Search, LayoutGrid, Table as TableIcon,
-} from "lucide-react";
+import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
 import { CaseActions } from "@/components/CaseActions";
-
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewCaseDialog } from "@/components/NewCaseDialog";
 import { useCases } from "@/hooks/use-cases";
-import { STATUS_LABELS, BILLING_LABELS, PRIORITY_LABELS } from "@/lib/types";
-import type { Database } from "@/integrations/supabase/types";
-
-type CaseStatus = Database["public"]["Enums"]["case_status"];
+import { STATUS_LABELS } from "@/lib/types";
 
 export default function Demandas() {
   const { data: cases = [], isLoading } = useCases();
@@ -50,8 +43,6 @@ export default function Demandas() {
     });
   }, [cases, search, tagFilter, ownerFilter]);
 
-  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
   return (
     <InternalLayout>
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -63,21 +54,21 @@ export default function Demandas() {
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nome ou CPF..."
+              placeholder="Buscar por nome do cliente..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={tagFilter} onValueChange={setTagFilter}>
               <SelectTrigger className="w-44">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Tag" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                <SelectItem value="all">Todas as tags</SelectItem>
+                {tags.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -89,28 +80,6 @@ export default function Demandas() {
                 <SelectItem value="all">Todos responsáveis</SelectItem>
                 {owners.map((o) => (
                   <SelectItem key={o} value={o}>{o}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Prioridade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={billingFilter} onValueChange={setBillingFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Cobrança" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas cobranças</SelectItem>
-                {Object.entries(BILLING_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -129,11 +98,11 @@ export default function Demandas() {
                   <TableHead className="hidden sm:table-cell">Tag</TableHead>
                   <TableHead className="hidden md:table-cell">CPF</TableHead>
                   <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
-                   <TableHead className="min-w-[100px]">Status Interno</TableHead>
-                   <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
-                   <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                   <TableHead className="hidden lg:table-cell">Cobrança</TableHead>
-                  
+                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
+                  <TableHead className="min-w-[100px]">Status Interno</TableHead>
+                  <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
+                  <TableHead className="hidden md:table-cell">Prioridade</TableHead>
+                  <TableHead className="hidden lg:table-cell">Cobrança</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
