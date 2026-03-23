@@ -8,6 +8,7 @@ import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
 import { CaseActions } from "@/components/CaseActions";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -126,6 +127,7 @@ export default function Demandas() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[120px]">Cliente</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tag</TableHead>
                   <TableHead className="hidden md:table-cell">CPF</TableHead>
                   <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
                   <TableHead className="hidden sm:table-cell">Responsável</TableHead>
@@ -148,6 +150,13 @@ export default function Demandas() {
                         <Link to={`/demandas/${c.id}`} className="hover:text-primary transition-colors">
                           {c.clients?.full_name}
                         </Link>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {(c.clients?.tags ?? []).map((tag: string) => (
+                            <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                         {formatCPF(c.clients?.cpf)}
