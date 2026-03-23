@@ -1,0 +1,1 @@
+UPDATE form_question_templates SET question = 'Como você prefere receber sua restituição?' WHERE id = '61d578b6-34a5-460d-835b-1ec0c16362fd';
