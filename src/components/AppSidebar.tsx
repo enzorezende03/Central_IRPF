@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut,
 } from "lucide-react";
+import logo2m from "@/assets/logo-2m.png";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
