@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { CaseWithClient } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { BillingBadge, PriorityBadge } from "@/components/StatusBadge";
-import { Progress } from "@/components/ui/progress";
+
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
@@ -88,13 +88,6 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}
                     </p>
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                        <span>Progresso</span>
-                        <span>{c.progress_percent}%</span>
-                      </div>
-                      <Progress value={c.progress_percent} className="h-1.5" />
-                    </div>
                     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <PriorityBadge priority={c.priority} />
                       {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}

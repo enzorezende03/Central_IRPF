@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
 import { CaseActions } from "@/components/CaseActions";
-import { Progress } from "@/components/ui/progress";
+
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -130,12 +130,10 @@ export default function Demandas() {
                   <TableHead className="hidden sm:table-cell">Tag</TableHead>
                   <TableHead className="hidden md:table-cell">CPF</TableHead>
                   <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
-                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
-                  <TableHead className="min-w-[100px]">Status Interno</TableHead>
-                  <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
-                  <TableHead className="hidden lg:table-cell">Progresso</TableHead>
-                  <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                  <TableHead className="hidden lg:table-cell">Cobrança</TableHead>
+                   <TableHead className="min-w-[100px]">Status Interno</TableHead>
+                   <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
+                   <TableHead className="hidden md:table-cell">Prioridade</TableHead>
+                   <TableHead className="hidden lg:table-cell">Cobrança</TableHead>
                   
                   <TableHead className="w-10" />
                 </TableRow>
@@ -170,12 +168,6 @@ export default function Demandas() {
                       </TableCell>
                       <TableCell className="hidden xl:table-cell">
                         <StatusBadge status={c.status} />
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <div className="flex items-center gap-2 min-w-[100px]">
-                          <Progress value={c.progress_percent} className="h-1.5 flex-1" />
-                          <span className="text-xs text-muted-foreground w-8">{c.progress_percent}%</span>
-                        </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <PriorityBadge priority={c.priority} />

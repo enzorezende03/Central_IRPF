@@ -16,7 +16,7 @@ import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -359,26 +359,7 @@ export default function ClientDetail() {
           <InfoCard icon={Calendar} label="Criado em" value={fmtDate(caseData.created_at)} />
         </div>
 
-        {/* ── 2. Progress (auto-calculated) ── */}
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <p className="text-sm font-semibold">Progresso Geral <span className="text-[10px] font-normal text-muted-foreground ml-1">(calculado automaticamente)</span></p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {approvedDocs} de {docRequests.filter(d => d.is_required).length} docs obrigatórios aprovados
-                  {unansweredCount > 0 && ` · ${unansweredCount} pergunta(s) sem resposta`}
-                  {pendingDocs > 0 && ` · ${pendingDocs} documento(s) pendente(s)`}
-                  {deliverable?.irpf_file_url && deliverable?.receipt_file_url && deliverable?.sent_to_client
-                    ? " · ✅ Entrega finalizada"
-                    : !deliverable?.irpf_file_url ? " · Declaração pendente" : !deliverable?.sent_to_client ? " · Entrega não liberada" : ""}
-                </p>
-              </div>
-              <span className="text-2xl font-bold text-primary">{caseData.progress_percent}%</span>
-            </div>
-            <Progress value={caseData.progress_percent} className="h-2.5" />
-          </CardContent>
-        </Card>
+        {/* Status do cliente calculado automaticamente */}
 
         {/* ── 3. Portal Link ── */}
         <Card>
