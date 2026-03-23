@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut,
 } from "lucide-react";
+import logo2m from "@/assets/logo-2m.png";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
@@ -50,18 +51,14 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         {!collapsed ? (
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center shadow-sm">
-              <FileText className="h-4.5 w-4.5 text-primary-foreground" />
-            </div>
+            <img src={logo2m} alt="2M Contabilidade" className="h-9 w-9 rounded-lg object-contain" />
             <div>
               <h1 className="text-sm font-bold text-sidebar-primary-foreground tracking-tight">Central IRPF</h1>
               <p className="text-[10px] text-sidebar-foreground/50 font-medium">Exercício 2026</p>
             </div>
           </div>
         ) : (
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center mx-auto shadow-sm">
-            <FileText className="h-4.5 w-4.5 text-primary-foreground" />
-          </div>
+          <img src={logo2m} alt="2M Contabilidade" className="h-9 w-9 rounded-lg object-contain mx-auto" />
         )}
       </SidebarHeader>
       <SidebarContent>

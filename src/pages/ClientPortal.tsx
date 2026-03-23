@@ -6,6 +6,7 @@ import {
   MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import logo2m from "@/assets/logo-2m.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -484,9 +485,7 @@ function PortalShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-            <FileText className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <img src={logo2m} alt="2M Contabilidade" className="h-9 w-9 rounded-lg object-contain" />
           <div>
             <h1 className="text-sm font-bold">Central IRPF 2026</h1>
             <p className="text-[10px] text-muted-foreground">Portal do Cliente</p>
