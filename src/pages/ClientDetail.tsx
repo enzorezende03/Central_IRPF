@@ -302,7 +302,7 @@ export default function ClientDetail() {
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold truncate">{client?.full_name ?? "Cliente"}</h1>
             <p className="text-sm text-muted-foreground">
-              CPF: {client?.cpf} · Ano-base {caseData.base_year} · Exercício {caseData.tax_year}
+              CPF: {formatCPF(client?.cpf)} · Ano-base {caseData.base_year} · Exercício {caseData.tax_year}
             </p>
           </div>
           <div className="flex flex-wrap gap-2 items-center">
