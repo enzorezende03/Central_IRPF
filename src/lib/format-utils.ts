@@ -1,11 +1,20 @@
 /**
- * Format a CPF string: 000.000.000-00
+ * Format a CPF (11 digits) or CNPJ (14 digits) string
  */
 export function formatCPF(cpf: string | null | undefined): string {
   if (!cpf) return "—";
   const digits = cpf.replace(/\D/g, "");
-  if (digits.length !== 11) return cpf; // return as-is if not 11 digits
-  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  if (digits.length === 14) {
+    return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+  }
+  if (digits.length === 11) {
+    return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  }
+  // Best-effort for other lengths: group in 3s with dots
+  if (digits.length >= 9) {
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}${digits.length > 9 ? "-" + digits.slice(9) : ""}`;
+  }
+  return cpf;
 }
 
 /**
