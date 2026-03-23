@@ -1,6 +1,8 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, useRef } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 import {
   ArrowLeft, Copy, MessageCircle, CheckCircle, Circle, FileText, Clock,
   User, Mail, Phone, DollarSign, ExternalLink, Upload, Send, Eye,
