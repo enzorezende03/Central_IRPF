@@ -10,41 +10,59 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-const COLUMNS: CaseStatus[] = [
+type KanbanColumn = CaseStatus | "previa_enviada";
+
+const COLUMNS: KanbanColumn[] = [
   "aguardando_cliente",
   "documentos_em_analise",
   "em_andamento",
+  "previa_enviada",
   "pendencia",
   "finalizado",
 ];
 
-const columnColors: Record<CaseStatus, string> = {
+const COLUMN_LABELS: Record<KanbanColumn, string> = {
+  ...STATUS_LABELS,
+  previa_enviada: "Envio de Prévia",
+};
+
+const columnColors: Record<KanbanColumn, string> = {
   aguardando_cliente: "border-t-warning",
   documentos_em_analise: "border-t-info",
   em_andamento: "border-t-primary",
+  previa_enviada: "border-t-violet-500",
   pendencia: "border-t-destructive",
   finalizado: "border-t-success",
 };
 
-const dotColors: Record<CaseStatus, string> = {
+const dotColors: Record<KanbanColumn, string> = {
   aguardando_cliente: "bg-warning",
   documentos_em_analise: "bg-info",
   em_andamento: "bg-primary",
+  previa_enviada: "bg-violet-500",
   pendencia: "bg-destructive",
   finalizado: "bg-success",
 };
 
 export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
   const grouped = useMemo(() => {
-    const map: Record<CaseStatus, CaseWithClient[]> = {
+    const map: Record<KanbanColumn, CaseWithClient[]> = {
       aguardando_cliente: [],
       documentos_em_analise: [],
       em_andamento: [],
+      previa_enviada: [],
       pendencia: [],
       finalizado: [],
     };
     cases.forEach((c) => {
-      if (map[c.status]) map[c.status].push(c);
+      const hasPreview = c.final_deliverables?.some(
+        (fd) => fd.preview_file_url
+      );
+      if (hasPreview && c.status !== "finalizado") {
+        map.previa_enviada.push(c);
+      } else if (map[c.status]) {
+        map[c.status].push(c);
+      }
     });
     return map;
   }, [cases]);
@@ -62,7 +80,7 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
           <div className="p-3 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`h-2.5 w-2.5 rounded-full ${dotColors[status]}`} />
-              <span className="text-sm font-semibold">{STATUS_LABELS[status]}</span>
+              <span className="text-sm font-semibold">{COLUMN_LABELS[status]}</span>
             </div>
             <span className="text-xs font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
               {grouped[status].length}
