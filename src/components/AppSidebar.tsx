@@ -52,14 +52,14 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         {!collapsed ? (
           <div className="flex items-center gap-2.5">
-            <img src={logo2m} alt="2M Contabilidade" className="h-9 w-9 rounded-lg object-contain" />
+            <img src={logoUrl} alt="Logo do Escritório" className="h-12 w-12 rounded-lg object-contain" />
             <div>
               <h1 className="text-sm font-bold text-sidebar-primary-foreground tracking-tight">Central IRPF</h1>
               <p className="text-[10px] text-sidebar-foreground/50 font-medium">Exercício 2026</p>
             </div>
           </div>
         ) : (
-          <img src={logo2m} alt="2M Contabilidade" className="h-9 w-9 rounded-lg object-contain mx-auto" />
+          <img src={logoUrl} alt="Logo do Escritório" className="h-10 w-10 rounded-lg object-contain mx-auto" />
         )}
       </SidebarHeader>
       <SidebarContent>
