@@ -32,7 +32,7 @@ export function useCase(id: string | undefined) {
       if (!id) return null;
       const { data, error } = await supabase
         .from("irpf_cases")
-        .select("*, clients(*), billing(*)")
+        .select("*, clients(*), billing(*), final_deliverables(*)")
         .eq("id", id)
         .single();
       if (error) throw error;
