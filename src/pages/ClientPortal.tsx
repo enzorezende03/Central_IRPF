@@ -869,9 +869,9 @@ function DocumentRow({
               )}
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="text-xs h-8 text-muted-foreground hover:text-destructive flex-1 sm:flex-initial"
+              className="text-xs h-8 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground flex-1 sm:flex-initial font-medium"
               disabled={uploading || markingNotHave}
               onClick={handleNotHave}
             >
