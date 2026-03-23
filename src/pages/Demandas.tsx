@@ -168,6 +168,11 @@ export default function Demandas() {
                       <TableCell className="hidden md:table-cell">
                         <PriorityBadge priority={c.priority} />
                       </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant={c.declaration_type === "completa" ? "default" : "outline"} className="text-xs">
+                          {c.declaration_type === "completa" ? "Completa" : "Simples"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <CaseActions caseData={c} />
                       </TableCell>
