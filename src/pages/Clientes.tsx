@@ -57,7 +57,22 @@ export default function Clientes() {
     },
   });
 
-  const filtered = useMemo(() => {
+  const deleteClient = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("clients").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["client-case-counts"] });
+      toast.success("Cliente excluído com sucesso.");
+    },
+    onError: () => {
+      toast.error("Erro ao excluir cliente. Verifique se não há demandas vinculadas.");
+    },
+  });
+
+
     const q = search.toLowerCase();
     return allClients.filter((client) => {
       const name = client.full_name.toLowerCase();
