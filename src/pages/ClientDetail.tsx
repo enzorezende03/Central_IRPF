@@ -381,7 +381,31 @@ export default function ClientDetail() {
           />
           <InfoCard icon={Phone} label="Celular" value={formatPhone(client?.phone)} />
           <InfoCard icon={Mail} label="E-mail" value={client?.email ?? "—"} />
-          
+          <Card>
+            <CardContent className="p-3.5 flex items-center gap-3">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Tipo Declaração</p>
+                <Select
+                  value={caseData.declaration_type ?? "simples"}
+                  onValueChange={(v) => {
+                    supabase.from("irpf_cases").update({ declaration_type: v }).eq("id", id!).then(() => {
+                      queryClient.invalidateQueries({ queryKey: ["case-detail", id] });
+                      toast.success("Tipo de declaração atualizado!");
+                    });
+                  }}
+                >
+                  <SelectTrigger className="h-auto p-0 border-0 shadow-none text-sm font-medium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="simples">Simples</SelectItem>
+                    <SelectItem value="completa">Completa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
           <InfoCard icon={Calendar} label="Criado em" value={fmtDate(caseData.created_at)} />
         </div>
 
