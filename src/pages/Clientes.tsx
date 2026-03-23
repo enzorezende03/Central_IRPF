@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Search, Users, Mail, Phone } from "lucide-react";
+import { formatCPF, formatPhone } from "@/lib/format-utils";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { InternalLayout } from "@/components/InternalLayout";
 import { Input } from "@/components/ui/input";
