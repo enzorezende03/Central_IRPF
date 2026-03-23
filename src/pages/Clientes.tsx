@@ -12,12 +12,15 @@ import { Switch } from "@/components/ui/switch";
 import { NewClientDialog } from "@/components/NewClientDialog";
 import { ImportClientsDialog } from "@/components/ImportClientsDialog";
 import { EditClientDialog } from "@/components/EditClientDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function Clientes() {
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
+  const { role } = useAuth();
 
   // Fetch all clients directly
   const { data: allClients = [], isLoading: loadingClients } = useQuery({
