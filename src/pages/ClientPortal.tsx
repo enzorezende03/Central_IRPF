@@ -519,11 +519,11 @@ function PortalShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <img src={logoUrl} alt="Logo do Escritório" className="h-12 w-12 rounded-lg object-contain" />
-          <div>
-            <h1 className="text-sm font-bold">Central IRPF 2026</h1>
-            <p className="text-[10px] text-muted-foreground">Portal do Cliente</p>
+        <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col items-center gap-2">
+          <img src={logoUrl} alt="Logo do Escritório" className="h-20 w-20 rounded-lg object-contain" />
+          <div className="text-center">
+            <h1 className="text-base font-bold">Central IRPF 2026</h1>
+            <p className="text-[11px] text-muted-foreground">Portal do Cliente</p>
           </div>
         </div>
       </header>

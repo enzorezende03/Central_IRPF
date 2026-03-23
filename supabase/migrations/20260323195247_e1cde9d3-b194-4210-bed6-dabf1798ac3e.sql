@@ -1,0 +1,1 @@
+UPDATE case_questions SET question = 'Como você prefere receber sua restituição?' WHERE question = 'Como você prefere receber sua restituição (ou pagar o imposto, se houver)?';
