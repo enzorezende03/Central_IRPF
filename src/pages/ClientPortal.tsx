@@ -366,32 +366,39 @@ export default function ClientPortal() {
           </motion.div>
         )}
 
-        {/* ── Messages from Office ── */}
-        {caseMessages.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Mensagens do Escritório</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {caseMessages.map((msg: any) => (
-                  <div
-                    key={msg.id}
-                    className={`p-3 rounded-lg text-sm ${
-                      msg.sender === "office" ? "bg-primary/5 border border-primary/10" : "bg-muted"
-                    }`}
-                  >
-                    <p className="leading-relaxed">{msg.message}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {msg.sender === "office" ? "Escritório" : "Você"} · {new Date(msg.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                ))}
-                <PortalReplyBox caseId={caseId!} onSent={() => queryClient.invalidateQueries({ queryKey: ["portal-messages", caseId] })} />
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+        {/* ── Messages ── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-primary" />
+                Mensagens
+              </CardTitle>
+              <CardDescription>Converse com o escritório sobre sua declaração.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {caseMessages.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma mensagem ainda. Envie uma mensagem abaixo caso tenha dúvidas.
+                </p>
+              )}
+              {caseMessages.map((msg: any) => (
+                <div
+                  key={msg.id}
+                  className={`p-3 rounded-lg text-sm ${
+                    msg.sender === "office" ? "bg-primary/5 border border-primary/10" : "bg-muted"
+                  }`}
+                >
+                  <p className="leading-relaxed">{msg.message}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    {msg.sender === "office" ? "Escritório" : "Você"} · {new Date(msg.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              ))}
+              <PortalReplyBox caseId={caseId!} onSent={() => queryClient.invalidateQueries({ queryKey: ["portal-messages", caseId] })} />
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* ── 5a. Preview Declaration (for client approval) ── */}
         {deliverable && (deliverable as any).preview_file_url && (
