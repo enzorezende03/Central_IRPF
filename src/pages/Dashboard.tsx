@@ -169,7 +169,9 @@ export default function Dashboard() {
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => toggleStatFilter("finalizado")} active={statFilter === "finalizado"} />
               <StatCard label="Cobrança Pendente" value={billingPending} icon={Ban} color="text-warning" onClick={() => toggleStatFilter("cobranca_pendente")} active={statFilter === "cobranca_pendente"} />
               <StatCard label="Honorários Previstos" value={fmt(totalFees)} icon={TrendingUp} color="text-primary" subtitle="Total previsto" onClick={() => toggleStatFilter("honorarios")} active={statFilter === "honorarios"} />
-              <StatCard label="Já Recebido" value={fmt(totalPaid)} icon={DollarSign} color="text-success" subtitle="Total pago" onClick={() => toggleStatFilter("recebido")} active={statFilter === "recebido"} />
+              {canSeeFinancial && (
+                <StatCard label="Já Recebido" value={fmt(totalPaid)} icon={DollarSign} color="text-success" subtitle="Total pago" onClick={() => toggleStatFilter("recebido")} active={statFilter === "recebido"} />
+              )}
             </div>
 
             {/* Filtered cases list from stat card click */}
