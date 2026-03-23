@@ -535,18 +535,6 @@ export default function ClientDetail() {
               }}
             />
 
-            {/* ── 10. Billing ── */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-primary" />
-                  Cobrança
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BillingBlock billing={billing} onUpdate={(updates) => updateBilling.mutate(updates)} />
-              </CardContent>
-            </Card>
 
             {/* ── 9a. Prévia ── */}
             <Card>
