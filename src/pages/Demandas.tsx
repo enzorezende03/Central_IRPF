@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatCPF } from "@/lib/format-utils";
 import {
   Search, LayoutGrid, Table as TableIcon,
 } from "lucide-react";

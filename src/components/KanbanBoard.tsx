@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { formatCPF } from "@/lib/format-utils";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CaseWithClient } from "@/hooks/use-cases";

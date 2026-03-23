@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { formatCPF, formatPhone } from "@/lib/format-utils";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
