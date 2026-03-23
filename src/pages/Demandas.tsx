@@ -169,12 +169,6 @@ export default function Demandas() {
                       <TableCell className="hidden xl:table-cell">
                         <StatusBadge status={c.status} />
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <div className="flex items-center gap-2 min-w-[100px]">
-                          <Progress value={c.progress_percent} className="h-1.5 flex-1" />
-                          <span className="text-xs text-muted-foreground w-8">{c.progress_percent}%</span>
-                        </div>
-                      </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <PriorityBadge priority={c.priority} />
                       </TableCell>
