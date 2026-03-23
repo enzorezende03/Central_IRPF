@@ -142,6 +142,23 @@ export function NewCaseDialog() {
         billing_type: billingType,
       } as any);
 
+      // Copy form question templates into case_questions
+      const { data: formTemplates } = await supabase
+        .from("form_question_templates")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order");
+      if (formTemplates && formTemplates.length > 0) {
+        const questionInserts = formTemplates.map((t: any) => ({
+          case_id: newCase.id,
+          question: t.question,
+          answer_type: t.answer_type ?? "text",
+          is_required: false,
+          sort_order: t.sort_order,
+        }));
+        await supabase.from("case_questions").insert(questionInserts);
+      }
+
       // Log timeline
       await logTimelineEvent(newCase.id, "criacao", "Demanda criada no sistema.");
 
