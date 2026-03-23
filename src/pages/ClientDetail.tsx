@@ -455,6 +455,50 @@ export default function ClientDetail() {
 
           {/* Right column (1/3) */}
           <div className="space-y-6">
+            {/* ── 4. Document Checklist ── */}
+            <Collapsible>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CollapsibleTrigger className="w-full text-left">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" />
+                        Checklist Documental
+                      </CardTitle>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                    </div>
+                    <CardDescription className="mt-1">
+                      {approvedDocs} aprovados · {pendingDocs} pendentes · {docRequests.length} total
+                    </CardDescription>
+                  </CollapsibleTrigger>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent className="space-y-2">
+                    {docRequests.map((doc) => {
+                      const docUploads = uploadedDocs.filter((u) => u.document_request_id === doc.id);
+                      return (
+                        <InternalDocRow
+                          key={doc.id}
+                          doc={doc}
+                          uploads={docUploads}
+                          caseId={id!}
+                          onStatusChange={(status) => updateDocStatus.mutate({ docId: doc.id, status })}
+                          onRefresh={() => {
+                            queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+                            queryClient.invalidateQueries({ queryKey: ["uploaded-docs", id] });
+                            queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                          }}
+                        />
+                      );
+                    })}
+                    <AddDocumentRow caseId={id!} onAdded={() => {
+                      queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+                    }} />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+
             {/* ── 6. Internal Notes ── */}
             <Card>
               <CardHeader className="pb-3">
