@@ -206,6 +206,8 @@ export default function Configuracoes() {
 
         <DocumentChecklistCard />
 
+        <FormQuestionsCard />
+
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
