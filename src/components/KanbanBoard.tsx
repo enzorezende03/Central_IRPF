@@ -55,9 +55,10 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
       finalizado: [],
     };
     cases.forEach((c) => {
-      const hasPreview = c.final_deliverables?.some(
-        (fd) => fd.preview_file_url
-      );
+      const fd = Array.isArray(c.final_deliverables)
+        ? c.final_deliverables[0]
+        : c.final_deliverables;
+      const hasPreview = fd?.preview_file_url;
       if (hasPreview && c.status !== "finalizado") {
         map.previa_enviada.push(c);
       } else if (map[c.status]) {
