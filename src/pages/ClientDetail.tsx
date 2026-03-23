@@ -410,6 +410,51 @@ export default function ClientDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column (2/3) */}
           <div className="lg:col-span-2 space-y-6">
+            {/* ── Internal Checklist (moved to left) ── */}
+            <InternalChecklistCard caseId={id!} />
+
+            {/* ── 8. Timeline ── */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                  Histórico / Timeline
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {timeline.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Nenhum evento registrado.</p>
+                ) : (
+                  <div className="relative space-y-0">
+                    {timeline.map((event, i) => (
+                      <div key={event.id} className="flex gap-3 pb-4">
+                        <div className="flex flex-col items-center">
+                          <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                          {i < timeline.length - 1 && <div className="flex-1 w-px bg-border" />}
+                        </div>
+                        <div className="flex-1 min-w-0 pb-1">
+                          <p className="text-sm font-medium">{event.event_type}</p>
+                          {event.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
+                          )}
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {fmtDate(event.created_at)}
+                            {event.created_by && ` · ${event.created_by}`}
+                            {event.visible_to_client && (
+                              <span className="ml-2 text-info">Visível ao cliente</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right column (1/3) */}
+          <div className="space-y-6">
             {/* ── 4. Document Checklist ── */}
             <Collapsible>
               <Card>
@@ -454,48 +499,6 @@ export default function ClientDetail() {
               </Card>
             </Collapsible>
 
-            {/* ── 8. Timeline ── */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-primary" />
-                  Histórico / Timeline
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {timeline.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Nenhum evento registrado.</p>
-                ) : (
-                  <div className="relative space-y-0">
-                    {timeline.map((event, i) => (
-                      <div key={event.id} className="flex gap-3 pb-4">
-                        <div className="flex flex-col items-center">
-                          <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                          {i < timeline.length - 1 && <div className="flex-1 w-px bg-border" />}
-                        </div>
-                        <div className="flex-1 min-w-0 pb-1">
-                          <p className="text-sm font-medium">{event.event_type}</p>
-                          {event.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
-                          )}
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            {fmtDate(event.created_at)}
-                            {event.created_by && ` · ${event.created_by}`}
-                            {event.visible_to_client && (
-                              <span className="ml-2 text-info">Visível ao cliente</span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right column (1/3) */}
-          <div className="space-y-6">
             {/* ── 6. Internal Notes ── */}
             <Card>
               <CardHeader className="pb-3">
@@ -521,9 +524,6 @@ export default function ClientDetail() {
                 </Button>
               </CardContent>
             </Card>
-
-            {/* ── Internal Checklist ── */}
-            <InternalChecklistCard caseId={id!} />
 
             {/* ── 7. Messages to Client ── */}
             <MessagesSection
