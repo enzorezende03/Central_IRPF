@@ -92,7 +92,7 @@ export default function Clientes() {
                   <TableHead>Demandas</TableHead>
                   <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
                   <TableHead className="text-center">Ativo</TableHead>
-                </TableRow>
+                  <TableHead className="w-[50px]"></TableHead>
               </TableHeader>
               <TableBody>
                 {filtered.map((client) => {
