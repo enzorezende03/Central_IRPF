@@ -155,6 +155,32 @@ export default function ClientDetail() {
     enabled: !!id,
   });
 
+  // ── Fetch questions + answers ──
+  const { data: caseQuestions = [] } = useQuery({
+    queryKey: ["case-questions", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_questions")
+        .select("*")
+        .eq("case_id", id!)
+        .order("sort_order");
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: caseAnswers = [] } = useQuery({
+    queryKey: ["case-answers", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("case_answers")
+        .select("*")
+        .eq("case_id", id!);
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
+
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
 
