@@ -1009,6 +1009,10 @@ function QuestionRow({
     }
   };
 
+  const [spouseData, setSpouseData] = useState({
+    nome: "", cpf: "", dataNascimento: "", novoEstadoCivil: "",
+  });
+
   const renderConditionalField = () => {
     if (!hasConditional) return null;
 
@@ -1016,6 +1020,52 @@ function QuestionRow({
     if (question.answer_type === "yes_no" && text !== "Sim") return null;
     // For select questions: show when trigger value selected
     if (isSelect && !showSelectConditional) return null;
+
+    if (conditionalType === "spouse_data") {
+      return (
+        <div className="mt-3 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+          <p className="text-sm font-medium text-primary">{conditionalLabel}</p>
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs text-muted-foreground">Novo estado civil</label>
+              <Input
+                placeholder="Ex: Casado(a), Divorciado(a), Viúvo(a)..."
+                value={spouseData.novoEstadoCivil}
+                onChange={(e) => setSpouseData(prev => ({ ...prev, novoEstadoCivil: e.target.value }))}
+                className="text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Nome completo do cônjuge</label>
+              <Input
+                placeholder="Nome completo"
+                value={spouseData.nome}
+                onChange={(e) => setSpouseData(prev => ({ ...prev, nome: e.target.value }))}
+                className="text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">CPF do cônjuge</label>
+              <Input
+                placeholder="000.000.000-00"
+                value={spouseData.cpf}
+                onChange={(e) => setSpouseData(prev => ({ ...prev, cpf: e.target.value }))}
+                className="text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Data de nascimento do cônjuge</label>
+              <Input
+                type="date"
+                value={spouseData.dataNascimento}
+                onChange={(e) => setSpouseData(prev => ({ ...prev, dataNascimento: e.target.value }))}
+                className="text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="mt-3 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
