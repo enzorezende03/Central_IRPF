@@ -372,53 +372,15 @@ export default function ClientPortal() {
 
                 {/* Quick actions / pendencies */}
                 {hasPendencies && !isFinished && (
-                  <Card className="border-warning/40">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-warning" />
-                        O que ainda falta
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-1.5">
-                        {pendingDocs.slice(0, 3).map((d) => (
-                          <li key={d.id} className="flex items-center gap-2 text-xs">
-                            <Circle className="h-2.5 w-2.5 text-warning shrink-0" />
-                            <span>Enviar: <strong>{d.title}</strong></span>
-                          </li>
-                        ))}
-                        {rejectedDocs.slice(0, 2).map((d) => (
-                          <li key={d.id} className="flex items-center gap-2 text-xs text-destructive">
-                            <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
-                            <span>Reenviar: <strong>{d.title}</strong></span>
-                          </li>
-                        ))}
-                        {unansweredQuestions.slice(0, 2).map((q) => (
-                          <li key={q.id} className="flex items-center gap-2 text-xs">
-                            <Circle className="h-2.5 w-2.5 text-warning shrink-0" />
-                            <span>Responder: <strong>{q.question}</strong></span>
-                          </li>
-                        ))}
-                      </ul>
-                      {(pendingDocs.length > 3 || unansweredQuestions.length > 2) && (
-                        <p className="text-[10px] text-muted-foreground mt-2">
-                          E mais itens pendentes...
-                        </p>
-                      )}
-                      <div className="flex gap-2 mt-3">
-                        {docBadge > 0 && (
-                          <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => setActiveTab("documentos")}>
-                            <FileText className="h-3.5 w-3.5 mr-1" /> Documentos ({docBadge})
-                          </Button>
-                        )}
-                        {formBadge > 0 && (
-                          <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => setActiveTab("formulario")}>
-                            <HelpCircle className="h-3.5 w-3.5 mr-1" /> Formulário ({formBadge})
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <PendenciesCard
+                    pendingDocs={pendingDocs}
+                    rejectedDocs={rejectedDocs}
+                    unansweredQuestions={unansweredQuestions}
+                    docBadge={docBadge}
+                    formBadge={formBadge}
+                    onGoToDocs={() => setActiveTab("documentos")}
+                    onGoToForm={() => setActiveTab("formulario")}
+                  />
                 )}
 
                 {/* Preview Approval */}
