@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { maskCPF, maskPhone } from "@/lib/format-utils";
 
 const AVAILABLE_TAGS = ["2M Saúde", "2M Contabilidade"] as const;
 
