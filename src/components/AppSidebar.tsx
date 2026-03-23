@@ -34,6 +34,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { user, role, profileName, signOut, hasPermission } = useAuth();
   const navigate = useNavigate();
+  const logoUrl = useOfficeLogo();
 
   const handleLogout = async () => {
     await signOut();
