@@ -24,10 +24,8 @@ type CaseStatus = Database["public"]["Enums"]["case_status"];
 export default function Demandas() {
   const { data: cases = [], isLoading } = useCases();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [billingFilter, setBillingFilter] = useState("all");
 
   const owners = useMemo(() => {
     const set = new Set<string>();
@@ -35,21 +33,22 @@ export default function Demandas() {
     return Array.from(set).sort();
   }, [cases]);
 
+  const tags = useMemo(() => {
+    const set = new Set<string>();
+    cases.forEach((c) => (c.clients?.tags ?? []).forEach((t: string) => set.add(t)));
+    return Array.from(set).sort();
+  }, [cases]);
+
   const filtered = useMemo(() => {
     return cases.filter((c) => {
       const q = search.toLowerCase();
       const name = c.clients?.full_name?.toLowerCase() ?? "";
-      const cpf = c.clients?.cpf ?? "";
-      const matchSearch = !q || name.includes(q) || cpf.includes(q);
-      const internalStatus = (c as any).internal_status ?? c.status;
-      const matchStatus = statusFilter === "all" || internalStatus === statusFilter;
+      const matchSearch = !q || name.includes(q);
+      const matchTag = tagFilter === "all" || (c.clients?.tags ?? []).includes(tagFilter);
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
-      const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
-      const billing = c.billing?.[0];
-      const matchBilling = billingFilter === "all" || billing?.billing_status === billingFilter;
-      return matchSearch && matchStatus && matchOwner && matchPriority && matchBilling;
+      return matchSearch && matchTag && matchOwner;
     });
-  }, [cases, search, statusFilter, ownerFilter, priorityFilter, billingFilter]);
+  }, [cases, search, tagFilter, ownerFilter]);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
