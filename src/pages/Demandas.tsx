@@ -150,6 +150,13 @@ export default function Demandas() {
                           {c.clients?.full_name}
                         </Link>
                       </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {(c.clients?.tags ?? []).map((tag: string) => (
+                            <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
+                      </TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                         {formatCPF(c.clients?.cpf)}
                       </TableCell>
