@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { maskCPF, maskPhone } from "@/lib/format-utils";
 
 const AVAILABLE_TAGS = ["2M Saúde", "2M Contabilidade"] as const;
 
@@ -95,7 +96,7 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="nc-cpf">CPF *</Label>
-            <Input id="nc-cpf" value={form.cpf} onChange={(e) => set("cpf", e.target.value)} placeholder="000.000.000-00" />
+            <Input id="nc-cpf" value={form.cpf} onChange={(e) => set("cpf", maskCPF(e.target.value))} placeholder="000.000.000-00" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -104,7 +105,7 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="nc-phone">Telefone</Label>
-              <Input id="nc-phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(11) 99999-0000" />
+              <Input id="nc-phone" value={form.phone} onChange={(e) => set("phone", maskPhone(e.target.value))} placeholder="(11) 99999-0000" />
             </div>
           </div>
           <div className="space-y-1.5">

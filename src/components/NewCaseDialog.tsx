@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCPF } from "@/lib/format-utils";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -218,7 +219,7 @@ export function NewCaseDialog() {
                   <SelectContent>
                     {clients.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.full_name} — {c.cpf}
+                        {c.full_name} — {formatCPF(c.cpf)}
                       </SelectItem>
                     ))}
                   </SelectContent>

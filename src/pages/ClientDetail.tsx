@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { formatCPF, formatPhone } from "@/lib/format-utils";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -302,7 +303,7 @@ export default function ClientDetail() {
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold truncate">{client?.full_name ?? "Cliente"}</h1>
             <p className="text-sm text-muted-foreground">
-              CPF: {client?.cpf} · Ano-base {caseData.base_year} · Exercício {caseData.tax_year}
+              CPF: {formatCPF(client?.cpf)} · Ano-base {caseData.base_year} · Exercício {caseData.tax_year}
             </p>
           </div>
           <div className="flex flex-wrap gap-2 items-center">
@@ -352,7 +353,7 @@ export default function ClientDetail() {
               });
             }}
           />
-          <InfoCard icon={Phone} label="Celular" value={client?.phone ?? "—"} />
+          <InfoCard icon={Phone} label="Celular" value={formatPhone(client?.phone)} />
           <InfoCard icon={Mail} label="E-mail" value={client?.email ?? "—"} />
           
           <InfoCard icon={Calendar} label="Criado em" value={fmtDate(caseData.created_at)} />

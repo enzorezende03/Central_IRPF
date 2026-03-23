@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatCPF } from "@/lib/format-utils";
 import {
   Search, LayoutGrid, Table as TableIcon,
 } from "lucide-react";
@@ -149,7 +150,7 @@ export default function Demandas() {
                         </Link>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
-                        {c.clients?.cpf}
+                        {formatCPF(c.clients?.cpf)}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm">
                         {c.base_year}
