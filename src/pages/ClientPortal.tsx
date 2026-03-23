@@ -232,8 +232,11 @@ export default function ClientPortal() {
           <Card>
             <CardContent className="p-6">
               <p className="text-xl font-bold mb-1">Olá, {client?.full_name ?? "Cliente"}!</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mb-2">
                 IRPF {caseData.tax_year} · Ano-base {caseData.base_year}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Tudo do seu IRPF em um só lugar: envie documentos, acompanhe o progresso e receba atualizações em tempo real.
               </p>
               {caseData.client_message && (
                 <div className="mt-4 p-4 rounded-lg bg-accent border border-primary/20">
