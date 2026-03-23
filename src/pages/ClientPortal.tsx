@@ -274,13 +274,6 @@ export default function ClientPortal() {
                   <p className="text-sm font-medium">Existem pendências que precisam da sua atenção.</p>
                 </div>
               )}
-              <div className="mt-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Progresso geral</span>
-                  <span className="font-semibold text-foreground">{caseData.progress_percent}%</span>
-                </div>
-                <Progress value={caseData.progress_percent} className="h-2" />
-              </div>
             </CardContent>
           </Card>
         </motion.div>
