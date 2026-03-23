@@ -116,6 +116,19 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  // ── Fetch form templates (for conditional config) ──
+  const { data: formTemplates = [] } = useQuery({
+    queryKey: ["portal-form-templates"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("form_question_templates")
+        .select("*")
+        .eq("is_active", true);
+      return data ?? [];
+    },
+    enabled: !!caseId,
+  });
+
   const { data: answers = [] } = useQuery({
     queryKey: ["portal-answers", caseId],
     queryFn: async () => {
@@ -360,12 +373,14 @@ export default function ClientPortal() {
               <CardContent className="space-y-4">
                 {questions.map((q) => {
                   const answer = answers.find((a) => a.question_id === q.id);
+                  const template = formTemplates.find((t) => t.question === q.question);
                   return (
                     <QuestionRow
                       key={q.id}
                       question={q}
                       answer={answer ?? null}
                       caseId={caseId!}
+                      template={template ?? null}
                       onSuccess={() => {
                         queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
                         queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
@@ -910,37 +925,157 @@ function QuestionRow({
   question,
   answer,
   caseId,
+  template,
   onSuccess,
 }: {
   question: Tables<"case_questions">;
   answer: Tables<"case_answers"> | null;
   caseId: string;
+  template: Tables<"form_question_templates"> | null;
   onSuccess: () => void;
 }) {
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [conditionalText, setConditionalText] = useState("");
+  const [conditionalFile, setConditionalFile] = useState<File | null>(null);
+  const [uploadingConditional, setUploadingConditional] = useState(false);
+  const conditionalFileRef = useRef<HTMLInputElement>(null);
+
+  const hasConditional = template?.has_conditional ?? false;
+  const conditionalLabel = template?.conditional_label ?? "";
+  const conditionalType = template?.conditional_type ?? "text";
+  const templateOptions = (template?.options as Array<{ label: string; value: string }>) ?? [];
+  const isSelect = template?.answer_type === "select";
+
+  // For yes_no with conditional: show extra field when "Sim" is selected
+  const showConditionalField = hasConditional && text === "Sim";
+  // For select with conditional: show when specific option triggers it (e.g. conta_bancaria)
+  const showSelectConditional = isSelect && hasConditional && text === "conta_bancaria";
 
   const handleSave = async () => {
     if (!text.trim()) {
       toast.error("Digite uma resposta.");
       return;
     }
+
+    // Build full answer including conditional data
+    let fullAnswer = text;
+    if (showConditionalField && conditionalType === "file") {
+      // File is handled separately, just save the main answer
+    } else if (showConditionalField && conditionalText.trim()) {
+      fullAnswer = `${text} — ${conditionalLabel}: ${conditionalText.trim()}`;
+    } else if (showSelectConditional && conditionalText.trim()) {
+      const selectedLabel = templateOptions.find(o => o.value === text)?.label ?? text;
+      fullAnswer = `${selectedLabel} — ${conditionalLabel}: ${conditionalText.trim()}`;
+    } else if (isSelect) {
+      const selectedLabel = templateOptions.find(o => o.value === text)?.label ?? text;
+      fullAnswer = selectedLabel;
+    }
+
     setSaving(true);
     try {
+      // Upload conditional file if needed
+      if (showConditionalField && conditionalType === "file" && conditionalFile) {
+        setUploadingConditional(true);
+        const validationError = validateFile(conditionalFile);
+        if (validationError) {
+          toast.error(validationError);
+          setSaving(false);
+          setUploadingConditional(false);
+          return;
+        }
+        const filePath = buildStoragePath(caseId, conditionalFile.name, "formulario");
+        const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, conditionalFile);
+        fullAnswer = `${text} — Arquivo: ${conditionalFile.name} (${fileUrl})`;
+        setUploadingConditional(false);
+      }
+
       const { error } = await supabase.from("case_answers").insert({
         case_id: caseId,
         question_id: question.id,
-        answer_text: text.trim(),
+        answer_text: fullAnswer.trim(),
       });
       if (error) throw error;
       toast.success("Resposta enviada com sucesso!");
       setText("");
+      setConditionalText("");
+      setConditionalFile(null);
       onSuccess();
     } catch {
       toast.error("Erro ao enviar resposta. Tente novamente.");
     } finally {
       setSaving(false);
+      setUploadingConditional(false);
     }
+  };
+
+  const renderConditionalField = () => {
+    if (!hasConditional) return null;
+
+    // For yes_no questions: show when "Sim"
+    if (question.answer_type === "yes_no" && text !== "Sim") return null;
+    // For select questions: show when trigger value selected
+    if (isSelect && !showSelectConditional) return null;
+
+    return (
+      <div className="mt-3 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
+        <p className="text-sm font-medium text-primary">{conditionalLabel}</p>
+        {conditionalType === "file" ? (
+          <div>
+            <input
+              ref={conditionalFileRef}
+              type="file"
+              className="hidden"
+              accept={getAcceptString()}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  const err = validateFile(f);
+                  if (err) { toast.error(err); return; }
+                  setConditionalFile(f);
+                }
+              }}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => conditionalFileRef.current?.click()}
+            >
+              <Upload className="h-3.5 w-3.5 mr-1" />
+              {conditionalFile ? conditionalFile.name : "Selecionar arquivo"}
+            </Button>
+            <p className="text-[9px] text-muted-foreground mt-1">
+              Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
+            </p>
+          </div>
+        ) : conditionalType === "address" ? (
+          <Textarea
+            placeholder="Rua, número, bairro, cidade, estado, CEP..."
+            value={conditionalText}
+            onChange={(e) => setConditionalText(e.target.value)}
+            rows={3}
+            className="text-sm"
+          />
+        ) : conditionalType === "bank_details" ? (
+          <Textarea
+            placeholder="Banco, agência, conta, tipo de conta..."
+            value={conditionalText}
+            onChange={(e) => setConditionalText(e.target.value)}
+            rows={3}
+            className="text-sm"
+          />
+        ) : (
+          <Textarea
+            placeholder="Digite aqui..."
+            value={conditionalText}
+            onChange={(e) => setConditionalText(e.target.value)}
+            rows={2}
+            className="text-sm"
+          />
+        )}
+      </div>
+    );
   };
 
   return (
@@ -967,12 +1102,26 @@ function QuestionRow({
         </div>
       ) : (
         <div className="ml-6 space-y-2">
-          {question.answer_type === "yes_no" ? (
+          {isSelect && templateOptions.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {templateOptions.map((opt) => (
+                <Button
+                  key={opt.value}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setText(opt.value)}
+                  className={`justify-start ${text === opt.value ? "border-primary bg-primary/10" : ""}`}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+          ) : question.answer_type === "yes_no" ? (
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => { setText("Sim"); }}
+                onClick={() => { setText("Sim"); setConditionalText(""); setConditionalFile(null); }}
                 className={text === "Sim" ? "border-primary bg-primary/10" : ""}
               >
                 Sim
@@ -980,7 +1129,7 @@ function QuestionRow({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => { setText("Não"); }}
+                onClick={() => { setText("Não"); setConditionalText(""); setConditionalFile(null); }}
                 className={text === "Não" ? "border-primary bg-primary/10" : ""}
               >
                 Não
@@ -1010,13 +1159,16 @@ function QuestionRow({
               className="text-sm"
             />
           )}
+
+          {renderConditionalField()}
+
           <Button
             size="sm"
             onClick={handleSave}
             disabled={saving || !text.trim()}
             className="w-full sm:w-auto"
           >
-            {saving ? (
+            {saving || uploadingConditional ? (
               <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
             ) : (
               <><Send className="h-3.5 w-3.5 mr-1" /> Enviar Resposta</>
