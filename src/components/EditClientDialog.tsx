@@ -114,7 +114,7 @@ export function EditClientDialog({ client, trigger }: EditClientDialogProps) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ec-cpf">CPF *</Label>
-            <Input id="ec-cpf" value={form.cpf} onChange={(e) => set("cpf", e.target.value)} />
+            <Input id="ec-cpf" value={form.cpf} onChange={(e) => set("cpf", maskCPF(e.target.value))} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
