@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import {
   FileText, Upload, CheckCircle, Circle, AlertTriangle, Download,
   MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
@@ -44,6 +44,7 @@ export default function ClientPortal() {
   const { token, org, slug } = useParams<{ token?: string; org?: string; slug?: string }>();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<PortalTab>("inicio");
+  const [lastRead, setLastRead] = useState<string>("");
 
   // Build the identifier: either "org/slug" or plain token
   const identifier = org && slug ? `${org}/${slug}` : token;
@@ -194,6 +195,29 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  // Track unread messages using localStorage
+  const storageKey = `portal-last-read-${caseId ?? "none"}`;
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey) ?? "";
+      setLastRead(stored);
+    } catch { /* ignore */ }
+  }, [storageKey]);
+
+  const officeMessages = caseMessages.filter((m: any) => m.sender === "office");
+  const msgBadge = officeMessages.filter((m: any) => !lastRead || m.created_at > lastRead).length;
+
+  useEffect(() => {
+    if (activeTab === "mensagens" && officeMessages.length > 0) {
+      const latest = officeMessages[officeMessages.length - 1]?.created_at;
+      if (latest && latest !== lastRead) {
+        localStorage.setItem(storageKey, latest);
+        setLastRead(latest);
+      }
+    }
+  }, [activeTab, officeMessages, lastRead, storageKey]);
+
   // ── Loading / error states ──
   if (loadingToken || loadingCase) {
     return (
@@ -224,20 +248,19 @@ export default function ClientPortal() {
   }
 
   const client = caseData.clients as Tables<"clients"> | null;
-  // Compute visual step based on actual state
   const hasPreview = !!(deliverable as any)?.preview_file_url;
   const allDocsHandled = docRequests.length > 0 && docRequests.every((d) => d.status !== "pendente" && d.status !== "rejeitado");
   const allDocsApproved = docRequests.length > 0 && docRequests.every((d) => d.status === "aprovado");
 
-  let currentStepIndex = 0; // aguardando_documentos
+  let currentStepIndex = 0;
   if (caseData.status === "finalizado") {
     currentStepIndex = 4;
   } else if (hasPreview) {
-    currentStepIndex = 3; // previa_enviada
+    currentStepIndex = 3;
   } else if (allDocsApproved || caseData.status === "em_andamento") {
-    currentStepIndex = 2; // em_andamento
+    currentStepIndex = 2;
   } else if (allDocsHandled || caseData.status === "documentos_em_analise") {
-    currentStepIndex = 1; // em_analise
+    currentStepIndex = 1;
   }
 
   const isPendencia = caseData.status === "pendencia";
@@ -248,10 +271,8 @@ export default function ClientPortal() {
   const rejectedDocs = docRequests.filter((d) => d.status === "rejeitado");
   const hasPendencies = pendingDocs.length > 0 || unansweredQuestions.length > 0 || rejectedDocs.length > 0;
 
-  // Badge counts for tabs
   const docBadge = pendingDocs.length + rejectedDocs.length;
   const formBadge = unansweredQuestions.length;
-  const msgBadge = caseMessages.filter((m: any) => m.sender === "office").length;
 
   return (
     <PortalShell>
@@ -270,7 +291,7 @@ export default function ClientPortal() {
         <div className="sticky top-[88px] z-20 bg-background/95 backdrop-blur-sm pb-2 pt-1 -mx-4 px-4 border-b">
           <div className="flex gap-1">
             {TAB_CONFIG.map((tab) => {
-              const badge = tab.key === "documentos" ? docBadge : tab.key === "formulario" ? formBadge : 0;
+              const badge = tab.key === "documentos" ? docBadge : tab.key === "formulario" ? formBadge : tab.key === "mensagens" ? msgBadge : 0;
               const isActive = activeTab === tab.key;
               return (
                 <button
