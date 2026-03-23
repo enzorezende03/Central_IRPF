@@ -103,11 +103,11 @@ export default function Clientes() {
                   return (
                     <TableRow key={client.id} className={`hover:bg-muted/50 ${!isActive ? "opacity-50" : ""}`}>
                       <TableCell className="font-medium">{client.full_name}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground font-mono">{client.cpf}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground font-mono">{formatCPF(client.cpf)}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">
                         {client.phone ? (
                           <span className="flex items-center gap-1 text-muted-foreground">
-                            <Phone className="h-3 w-3" /> {client.phone}
+                            <Phone className="h-3 w-3" /> {formatPhone(client.phone)}
                           </span>
                         ) : "—"}
                       </TableCell>

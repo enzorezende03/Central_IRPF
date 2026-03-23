@@ -352,7 +352,7 @@ export default function ClientDetail() {
               });
             }}
           />
-          <InfoCard icon={Phone} label="Celular" value={client?.phone ?? "—"} />
+          <InfoCard icon={Phone} label="Celular" value={formatPhone(client?.phone)} />
           <InfoCard icon={Mail} label="E-mail" value={client?.email ?? "—"} />
           
           <InfoCard icon={Calendar} label="Criado em" value={fmtDate(caseData.created_at)} />

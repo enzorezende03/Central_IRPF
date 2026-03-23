@@ -85,7 +85,7 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
                       {c.clients?.full_name}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {c.clients?.cpf} · {c.internal_owner ?? "Sem responsável"}
+                      {formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}
                     </p>
                     <div className="mt-2">
                       <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
