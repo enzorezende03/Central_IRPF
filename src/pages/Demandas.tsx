@@ -167,9 +167,6 @@ export default function Demandas() {
                       <TableCell className="hidden md:table-cell">
                         <PriorityBadge priority={c.priority} />
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}
-                      </TableCell>
                       <TableCell>
                         <CaseActions caseData={c} />
                       </TableCell>
