@@ -304,12 +304,6 @@ export function NewCaseDialog() {
               </div>
             </div>
 
-            {billingType === "cobranca_extra" && (
-              <div className="space-y-1.5">
-                <Label htmlFor="nd-fee">Valor do Honorário (R$)</Label>
-                <Input id="nd-fee" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} placeholder="1.500,00" />
-              </div>
-            )}
 
             {/* Document selection */}
             {docTemplates.length > 0 && (
