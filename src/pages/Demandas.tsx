@@ -129,6 +129,7 @@ export default function Demandas() {
                   <TableHead className="min-w-[100px]">Status Interno</TableHead>
                   <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
                   <TableHead className="hidden md:table-cell">Prioridade</TableHead>
+                  <TableHead className="hidden lg:table-cell">Tipo</TableHead>
                   
                   <TableHead className="w-10" />
                 </TableRow>
@@ -166,6 +167,11 @@ export default function Demandas() {
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <PriorityBadge priority={c.priority} />
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant={c.declaration_type === "completa" ? "default" : "outline"} className="text-xs">
+                          {c.declaration_type === "completa" ? "Completa" : "Simples"}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <CaseActions caseData={c} />
