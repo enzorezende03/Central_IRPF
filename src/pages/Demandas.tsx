@@ -41,9 +41,12 @@ export default function Demandas() {
       const matchSearch = !q || name.includes(q);
       const matchTag = tagFilter === "all" || (c.clients?.tags ?? []).includes(tagFilter);
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
-      return matchSearch && matchTag && matchOwner;
+      const internalStatus = (c as any).internal_status ?? c.status;
+      const matchInternal = internalStatusFilter === "all" || internalStatus === internalStatusFilter;
+      const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient;
     });
-  }, [cases, search, tagFilter, ownerFilter]);
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter]);
 
   return (
     <InternalLayout>
