@@ -373,12 +373,14 @@ export default function ClientPortal() {
               <CardContent className="space-y-4">
                 {questions.map((q) => {
                   const answer = answers.find((a) => a.question_id === q.id);
+                  const template = formTemplates.find((t) => t.question === q.question);
                   return (
                     <QuestionRow
                       key={q.id}
                       question={q}
                       answer={answer ?? null}
                       caseId={caseId!}
+                      template={template ?? null}
                       onSuccess={() => {
                         queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
                         queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
