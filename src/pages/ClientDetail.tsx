@@ -525,9 +525,6 @@ export default function ClientDetail() {
               </CardContent>
             </Card>
 
-            {/* ── Internal Checklist ── */}
-            <InternalChecklistCard caseId={id!} />
-
             {/* ── 7. Messages to Client ── */}
             <MessagesSection
               caseId={id!}
