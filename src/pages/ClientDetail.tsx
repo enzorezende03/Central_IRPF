@@ -1415,3 +1415,71 @@ function InternalChecklistCard({ caseId }: { caseId: string }) {
     </Card>
   );
 }
+
+// ── Case Questions Card (Formulário) ──
+function CaseQuestionsCard({
+  caseId,
+  questions,
+  answers,
+  onRefresh,
+}: {
+  caseId: string;
+  questions: Tables<"case_questions">[];
+  answers: Tables<"case_answers">[];
+  onRefresh: () => void;
+}) {
+  const answeredIds = new Set(answers.map((a) => a.question_id));
+  const answeredCount = questions.filter((q) => answeredIds.has(q.id)).length;
+
+  if (questions.length === 0) return null;
+
+  return (
+    <Collapsible defaultOpen>
+      <Card>
+        <CardHeader className="pb-3">
+          <CollapsibleTrigger className="w-full text-left">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ListChecks className="h-4 w-4 text-primary" />
+                Formulário do Cliente
+              </CardTitle>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+            </div>
+            <CardDescription className="mt-1">
+              {answeredCount} de {questions.length} pergunta(s) respondida(s)
+            </CardDescription>
+          </CollapsibleTrigger>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="space-y-3">
+            {questions.map((q) => {
+              const answer = answers.find((a) => a.question_id === q.id);
+              return (
+                <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg border">
+                  {answer ? (
+                    <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{q.question}</p>
+                    {answer ? (
+                      <div className="mt-1.5 bg-success/10 p-2.5 rounded-md">
+                        <p className="text-sm">{answer.answer_text}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Respondido em {new Date(answer.answered_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">Aguardando resposta do cliente</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+}
