@@ -642,6 +642,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_update_client_status: {
+        Args: { p_case_id: string }
+        Returns: undefined
+      }
       get_case_by_slug: { Args: { p_slug: string }; Returns: string }
       get_case_by_token: { Args: { p_token: string }; Returns: string }
       has_role: {
