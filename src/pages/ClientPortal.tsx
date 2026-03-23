@@ -1,11 +1,12 @@
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import {
   FileText, Upload, CheckCircle, Circle, AlertTriangle, Download,
   MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
+  Home, ClipboardList, HelpCircle,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -30,9 +31,19 @@ const STATUS_STEPS = [
   { key: "finalizado", label: "Finalizado" },
 ] as const;
 
+type PortalTab = "inicio" | "documentos" | "formulario" | "mensagens";
+
+const TAB_CONFIG: { key: PortalTab; label: string; icon: React.ReactNode }[] = [
+  { key: "inicio", label: "Início", icon: <Home className="h-4 w-4" /> },
+  { key: "documentos", label: "Documentos", icon: <FileText className="h-4 w-4" /> },
+  { key: "formulario", label: "Formulário", icon: <HelpCircle className="h-4 w-4" /> },
+  { key: "mensagens", label: "Mensagens", icon: <MessageSquare className="h-4 w-4" /> },
+];
+
 export default function ClientPortal() {
   const { token, org, slug } = useParams<{ token?: string; org?: string; slug?: string }>();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<PortalTab>("inicio");
 
   // Build the identifier: either "org/slug" or plain token
   const identifier = org && slug ? `${org}/${slug}` : token;
@@ -237,277 +248,339 @@ export default function ClientPortal() {
   const rejectedDocs = docRequests.filter((d) => d.status === "rejeitado");
   const hasPendencies = pendingDocs.length > 0 || unansweredQuestions.length > 0 || rejectedDocs.length > 0;
 
+  // Badge counts for tabs
+  const docBadge = pendingDocs.length + rejectedDocs.length;
+  const formBadge = unansweredQuestions.length;
+  const msgBadge = caseMessages.filter((m: any) => m.sender === "office").length;
+
   return (
     <PortalShell>
-      <div className="space-y-6">
-        {/* ── 1. Header ── */}
+      <div className="space-y-4">
+        {/* ── Compact Header ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card>
-            <CardContent className="p-6">
-              <p className="text-xl font-bold mb-1">Olá, {client?.full_name ?? "Cliente"}!</p>
-              <p className="text-sm text-muted-foreground mb-2">
-                IRPF {caseData.tax_year} · Ano-base {caseData.base_year}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Tudo do seu IRPF em um só lugar: envie documentos, acompanhe o progresso e receba atualizações em tempo real.
-              </p>
-              {caseData.client_message && (
-                <div className="mt-4 p-4 rounded-lg bg-accent border border-primary/20">
-                  <div className="flex items-start gap-2.5">
-                    <MessageSquare className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <p className="text-sm leading-relaxed">{caseData.client_message}</p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="text-center px-2">
+            <p className="text-lg font-bold">Olá, {client?.full_name?.split(" ")[0] ?? "Cliente"}!</p>
+            <p className="text-xs text-muted-foreground">
+              IRPF {caseData.tax_year} · Ano-base {caseData.base_year}
+            </p>
+          </div>
         </motion.div>
 
-        {/* ── Status Progress ── */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Andamento do IRPF</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-1 mb-1">
-                {STATUS_STEPS.map((step, i) => {
-                  const isActive = !isPendencia && i <= currentStepIndex;
-                  const isCurrent = i === currentStepIndex && !isPendencia;
-                  return (
-                    <div key={step.key} className="flex-1">
-                      <div className={`h-2 rounded-full transition-colors ${isActive ? "bg-primary" : "bg-muted"}`} />
-                      <p className={`text-[10px] mt-1.5 text-center leading-tight ${isCurrent ? "font-semibold text-primary" : "text-muted-foreground"}`}>
-                        {step.label}
-                      </p>
+        {/* ── Tab Navigation (sticky) ── */}
+        <div className="sticky top-[88px] z-20 bg-background/95 backdrop-blur-sm pb-2 pt-1 -mx-4 px-4 border-b">
+          <div className="flex gap-1">
+            {TAB_CONFIG.map((tab) => {
+              const badge = tab.key === "documentos" ? docBadge : tab.key === "formulario" ? formBadge : 0;
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[11px] font-medium transition-colors relative ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                  {badge > 0 && (
+                    <span className={`absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                      isActive ? "bg-destructive text-destructive-foreground" : "bg-destructive text-destructive-foreground"
+                    }`}>
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Tab Content ── */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {activeTab === "inicio" && (
+              <div className="space-y-4">
+                {/* Status Progress */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Andamento do IRPF</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-1 mb-1">
+                      {STATUS_STEPS.map((step, i) => {
+                        const isActive = !isPendencia && i <= currentStepIndex;
+                        const isCurrent = i === currentStepIndex && !isPendencia;
+                        return (
+                          <div key={step.key} className="flex-1">
+                            <div className={`h-2 rounded-full transition-colors ${isActive ? "bg-primary" : "bg-muted"}`} />
+                            <p className={`text-[9px] mt-1 text-center leading-tight ${isCurrent ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                              {step.label}
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-              {isPendencia && (
-                <div className="mt-3 flex items-center gap-2 text-destructive bg-destructive/10 p-3 rounded-lg">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  <p className="text-sm font-medium">Existem pendências que precisam da sua atenção.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+                    {isPendencia && (
+                      <div className="mt-3 flex items-center gap-2 text-destructive bg-destructive/10 p-2.5 rounded-lg">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        <p className="text-xs font-medium">Existem pendências que precisam da sua atenção.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-        {/* ── 4. Pendencies Summary ── */}
-        {hasPendencies && !isFinished && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <Card className="border-warning/40">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-warning" />
-                  O que ainda falta
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {pendingDocs.map((d) => (
-                    <li key={d.id} className="flex items-center gap-2 text-sm">
-                      <Circle className="h-3 w-3 text-warning shrink-0" />
-                      <span>Enviar: <strong>{d.title}</strong></span>
-                    </li>
-                  ))}
-                  {rejectedDocs.map((d) => (
-                    <li key={d.id} className="flex items-center gap-2 text-sm text-destructive">
-                      <AlertTriangle className="h-3 w-3 shrink-0" />
-                      <span>Reenviar: <strong>{d.title}</strong> (documento rejeitado)</span>
-                    </li>
-                  ))}
-                  {unansweredQuestions.map((q) => (
-                    <li key={q.id} className="flex items-center gap-2 text-sm">
-                      <Circle className="h-3 w-3 text-warning shrink-0" />
-                      <span>Responder: <strong>{q.question}</strong></span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                {/* Client message */}
+                {caseData.client_message && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-2.5">
+                        <MessageSquare className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <p className="text-sm leading-relaxed">{caseData.client_message}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-        {/* ── 2. Documents ── */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Documentos Solicitados</CardTitle>
-              <CardDescription>
-                Envie os documentos abaixo para darmos andamento à sua declaração.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {docRequests.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">Nenhum documento solicitado no momento.</p>
-              ) : (
-                docRequests.map((doc) => (
-                  <DocumentRow
-                    key={doc.id}
-                    doc={doc}
+                {/* Quick actions / pendencies */}
+                {hasPendencies && !isFinished && (
+                  <Card className="border-warning/40">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-warning" />
+                        O que ainda falta
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-1.5">
+                        {pendingDocs.slice(0, 3).map((d) => (
+                          <li key={d.id} className="flex items-center gap-2 text-xs">
+                            <Circle className="h-2.5 w-2.5 text-warning shrink-0" />
+                            <span>Enviar: <strong>{d.title}</strong></span>
+                          </li>
+                        ))}
+                        {rejectedDocs.slice(0, 2).map((d) => (
+                          <li key={d.id} className="flex items-center gap-2 text-xs text-destructive">
+                            <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                            <span>Reenviar: <strong>{d.title}</strong></span>
+                          </li>
+                        ))}
+                        {unansweredQuestions.slice(0, 2).map((q) => (
+                          <li key={q.id} className="flex items-center gap-2 text-xs">
+                            <Circle className="h-2.5 w-2.5 text-warning shrink-0" />
+                            <span>Responder: <strong>{q.question}</strong></span>
+                          </li>
+                        ))}
+                      </ul>
+                      {(pendingDocs.length > 3 || unansweredQuestions.length > 2) && (
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                          E mais itens pendentes...
+                        </p>
+                      )}
+                      <div className="flex gap-2 mt-3">
+                        {docBadge > 0 && (
+                          <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => setActiveTab("documentos")}>
+                            <FileText className="h-3.5 w-3.5 mr-1" /> Documentos ({docBadge})
+                          </Button>
+                        )}
+                        {formBadge > 0 && (
+                          <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => setActiveTab("formulario")}>
+                            <HelpCircle className="h-3.5 w-3.5 mr-1" /> Formulário ({formBadge})
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Preview Approval */}
+                {deliverable && (deliverable as any).preview_file_url && (
+                  <PreviewApprovalCard
+                    deliverable={deliverable}
                     caseId={caseId!}
-                    clientId={client?.id}
-                    uploadedDocs={uploadedDocs.filter((u) => u.document_request_id === doc.id)}
                     onSuccess={() => {
-                      queryClient.invalidateQueries({ queryKey: ["portal-uploaded", caseId] });
-                      queryClient.invalidateQueries({ queryKey: ["portal-docs", caseId] });
+                      queryClient.invalidateQueries({ queryKey: ["portal-deliverable", caseId] });
+                      queryClient.invalidateQueries({ queryKey: ["portal-timeline", caseId] });
                       queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
                     }}
                   />
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+                )}
 
-        {/* ── 3. Questions ── */}
-        {questions.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Perguntas do Escritório</CardTitle>
-                <CardDescription>Responda as perguntas abaixo para auxiliar na sua declaração.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {questions.map((q) => {
-                  const answer = answers.find((a) => a.question_id === q.id);
-                  const template = formTemplates.find((t) => t.question === q.question);
-                  return (
-                    <QuestionRow
-                      key={q.id}
-                      question={q}
-                      answer={answer ?? null}
-                      caseId={caseId!}
-                      template={template ?? null}
-                      onSuccess={() => {
-                        queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
-                        queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
-                      }}
-                    />
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                {/* Final Deliverables */}
+                {deliverable && deliverable.sent_to_client && (
+                  <Card className="border-success/40">
+                    <CardContent className="p-5 text-center">
+                      <CheckCircle className="h-10 w-10 text-success mx-auto mb-2" />
+                      <h2 className="text-base font-bold mb-1">Declaração Finalizada! 🎉</h2>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Sua declaração de IRPF {caseData.tax_year} foi concluída com sucesso.
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {deliverable.irpf_file_url && (
+                          <Button size="sm" asChild>
+                            <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4 mr-2" /> Baixar Declaração
+                            </a>
+                          </Button>
+                        )}
+                        {deliverable.receipt_file_url && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4 mr-2" /> Baixar Recibo de Entrega
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-        {/* ── Messages ── */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                Mensagens
-              </CardTitle>
-              <CardDescription>Converse com o escritório sobre sua declaração.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {caseMessages.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhuma mensagem ainda. Envie uma mensagem abaixo caso tenha dúvidas.
-                </p>
-              )}
-              {caseMessages.map((msg: any) => (
-                <div
-                  key={msg.id}
-                  className={`p-3 rounded-lg text-sm ${
-                    msg.sender === "office" ? "bg-primary/5 border border-primary/10" : "bg-muted"
-                  }`}
-                >
-                  <p className="leading-relaxed">{msg.message}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1.5">
-                    {msg.sender === "office" ? "Escritório" : "Você"} · {new Date(msg.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                {/* Footer */}
+                <div className="text-center py-4 space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    Em caso de dúvidas, entre em contato com o escritório.
                   </p>
+                  <p className="text-[10px] text-muted-foreground/60">Central IRPF 2026 · Portal do Cliente</p>
                 </div>
-              ))}
-              <PortalReplyBox caseId={caseId!} onSent={() => queryClient.invalidateQueries({ queryKey: ["portal-messages", caseId] })} />
-            </CardContent>
-          </Card>
-        </motion.div>
+              </div>
+            )}
 
-        {/* ── 5a. Preview Declaration (for client approval) ── */}
-        {deliverable && (deliverable as any).preview_file_url && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
-            <PreviewApprovalCard
-              deliverable={deliverable}
-              caseId={caseId!}
-              onSuccess={() => {
-                queryClient.invalidateQueries({ queryKey: ["portal-deliverable", caseId] });
-                queryClient.invalidateQueries({ queryKey: ["portal-timeline", caseId] });
-                queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
-              }}
-            />
+            {activeTab === "documentos" && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Documentos Solicitados</CardTitle>
+                    <CardDescription className="text-xs">
+                      Envie os documentos abaixo para darmos andamento à sua declaração.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {docRequests.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-6">Nenhum documento solicitado no momento.</p>
+                    ) : (
+                      docRequests.map((doc) => (
+                        <DocumentRow
+                          key={doc.id}
+                          doc={doc}
+                          caseId={caseId!}
+                          clientId={client?.id}
+                          uploadedDocs={uploadedDocs.filter((u) => u.document_request_id === doc.id)}
+                          onSuccess={() => {
+                            queryClient.invalidateQueries({ queryKey: ["portal-uploaded", caseId] });
+                            queryClient.invalidateQueries({ queryKey: ["portal-docs", caseId] });
+                            queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
+                          }}
+                        />
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+
+                {uploadedDocs.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Documentos Já Enviados</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1.5">
+                      {uploadedDocs.map((doc) => (
+                        <div key={doc.id} className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/50">
+                          <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
+                          <span className="text-xs flex-1 truncate">{doc.file_name}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(doc.uploaded_at).toLocaleDateString("pt-BR")}
+                          </span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "formulario" && (
+              <div className="space-y-4">
+                {questions.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <CheckCircle className="h-8 w-8 text-success mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Nenhuma pergunta pendente no momento.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Perguntas do Escritório</CardTitle>
+                      <CardDescription className="text-xs">Responda as perguntas abaixo para auxiliar na sua declaração.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {questions.map((q) => {
+                        const answer = answers.find((a) => a.question_id === q.id);
+                        const template = formTemplates.find((t) => t.question === q.question);
+                        return (
+                          <QuestionRow
+                            key={q.id}
+                            question={q}
+                            answer={answer ?? null}
+                            caseId={caseId!}
+                            template={template ?? null}
+                            onSuccess={() => {
+                              queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
+                              queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
+                            }}
+                          />
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "mensagens" && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-primary" />
+                      Mensagens
+                    </CardTitle>
+                    <CardDescription className="text-xs">Converse com o escritório sobre sua declaração.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {caseMessages.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-4">
+                        Nenhuma mensagem ainda. Envie uma mensagem abaixo caso tenha dúvidas.
+                      </p>
+                    )}
+                    <div className="max-h-[50vh] overflow-y-auto space-y-2">
+                      {caseMessages.map((msg: any) => (
+                        <div
+                          key={msg.id}
+                          className={`p-2.5 rounded-lg text-xs ${
+                            msg.sender === "office" ? "bg-primary/5 border border-primary/10" : "bg-muted ml-4"
+                          }`}
+                        >
+                          <p className="leading-relaxed">{msg.message}</p>
+                          <p className="text-[9px] text-muted-foreground mt-1">
+                            {msg.sender === "office" ? "Escritório" : "Você"} · {new Date(msg.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <PortalReplyBox caseId={caseId!} onSent={() => queryClient.invalidateQueries({ queryKey: ["portal-messages", caseId] })} />
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </motion.div>
-        )}
-
-        {/* ── 5b. Final Deliverables ── */}
-        {deliverable && deliverable.sent_to_client && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-            <Card className="border-success/40">
-              <CardContent className="p-6 text-center">
-                <CheckCircle className="h-12 w-12 text-success mx-auto mb-3" />
-                <h2 className="text-lg font-bold mb-1">Declaração Finalizada! 🎉</h2>
-                <p className="text-sm text-muted-foreground mb-5">
-                  Sua declaração de IRPF {caseData.tax_year} foi concluída com sucesso.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  {deliverable.irpf_file_url && (
-                    <Button asChild>
-                      <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer">
-                        <Download className="h-4 w-4 mr-2" /> Baixar Declaração
-                      </a>
-                    </Button>
-                  )}
-                  {deliverable.receipt_file_url && (
-                    <Button variant="outline" asChild>
-                      <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer">
-                        <Download className="h-4 w-4 mr-2" /> Baixar Recibo de Entrega
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* ── Already sent docs ── */}
-        {uploadedDocs.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Documentos Já Enviados</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1.5">
-                {uploadedDocs.map((doc) => (
-                  <div key={doc.id} className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/50">
-                    <CheckCircle className="h-4 w-4 text-success shrink-0" />
-                    <span className="text-sm flex-1 truncate">{doc.file_name}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {new Date(doc.uploaded_at).toLocaleDateString("pt-BR")}
-                    </span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* ── 6. Footer ── */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-          <div className="text-center py-6 space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Em caso de dúvidas, entre em contato com o escritório.
-            </p>
-            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> Telefone do escritório</span>
-              <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> Email do escritório</span>
-            </div>
-            <p className="text-[10px] text-muted-foreground/60 mt-4">Central IRPF 2026 · Portal do Cliente</p>
-          </div>
-        </motion.div>
+        </AnimatePresence>
       </div>
     </PortalShell>
   );
