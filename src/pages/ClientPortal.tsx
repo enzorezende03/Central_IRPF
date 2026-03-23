@@ -255,9 +255,14 @@ export default function ClientPortal() {
 
   // Track unread messages using localStorage
   const storageKey = `portal-last-read-${caseId}`;
-  const [lastRead, setLastRead] = useState<string>(() => {
-    try { return localStorage.getItem(storageKey) ?? ""; } catch { return ""; }
-  });
+
+  // Initialize lastRead from localStorage on caseId change
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey) ?? "";
+      setLastRead(stored);
+    } catch { /* ignore */ }
+  }, [storageKey]);
 
   const officeMessages = caseMessages.filter((m: any) => m.sender === "office");
   const msgBadge = officeMessages.filter((m: any) => !lastRead || m.created_at > lastRead).length;
