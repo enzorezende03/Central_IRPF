@@ -19,6 +19,8 @@ export default function Demandas() {
   const [search, setSearch] = useState("");
   const [tagFilter, setTagFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
+  const [internalStatusFilter, setInternalStatusFilter] = useState("all");
+  const [clientStatusFilter, setClientStatusFilter] = useState("all");
 
   const owners = useMemo(() => {
     const set = new Set<string>();
@@ -39,9 +41,12 @@ export default function Demandas() {
       const matchSearch = !q || name.includes(q);
       const matchTag = tagFilter === "all" || (c.clients?.tags ?? []).includes(tagFilter);
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
-      return matchSearch && matchTag && matchOwner;
+      const internalStatus = (c as any).internal_status ?? c.status;
+      const matchInternal = internalStatusFilter === "all" || internalStatus === internalStatusFilter;
+      const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient;
     });
-  }, [cases, search, tagFilter, ownerFilter]);
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter]);
 
   return (
     <InternalLayout>
@@ -62,7 +67,7 @@ export default function Demandas() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Select value={tagFilter} onValueChange={setTagFilter}>
-              <SelectTrigger className="w-44">
+              <SelectTrigger className="w-40">
                 <SelectValue placeholder="Tag" />
               </SelectTrigger>
               <SelectContent>
@@ -80,6 +85,28 @@ export default function Demandas() {
                 <SelectItem value="all">Todos responsáveis</SelectItem>
                 {owners.map((o) => (
                   <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={internalStatusFilter} onValueChange={setInternalStatusFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Status Interno" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Status Interno</SelectItem>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={clientStatusFilter} onValueChange={setClientStatusFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Status Cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Status Cliente</SelectItem>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
