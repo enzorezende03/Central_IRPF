@@ -1,18 +1,36 @@
 import { useState, useMemo } from "react";
 import { Search, Users, Mail, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { InternalLayout } from "@/components/InternalLayout";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useCases } from "@/hooks/use-cases";
 import { NewClientDialog } from "@/components/NewClientDialog";
 import { ImportClientsDialog } from "@/components/ImportClientsDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function Clientes() {
   const { data: cases = [], isLoading } = useCases();
   const [search, setSearch] = useState("");
+  const queryClient = useQueryClient();
+
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from("clients").update({ is_active } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar status do cliente.");
+    },
+  });
 
   // Deduplicate clients
   const clients = useMemo(() => {
@@ -68,38 +86,48 @@ export default function Clientes() {
                   <TableHead className="hidden md:table-cell">E-mail</TableHead>
                   <TableHead>Demandas</TableHead>
                   <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
+                  <TableHead className="text-center">Ativo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(({ client, caseCount }) => (
-                  <TableRow key={client.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{client.full_name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground font-mono">{client.cpf}</TableCell>
-                    <TableCell className="hidden md:table-cell text-sm">
-                      {client.phone ? (
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Phone className="h-3 w-3" /> {client.phone}
-                        </span>
-                      ) : "—"}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm">
-                      {client.email ? (
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Mail className="h-3 w-3" /> {client.email}
-                        </span>
-                      ) : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">{caseCount} demanda(s)</Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                      {new Date(client.created_at).toLocaleDateString("pt-BR")}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filtered.map(({ client, caseCount }) => {
+                  const isActive = (client as any).is_active !== false;
+                  return (
+                    <TableRow key={client.id} className={`hover:bg-muted/50 ${!isActive ? "opacity-50" : ""}`}>
+                      <TableCell className="font-medium">{client.full_name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground font-mono">{client.cpf}</TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">
+                        {client.phone ? (
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <Phone className="h-3 w-3" /> {client.phone}
+                          </span>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">
+                        {client.email ? (
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <Mail className="h-3 w-3" /> {client.email}
+                          </span>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{caseCount} demanda(s)</Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                        {new Date(client.created_at).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Switch
+                          checked={isActive}
+                          onCheckedChange={(checked) => toggleActive.mutate({ id: client.id, is_active: checked })}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                       Nenhum cliente encontrado.
                     </TableCell>
                   </TableRow>
