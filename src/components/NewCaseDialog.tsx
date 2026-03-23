@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCPF } from "@/lib/format-utils";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
