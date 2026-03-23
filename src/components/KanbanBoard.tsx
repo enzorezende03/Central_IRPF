@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { CaseWithClient } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { BillingBadge, PriorityBadge } from "@/components/StatusBadge";
-import { Progress } from "@/components/ui/progress";
+
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
