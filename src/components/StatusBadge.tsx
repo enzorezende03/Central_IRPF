@@ -30,10 +30,13 @@ export function StatusBadge({ status }: { status: DemandStatus }) {
   );
 }
 
-export function BillingBadge({ status }: { status: BillingStatus }) {
+export function BillingBadge({ status, billingType }: { status: BillingStatus; billingType?: string }) {
+  const isIncluso = billingType === "incluso_mensalidade" && status === "pago";
+  const label = isIncluso ? "Incluso no Honorário" : BILLING_LABELS[status];
+  const color = isIncluso ? "bg-primary/10 text-primary border-primary/30" : billingColors[status];
   return (
-    <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium", billingColors[status])}>
-      {BILLING_LABELS[status]}
+    <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium", color)}>
+      {label}
     </span>
   );
 }

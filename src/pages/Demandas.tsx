@@ -172,7 +172,7 @@ export default function Demandas() {
                         <PriorityBadge priority={c.priority} />
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {billing && <BillingBadge status={billing.billing_status} />}
+                        {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-right text-sm font-medium">
                         {billing ? fmt(billing.amount) : "—"}

@@ -145,7 +145,7 @@ export default function Cobranca() {
                             <CheckCircle className="h-3 w-3" /> Incluso
                           </span>
                         ) : billing ? (
-                          <BillingBadge status={billing.billing_status} />
+                          <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />
                         ) : (
                           <span className="text-xs text-muted-foreground">Sem cobrança</span>
                         )}
