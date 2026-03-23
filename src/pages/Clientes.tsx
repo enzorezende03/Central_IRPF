@@ -141,6 +141,13 @@ export default function Clientes() {
                       <TableCell>
                         <Badge variant="outline" className="text-xs">{caseCount} demanda(s)</Badge>
                       </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {(client.tags ?? []).map((tag) => (
+                            <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
+                      </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                         {new Date(client.created_at).toLocaleDateString("pt-BR")}
                       </TableCell>
