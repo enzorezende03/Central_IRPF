@@ -98,30 +98,6 @@ export default function ClientDetail() {
     enabled: !!id,
   });
 
-  const { data: questions = [] } = useQuery({
-    queryKey: ["case-questions", id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("case_questions")
-        .select("*")
-        .eq("case_id", id!)
-        .order("sort_order");
-      return data ?? [];
-    },
-    enabled: !!id,
-  });
-
-  const { data: answers = [] } = useQuery({
-    queryKey: ["case-answers", id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("case_answers")
-        .select("*")
-        .eq("case_id", id!);
-      return data ?? [];
-    },
-    enabled: !!id,
-  });
 
   const { data: billing } = useQuery({
     queryKey: ["case-billing", id],
@@ -295,8 +271,7 @@ export default function ClientDetail() {
   const portalUrl = getPortalUrl(linkId);
   const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", linkId, caseData.client_message);
 
-  const answeredIds = new Set(answers.map((a) => a.question_id));
-  const unansweredCount = questions.filter((q) => q.is_required && !answeredIds.has(q.id)).length;
+  const unansweredCount = 0;
   const approvedDocs = docRequests.filter((d) => d.is_required && d.status === "aprovado").length;
   const pendingDocs = docRequests.filter((d) => d.is_required && (d.status === "pendente" || d.status === "rejeitado")).length;
 
@@ -467,18 +442,6 @@ export default function ClientDetail() {
                 )}
               </CardContent>
             </Card>
-
-            {/* ── 5. Questions ── */}
-            <QuestionsSection
-              questions={questions}
-              answers={answers}
-              caseId={id!}
-              onRefresh={() => {
-                queryClient.invalidateQueries({ queryKey: ["case-questions", id] });
-                queryClient.invalidateQueries({ queryKey: ["case-answers", id] });
-                queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
-              }}
-            />
 
             {/* ── 8. Timeline ── */}
             <Card>
@@ -1165,178 +1128,6 @@ function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliver
         </div>
       )}
     </div>
-  );
-}
-
-// ── Questions Section with CRUD ──
-import { Plus as PlusIcon } from "lucide-react";
-
-function QuestionsSection({
-  questions,
-  answers,
-  caseId,
-  onRefresh,
-}: {
-  questions: Tables<"case_questions">[];
-  answers: Tables<"case_answers">[];
-  caseId: string;
-  onRefresh: () => void;
-}) {
-  const [newQuestion, setNewQuestion] = useState("");
-  const [newRequired, setNewRequired] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
-
-  const answeredIds = new Set(answers.map((a) => a.question_id));
-  const unanswered = questions.filter((q) => q.is_required && !answeredIds.has(q.id)).length;
-
-  const addQuestion = async () => {
-    if (!newQuestion.trim()) return;
-    setAdding(true);
-    try {
-      await supabase.from("case_questions").insert({
-        case_id: caseId,
-        question: newQuestion.trim(),
-        is_required: newRequired,
-        sort_order: questions.length,
-      });
-      await logTimelineEvent(caseId, "Pergunta adicionada", `Pergunta: "${newQuestion.trim()}"`, true);
-      setNewQuestion("");
-      setNewRequired(false);
-      toast.success("Pergunta adicionada!");
-      onRefresh();
-    } catch {
-      toast.error("Erro ao adicionar pergunta.");
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const updateQuestion = async (qId: string) => {
-    if (!editText.trim()) return;
-    await supabase.from("case_questions").update({ question: editText.trim() }).eq("id", qId);
-    setEditingId(null);
-    toast.success("Pergunta atualizada!");
-    onRefresh();
-  };
-
-  const deleteQuestion = async (qId: string) => {
-    await supabase.from("case_answers").delete().eq("question_id", qId);
-    await supabase.from("case_questions").delete().eq("id", qId);
-    toast.success("Pergunta removida!");
-    onRefresh();
-  };
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <MessageCircle className="h-4 w-4 text-primary" />
-          Questionário Complementar
-        </CardTitle>
-        <CardDescription>
-          {questions.length - unanswered} respondidas · {unanswered} pendentes
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {questions.map((q) => {
-          const answer = answers.find((a) => a.question_id === q.id);
-          const isEditing = editingId === q.id;
-          return (
-            <div key={q.id} className="p-3 rounded-lg border space-y-2">
-              <div className="flex items-start gap-2">
-                {answer ? (
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                ) : (
-                  <Circle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  {isEditing ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        className="text-sm h-8"
-                        onKeyDown={(e) => e.key === "Enter" && updateQuestion(q.id)}
-                      />
-                      <Button size="sm" className="h-8 text-xs" onClick={() => updateQuestion(q.id)}>Salvar</Button>
-                      <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setEditingId(null)}>Cancelar</Button>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm font-medium">{q.question}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-muted-foreground uppercase">{q.answer_type}</span>
-                        {q.is_required && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatória</Badge>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-                {!isEditing && (
-                  <div className="flex gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => { setEditingId(q.id); setEditText(q.question); }}
-                    >
-                      <FileText className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive"
-                      onClick={() => deleteQuestion(q.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-              {answer ? (
-                <div className="ml-6 bg-success/10 p-2 rounded-md">
-                  <p className="text-sm">{answer.answer_text ?? "Respondida"}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Respondido em {fmtDate(answer.answered_at)}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground italic ml-6">Aguardando resposta do cliente</p>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Add new question */}
-        <div className="p-3 rounded-lg border border-dashed space-y-2">
-          <Input
-            value={newQuestion}
-            onChange={(e) => setNewQuestion(e.target.value)}
-            placeholder="Digite uma nova pergunta..."
-            className="text-sm"
-            onKeyDown={(e) => e.key === "Enter" && addQuestion()}
-          />
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={newRequired}
-                onChange={(e) => setNewRequired(e.target.checked)}
-                className="rounded"
-              />
-              Obrigatória
-            </label>
-            <Button size="sm" className="h-7 text-xs" disabled={adding || !newQuestion.trim()} onClick={addQuestion}>
-              <PlusIcon className="h-3 w-3 mr-1" />
-              {adding ? "Adicionando..." : "Adicionar Pergunta"}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
