@@ -960,7 +960,14 @@ function QuestionRow({
 
     // Build full answer including conditional data
     let fullAnswer = text;
-    if (showConditionalField && conditionalType === "file") {
+    if (showConditionalField && conditionalType === "spouse_data") {
+      const parts = [text];
+      if (spouseData.novoEstadoCivil) parts.push(`Estado civil: ${spouseData.novoEstadoCivil}`);
+      if (spouseData.nome) parts.push(`Cônjuge: ${spouseData.nome}`);
+      if (spouseData.cpf) parts.push(`CPF: ${spouseData.cpf}`);
+      if (spouseData.dataNascimento) parts.push(`Nascimento: ${new Date(spouseData.dataNascimento).toLocaleDateString("pt-BR")}`);
+      fullAnswer = parts.join(" — ");
+    } else if (showConditionalField && conditionalType === "file") {
       // File is handled separately, just save the main answer
     } else if (showConditionalField && conditionalText.trim()) {
       fullAnswer = `${text} — ${conditionalLabel}: ${conditionalText.trim()}`;
