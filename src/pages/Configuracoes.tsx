@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, Building2, CreditCard, UserPlus, Trash2, Pencil, Loader2, Upload, ImageIcon, FileText, Plus, GripVertical, Check } from "lucide-react";
+import { Shield, Building2, CreditCard, UserPlus, Trash2, Pencil, Loader2, Upload, ImageIcon, FileText, Plus, GripVertical, Check, ListChecks, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -205,6 +205,8 @@ export default function Configuracoes() {
         <OfficeSettingsCard />
 
         <DocumentChecklistCard />
+
+        <FormQuestionsCard />
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
@@ -838,5 +840,345 @@ function DocumentChecklistCard() {
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+const ANSWER_TYPE_LABELS: Record<string, string> = {
+  yes_no: "Sim/Não",
+  select: "Seleção",
+};
+
+const CONDITIONAL_TYPE_LABELS: Record<string, string> = {
+  text: "Campo de texto",
+  address: "Formulário de endereço",
+  file: "Upload de arquivo",
+  bank_details: "Dados bancários",
+};
+
+interface FormQuestionTemplate {
+  id: string;
+  question: string;
+  answer_type: string;
+  options: { label: string; value: string }[];
+  has_conditional: boolean;
+  conditional_label: string | null;
+  conditional_type: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+function FormQuestionsCard() {
+  const queryClient = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<FormQuestionTemplate | null>(null);
+
+  const { data: items = [], isLoading } = useQuery<FormQuestionTemplate[]>({
+    queryKey: ["form-question-templates"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("form_question_templates" as any)
+        .select("*")
+        .order("sort_order");
+      return (data as any) ?? [];
+    },
+  });
+
+  const deleteItem = async (id: string) => {
+    await supabase.from("form_question_templates" as any).delete().eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["form-question-templates"] });
+    toast.success("Pergunta removida.");
+  };
+
+  const toggleActive = async (item: FormQuestionTemplate) => {
+    await supabase
+      .from("form_question_templates" as any)
+      .update({ is_active: !item.is_active })
+      .eq("id", item.id);
+    queryClient.invalidateQueries({ queryKey: ["form-question-templates"] });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-primary" />
+              Formulário do Cliente
+            </CardTitle>
+            <CardDescription>
+              Perguntas enviadas ao cliente ao criar uma nova demanda
+            </CardDescription>
+          </div>
+          <Button size="sm" onClick={() => { setEditingItem(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 mr-1" />
+            Adicionar
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {isLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : items.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">Nenhuma pergunta configurada.</p>
+        ) : (
+          items.map((item) => (
+            <div
+              key={item.id}
+              className={`flex items-start gap-3 py-3 px-3 rounded-lg hover:bg-muted/50 group transition-colors ${!item.is_active ? "opacity-50" : ""}`}
+            >
+              <Checkbox
+                checked={item.is_active}
+                onCheckedChange={() => toggleActive(item)}
+                title="Ativa"
+                className="mt-0.5"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{item.question}</p>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  <Badge variant="outline" className="text-[10px]">
+                    {ANSWER_TYPE_LABELS[item.answer_type] || item.answer_type}
+                  </Badge>
+                  {item.has_conditional && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      Condicional: {CONDITIONAL_TYPE_LABELS[item.conditional_type] || item.conditional_type}
+                    </Badge>
+                  )}
+                  {item.answer_type === "select" && item.options?.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      {item.options.length} opções
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => { setEditingItem(item); setDialogOpen(true); }}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive hover:text-destructive"
+                  onClick={() => deleteItem(item.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+
+        <p className="text-xs text-muted-foreground pt-2 border-t">
+          Marque o checkbox para ativar/desativar. Perguntas desativadas não serão exibidas ao cliente.
+        </p>
+      </CardContent>
+
+      <FormQuestionDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        editingItem={editingItem}
+        itemCount={items.length}
+      />
+    </Card>
+  );
+}
+
+function FormQuestionDialog({
+  open,
+  onOpenChange,
+  editingItem,
+  itemCount,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  editingItem: FormQuestionTemplate | null;
+  itemCount: number;
+}) {
+  const queryClient = useQueryClient();
+  const [question, setQuestion] = useState("");
+  const [answerType, setAnswerType] = useState("yes_no");
+  const [hasConditional, setHasConditional] = useState(false);
+  const [conditionalLabel, setConditionalLabel] = useState("");
+  const [conditionalType, setConditionalType] = useState("text");
+  const [options, setOptions] = useState<{ label: string; value: string }[]>([]);
+  const [newOption, setNewOption] = useState("");
+
+  // Reset form when dialog opens
+  const resetForm = () => {
+    if (editingItem) {
+      setQuestion(editingItem.question);
+      setAnswerType(editingItem.answer_type);
+      setHasConditional(editingItem.has_conditional);
+      setConditionalLabel(editingItem.conditional_label || "");
+      setConditionalType(editingItem.conditional_type);
+      setOptions(editingItem.options || []);
+    } else {
+      setQuestion("");
+      setAnswerType("yes_no");
+      setHasConditional(false);
+      setConditionalLabel("");
+      setConditionalType("text");
+      setOptions([]);
+    }
+    setNewOption("");
+  };
+
+  // Reset when open changes
+  useState(() => { resetForm(); });
+
+  const addOption = () => {
+    if (!newOption.trim()) return;
+    const value = newOption.trim().toLowerCase().replace(/\s+/g, "_");
+    setOptions((prev) => [...prev, { label: newOption.trim(), value }]);
+    setNewOption("");
+  };
+
+  const removeOption = (index: number) => {
+    setOptions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!question.trim()) throw new Error("Pergunta obrigatória");
+      const payload = {
+        question: question.trim(),
+        answer_type: answerType,
+        has_conditional: hasConditional,
+        conditional_label: hasConditional ? conditionalLabel.trim() || null : null,
+        conditional_type: hasConditional ? conditionalType : "text",
+        options: answerType === "select" ? options : [],
+      };
+
+      if (editingItem) {
+        const { error } = await supabase
+          .from("form_question_templates" as any)
+          .update(payload)
+          .eq("id", editingItem.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("form_question_templates" as any)
+          .insert({ ...payload, sort_order: itemCount, is_active: true });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editingItem ? "Pergunta atualizada!" : "Pergunta adicionada!");
+      queryClient.invalidateQueries({ queryKey: ["form-question-templates"] });
+      onOpenChange(false);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (v) resetForm(); }}>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{editingItem ? "Editar Pergunta" : "Nova Pergunta"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Pergunta *</Label>
+            <Input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ex: Houve alteração de endereço?"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Tipo de Resposta</Label>
+            <Select value={answerType} onValueChange={setAnswerType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes_no">Sim / Não</SelectItem>
+                <SelectItem value="select">Seleção de opções</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {answerType === "select" && (
+            <div className="space-y-2">
+              <Label>Opções</Label>
+              <div className="space-y-1.5">
+                {options.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm bg-muted/50 rounded px-2.5 py-1.5">
+                    <span className="flex-1">{opt.label}</span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeOption(i)}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newOption}
+                  onChange={(e) => setNewOption(e.target.value)}
+                  placeholder="Nova opção..."
+                  className="text-sm"
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addOption(); } }}
+                />
+                <Button size="sm" variant="outline" onClick={addOption} disabled={!newOption.trim()}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <Checkbox
+              id="has-conditional"
+              checked={hasConditional}
+              onCheckedChange={(v) => setHasConditional(!!v)}
+            />
+            <label htmlFor="has-conditional" className="text-sm cursor-pointer">
+              Abrir campo condicional ao responder "Sim" ou selecionar uma opção
+            </label>
+          </div>
+
+          {hasConditional && (
+            <>
+              <div className="space-y-1.5">
+                <Label>Rótulo do campo condicional</Label>
+                <Input
+                  value={conditionalLabel}
+                  onChange={(e) => setConditionalLabel(e.target.value)}
+                  placeholder="Ex: Informe seu novo endereço"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tipo do campo condicional</Label>
+                <Select value={conditionalType} onValueChange={setConditionalType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Campo de texto</SelectItem>
+                    <SelectItem value="address">Formulário de endereço</SelectItem>
+                    <SelectItem value="file">Upload de arquivo</SelectItem>
+                    <SelectItem value="bank_details">Dados bancários</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !question.trim()}>
+            {mutation.isPending ? "Salvando..." : editingItem ? "Salvar" : "Adicionar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

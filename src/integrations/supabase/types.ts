@@ -368,6 +368,45 @@ export type Database = {
           },
         ]
       }
+      form_question_templates: {
+        Row: {
+          answer_type: string
+          conditional_label: string | null
+          conditional_type: string | null
+          created_at: string
+          has_conditional: boolean
+          id: string
+          is_active: boolean
+          options: Json | null
+          question: string
+          sort_order: number
+        }
+        Insert: {
+          answer_type?: string
+          conditional_label?: string | null
+          conditional_type?: string | null
+          created_at?: string
+          has_conditional?: boolean
+          id?: string
+          is_active?: boolean
+          options?: Json | null
+          question: string
+          sort_order?: number
+        }
+        Update: {
+          answer_type?: string
+          conditional_label?: string | null
+          conditional_type?: string | null
+          created_at?: string
+          has_conditional?: boolean
+          id?: string
+          is_active?: boolean
+          options?: Json | null
+          question?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       internal_checklist: {
         Row: {
           case_id: string
