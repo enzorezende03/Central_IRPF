@@ -251,7 +251,26 @@ export default function ClientPortal() {
   // Badge counts for tabs
   const docBadge = pendingDocs.length + rejectedDocs.length;
   const formBadge = unansweredQuestions.length;
-  const msgBadge = caseMessages.filter((m: any) => m.sender === "office").length;
+
+  // Track unread messages using localStorage
+  const storageKey = `portal-last-read-${caseId}`;
+  const [lastRead, setLastRead] = useState<string>(() => {
+    try { return localStorage.getItem(storageKey) ?? ""; } catch { return ""; }
+  });
+
+  const officeMessages = caseMessages.filter((m: any) => m.sender === "office");
+  const msgBadge = officeMessages.filter((m: any) => !lastRead || m.created_at > lastRead).length;
+
+  // Mark messages as read when opening the messages tab
+  useEffect(() => {
+    if (activeTab === "mensagens" && officeMessages.length > 0) {
+      const latest = officeMessages[officeMessages.length - 1]?.created_at;
+      if (latest && latest !== lastRead) {
+        localStorage.setItem(storageKey, latest);
+        setLastRead(latest);
+      }
+    }
+  }, [activeTab, officeMessages, lastRead, storageKey]);
 
   return (
     <PortalShell>
