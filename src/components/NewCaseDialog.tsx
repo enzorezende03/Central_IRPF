@@ -149,10 +149,6 @@ export function NewCaseDialog() {
         "Solicitar Documentação",
         "Fazer Procuração",
         "Preencher declaração",
-        "Enviar Prévia",
-        "Transmitir Declaração",
-        "Verificar se possui imposto a pagar para enviar ao cliente",
-        "Criar tarefa no G-Click em caso de pagamento do imposto por quotas",
       ];
       await supabase.from("internal_checklist").insert(
         defaultChecklist.map((label, i) => ({

@@ -1093,6 +1093,8 @@ function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliver
     } catch { toast.error("Erro ao salvar."); } finally { setSaving(false); }
   };
 
+  const [gclickChecked, setGclickChecked] = useState(false);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -1125,6 +1127,11 @@ function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliver
           )}
         </div>
       )}
+      <Separator className="my-2" />
+      <label className="flex items-center gap-2.5 py-1 cursor-pointer text-sm">
+        <Checkbox checked={gclickChecked} onCheckedChange={(v) => setGclickChecked(!!v)} />
+        <span>Criar tarefa no G-Click em caso de pagamento do imposto por quotas</span>
+      </label>
     </div>
   );
 }
