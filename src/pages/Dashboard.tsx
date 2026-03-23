@@ -36,6 +36,7 @@ function formatTimeAgo(dateStr: string) {
 export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
   const [ownerFilter, setOwnerFilter] = useState("todos");
+  const [statFilter, setStatFilter] = useState<string | null>(null);
 
   // Fetch recent client activity from timeline
   const { data: recentActivity = [] } = useQuery({
@@ -59,7 +60,7 @@ export default function Dashboard() {
     return Array.from(set).sort();
   }, [cases]);
 
-  // Filtered cases
+  // Filtered cases by owner
   const filtered = useMemo(() => {
     if (ownerFilter === "todos") return cases;
     if (ownerFilter === "sem_responsavel") return cases.filter((c) => !c.internal_owner);
@@ -78,6 +79,37 @@ export default function Dashboard() {
     .reduce((sum, c) => sum + (c.billing?.[0]?.amount ?? 0), 0);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  // Cases filtered by stat card click
+  const statFilteredCases = useMemo(() => {
+    if (!statFilter) return null;
+    switch (statFilter) {
+      case "total": return filtered;
+      case "aguardando_cliente": return filtered.filter((c) => c.status === "aguardando_cliente");
+      case "em_andamento": return filtered.filter((c) => c.status === "em_andamento" || c.status === "documentos_em_analise");
+      case "pendencia": return filtered.filter((c) => c.status === "pendencia");
+      case "finalizado": return filtered.filter((c) => c.status === "finalizado");
+      case "cobranca_pendente": return filtered.filter((c) => { const b = c.billing?.[0]; return b && b.billing_status !== "pago"; });
+      case "honorarios": return filtered.filter((c) => c.billing?.[0]?.amount);
+      case "recebido": return filtered.filter((c) => c.billing?.[0]?.billing_status === "pago");
+      default: return null;
+    }
+  }, [statFilter, filtered]);
+
+  const statFilterLabels: Record<string, string> = {
+    total: "Total de Demandas",
+    aguardando_cliente: "Aguardando Cliente",
+    em_andamento: "Em Andamento",
+    pendencia: "Pendências",
+    finalizado: "Finalizados",
+    cobranca_pendente: "Cobrança Pendente",
+    honorarios: "Honorários Previstos",
+    recebido: "Já Recebido",
+  };
+
+  const toggleStatFilter = (key: string) => {
+    setStatFilter((prev) => (prev === key ? null : key));
+  };
 
   const recentCases = useMemo(() => filtered.slice(0, 5), [filtered]);
   const urgentCases = useMemo(
