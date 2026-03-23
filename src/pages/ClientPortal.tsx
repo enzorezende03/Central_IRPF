@@ -6,6 +6,7 @@ import {
   MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import logo2m from "@/assets/logo-2m.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
