@@ -6,7 +6,7 @@ import {
   MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import logo2m from "@/assets/logo-2m.png";
+import { useOfficeLogo } from "@/hooks/use-office-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -497,11 +497,12 @@ export default function ClientPortal() {
 
 // ── Shell layout ──
 function PortalShell({ children }: { children: React.ReactNode }) {
+  const logoUrl = useOfficeLogo();
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <img src={logo2m} alt="2M Contabilidade" className="h-9 w-9 rounded-lg object-contain" />
+          <img src={logoUrl} alt="Logo do Escritório" className="h-12 w-12 rounded-lg object-contain" />
           <div>
             <h1 className="text-sm font-bold">Central IRPF 2026</h1>
             <p className="text-[10px] text-muted-foreground">Portal do Cliente</p>

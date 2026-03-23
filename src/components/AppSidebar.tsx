@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut,
 } from "lucide-react";
-import logo2m from "@/assets/logo-2m.png";
+import { useOfficeLogo } from "@/hooks/use-office-logo";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,6 +34,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { user, role, profileName, signOut, hasPermission } = useAuth();
   const navigate = useNavigate();
+  const logoUrl = useOfficeLogo();
 
   const handleLogout = async () => {
     await signOut();
@@ -51,14 +52,14 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         {!collapsed ? (
           <div className="flex items-center gap-2.5">
-            <img src={logo2m} alt="2M Contabilidade" className="h-9 w-9 rounded-lg object-contain" />
+            <img src={logoUrl} alt="Logo do Escritório" className="h-12 w-12 rounded-lg object-contain" />
             <div>
               <h1 className="text-sm font-bold text-sidebar-primary-foreground tracking-tight">Central IRPF</h1>
               <p className="text-[10px] text-sidebar-foreground/50 font-medium">Exercício 2026</p>
             </div>
           </div>
         ) : (
-          <img src={logo2m} alt="2M Contabilidade" className="h-9 w-9 rounded-lg object-contain mx-auto" />
+          <img src={logoUrl} alt="Logo do Escritório" className="h-10 w-10 rounded-lg object-contain mx-auto" />
         )}
       </SidebarHeader>
       <SidebarContent>
