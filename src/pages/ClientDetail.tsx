@@ -1239,6 +1239,51 @@ function MessagesSection({
   );
 }
 
+/* ── Add Document Row ── */
+function AddDocumentRow({ caseId, onAdded }: { caseId: string; onAdded: () => void }) {
+  const [adding, setAdding] = useState(false);
+  const [title, setTitle] = useState("");
+
+  const handleAdd = async () => {
+    const t = title.trim();
+    if (!t) return;
+    await supabase.from("document_requests").insert({
+      case_id: caseId,
+      title: t,
+      is_required: false,
+      status: "pendente" as const,
+    });
+    setTitle("");
+    setAdding(false);
+    onAdded();
+  };
+
+  if (!adding) {
+    return (
+      <Button variant="ghost" size="sm" className="w-full mt-2 text-muted-foreground" onClick={() => setAdding(true)}>
+        <Plus className="h-4 w-4 mr-1.5" /> Adicionar documento
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <Input
+        placeholder="Nome do documento..."
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+        autoFocus
+        className="flex-1"
+      />
+      <Button size="sm" onClick={handleAdd} disabled={!title.trim()}>Adicionar</Button>
+      <Button size="sm" variant="ghost" onClick={() => { setAdding(false); setTitle(""); }}>
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
 /* ── Internal Checklist Card ── */
 function InternalChecklistCard({ caseId }: { caseId: string }) {
   const queryClient = useQueryClient();
