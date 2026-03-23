@@ -202,7 +202,7 @@ export default function Dashboard() {
                         >
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{c.clients?.full_name}</p>
-                            <p className="text-xs text-muted-foreground">{c.clients?.cpf} · {c.internal_owner ?? "Sem responsável"}</p>
+                            <p className="text-xs text-muted-foreground">{formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}</p>
                           </div>
                           <StatusBadge status={c.status} />
                           <PriorityBadge priority={c.priority} />
