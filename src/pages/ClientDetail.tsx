@@ -335,42 +335,6 @@ export default function ClientDetail() {
           </div>
         </div>
 
-        {/* ── Billing Info Banner ── */}
-        {billing && (
-          <div className="rounded-lg border p-3 flex flex-wrap items-center gap-3 bg-muted/30">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <DollarSign className="h-4 w-4 text-primary" />
-              <span>Cobrança:</span>
-            </div>
-            {(billing as any).billing_type === "incluso_mensalidade" ? (
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
-                IRPF incluso na mensalidade
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
-                Cobrança extra
-              </Badge>
-            )}
-            {billing.billing_status === "pago" ? (
-              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
-                Pago {billing.payment_date ? `em ${format(new Date(billing.payment_date), "dd/MM/yyyy")}` : ""}
-              </Badge>
-            ) : billing.billing_status === "cobrado" ? (
-              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                Cobrado — Aguardando pagamento
-              </Badge>
-            ) : (
-              <Badge className="bg-red-100 text-red-800 border-red-200">
-                Não cobrado
-              </Badge>
-            )}
-            {billing.amount > 0 && (
-              <span className="text-sm font-semibold ml-auto">
-                R$ {billing.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-              </span>
-            )}
-          </div>
-        )}
 
         {/* ── Info Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
