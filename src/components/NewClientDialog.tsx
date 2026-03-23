@@ -96,7 +96,7 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="nc-cpf">CPF *</Label>
-            <Input id="nc-cpf" value={form.cpf} onChange={(e) => set("cpf", e.target.value)} placeholder="000.000.000-00" />
+            <Input id="nc-cpf" value={form.cpf} onChange={(e) => set("cpf", maskCPF(e.target.value))} placeholder="000.000.000-00" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
