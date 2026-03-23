@@ -468,18 +468,6 @@ export default function ClientDetail() {
               </CardContent>
             </Card>
 
-            {/* ── 5. Questions ── */}
-            <QuestionsSection
-              questions={questions}
-              answers={answers}
-              caseId={id!}
-              onRefresh={() => {
-                queryClient.invalidateQueries({ queryKey: ["case-questions", id] });
-                queryClient.invalidateQueries({ queryKey: ["case-answers", id] });
-                queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
-              }}
-            />
-
             {/* ── 8. Timeline ── */}
             <Card>
               <CardHeader className="pb-3">
