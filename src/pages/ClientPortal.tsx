@@ -195,6 +195,29 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  // Track unread messages using localStorage
+  const storageKey = `portal-last-read-${caseId ?? "none"}`;
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey) ?? "";
+      setLastRead(stored);
+    } catch { /* ignore */ }
+  }, [storageKey]);
+
+  const officeMessages = caseMessages.filter((m: any) => m.sender === "office");
+  const msgBadge = officeMessages.filter((m: any) => !lastRead || m.created_at > lastRead).length;
+
+  useEffect(() => {
+    if (activeTab === "mensagens" && officeMessages.length > 0) {
+      const latest = officeMessages[officeMessages.length - 1]?.created_at;
+      if (latest && latest !== lastRead) {
+        localStorage.setItem(storageKey, latest);
+        setLastRead(latest);
+      }
+    }
+  }, [activeTab, officeMessages, lastRead, storageKey]);
+
   // ── Loading / error states ──
   if (loadingToken || loadingCase) {
     return (
@@ -225,20 +248,19 @@ export default function ClientPortal() {
   }
 
   const client = caseData.clients as Tables<"clients"> | null;
-  // Compute visual step based on actual state
   const hasPreview = !!(deliverable as any)?.preview_file_url;
   const allDocsHandled = docRequests.length > 0 && docRequests.every((d) => d.status !== "pendente" && d.status !== "rejeitado");
   const allDocsApproved = docRequests.length > 0 && docRequests.every((d) => d.status === "aprovado");
 
-  let currentStepIndex = 0; // aguardando_documentos
+  let currentStepIndex = 0;
   if (caseData.status === "finalizado") {
     currentStepIndex = 4;
   } else if (hasPreview) {
-    currentStepIndex = 3; // previa_enviada
+    currentStepIndex = 3;
   } else if (allDocsApproved || caseData.status === "em_andamento") {
-    currentStepIndex = 2; // em_andamento
+    currentStepIndex = 2;
   } else if (allDocsHandled || caseData.status === "documentos_em_analise") {
-    currentStepIndex = 1; // em_analise
+    currentStepIndex = 1;
   }
 
   const isPendencia = caseData.status === "pendencia";
@@ -249,34 +271,8 @@ export default function ClientPortal() {
   const rejectedDocs = docRequests.filter((d) => d.status === "rejeitado");
   const hasPendencies = pendingDocs.length > 0 || unansweredQuestions.length > 0 || rejectedDocs.length > 0;
 
-  // Badge counts for tabs
   const docBadge = pendingDocs.length + rejectedDocs.length;
   const formBadge = unansweredQuestions.length;
-
-  // Track unread messages using localStorage
-  const storageKey = `portal-last-read-${caseId}`;
-
-  // Initialize lastRead from localStorage on caseId change
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey) ?? "";
-      setLastRead(stored);
-    } catch { /* ignore */ }
-  }, [storageKey]);
-
-  const officeMessages = caseMessages.filter((m: any) => m.sender === "office");
-  const msgBadge = officeMessages.filter((m: any) => !lastRead || m.created_at > lastRead).length;
-
-  // Mark messages as read when opening the messages tab
-  useEffect(() => {
-    if (activeTab === "mensagens" && officeMessages.length > 0) {
-      const latest = officeMessages[officeMessages.length - 1]?.created_at;
-      if (latest && latest !== lastRead) {
-        localStorage.setItem(storageKey, latest);
-        setLastRead(latest);
-      }
-    }
-  }, [activeTab, officeMessages, lastRead, storageKey]);
 
   return (
     <PortalShell>
