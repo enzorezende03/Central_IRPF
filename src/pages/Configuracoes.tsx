@@ -206,33 +206,18 @@ export default function Configuracoes() {
 
         <DocumentChecklistCard />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Bell className="h-4 w-4 text-primary" />
-                Notificações
-              </CardTitle>
-              <CardDescription>Alertas de novas entregas e pendências</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <NotificationsPanel />
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-primary" />
-                Integração de Pagamento
-              </CardTitle>
-              <CardDescription>Link de pagamento e cobranças automáticas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Badge variant="secondary" className="text-xs">Em breve</Badge>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-primary" />
+              Integração de Pagamento
+            </CardTitle>
+            <CardDescription>Link de pagamento e cobranças automáticas</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Badge variant="secondary" className="text-xs">Em breve</Badge>
+          </CardContent>
+        </Card>
       </div>
     </InternalLayout>
   );
