@@ -132,8 +132,6 @@ export default function Clientes() {
                       <TableCell>
                         <EditClientDialog client={client as any} />
                       </TableCell>
-                        />
-                      </TableCell>
                     </TableRow>
                   );
                 })}
