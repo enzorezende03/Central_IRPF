@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatCPF } from "@/lib/format-utils";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
