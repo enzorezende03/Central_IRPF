@@ -1,23 +1,42 @@
 import { useState, useMemo } from "react";
 import { Search, Users, Mail, Phone } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { InternalLayout } from "@/components/InternalLayout";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { useCases } from "@/hooks/use-cases";
 import { NewClientDialog } from "@/components/NewClientDialog";
 import { ImportClientsDialog } from "@/components/ImportClientsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function Clientes() {
-  const { data: cases = [], isLoading } = useCases();
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
+
+  // Fetch all clients directly
+  const { data: allClients = [], isLoading: loadingClients } = useQuery({
+    queryKey: ["all-clients"],
+    queryFn: async () => {
+      const { data } = await supabase.from("clients").select("*").order("full_name");
+      return data ?? [];
+    },
+  });
+
+  // Fetch case counts per client
+  const { data: caseCounts = {} } = useQuery({
+    queryKey: ["client-case-counts"],
+    queryFn: async () => {
+      const { data } = await supabase.from("irpf_cases").select("client_id");
+      const counts: Record<string, number> = {};
+      (data ?? []).forEach((c) => {
+        counts[c.client_id] = (counts[c.client_id] || 0) + 1;
+      });
+      return counts;
+    },
+  });
 
   const toggleActive = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
@@ -25,36 +44,21 @@ export default function Clientes() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
+      queryClient.invalidateQueries({ queryKey: ["all-clients"] });
     },
     onError: () => {
       toast.error("Erro ao atualizar status do cliente.");
     },
   });
 
-  // Deduplicate clients
-  const clients = useMemo(() => {
-    const map = new Map<string, { client: NonNullable<typeof cases[0]["clients"]>; caseCount: number; latestStatus: string }>();
-    cases.forEach((c) => {
-      if (!c.clients) return;
-      const existing = map.get(c.clients.id);
-      if (existing) {
-        existing.caseCount++;
-      } else {
-        map.set(c.clients.id, { client: c.clients, caseCount: 1, latestStatus: c.status });
-      }
-    });
-    return Array.from(map.values());
-  }, [cases]);
-
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return clients.filter(({ client }) => {
+    return allClients.filter((client) => {
       const name = client.full_name.toLowerCase();
       const cpf = client.cpf;
       return !q || name.includes(q) || cpf.includes(q);
     });
-  }, [clients, search]);
+  }, [allClients, search]);
 
   return (
     <InternalLayout>
@@ -66,14 +70,14 @@ export default function Clientes() {
           </div>
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             <Badge variant="secondary" className="shrink-0">
-              <Users className="h-3 w-3 mr-1" /> {clients.length} clientes
+              <Users className="h-3 w-3 mr-1" /> {allClients.length} clientes
             </Badge>
             <ImportClientsDialog />
-            <NewClientDialog />
+            <NewClientDialog onCreated={() => queryClient.invalidateQueries({ queryKey: ["all-clients"] })} />
           </div>
         </div>
 
-        {isLoading ? (
+        {loadingClients ? (
           <Skeleton className="h-96 rounded-xl" />
         ) : (
           <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
@@ -90,8 +94,9 @@ export default function Clientes() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(({ client, caseCount }) => {
+                {filtered.map((client) => {
                   const isActive = (client as any).is_active !== false;
+                  const caseCount = caseCounts[client.id] || 0;
                   return (
                     <TableRow key={client.id} className={`hover:bg-muted/50 ${!isActive ? "opacity-50" : ""}`}>
                       <TableCell className="font-medium">{client.full_name}</TableCell>
