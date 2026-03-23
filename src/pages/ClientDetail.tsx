@@ -429,27 +429,26 @@ export default function ClientDetail() {
                 </CardHeader>
                 <CollapsibleContent>
                   <CardContent className="space-y-2">
-                    {docRequests.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-6">Nenhum documento solicitado.</p>
-                    ) : (
-                      docRequests.map((doc) => {
-                        const docUploads = uploadedDocs.filter((u) => u.document_request_id === doc.id);
-                        return (
-                          <InternalDocRow
-                            key={doc.id}
-                            doc={doc}
-                            uploads={docUploads}
-                            caseId={id!}
-                            onStatusChange={(status) => updateDocStatus.mutate({ docId: doc.id, status })}
-                            onRefresh={() => {
-                              queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
-                              queryClient.invalidateQueries({ queryKey: ["uploaded-docs", id] });
-                              queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
-                            }}
-                          />
-                        );
-                      })
-                    )}
+                    {docRequests.map((doc) => {
+                      const docUploads = uploadedDocs.filter((u) => u.document_request_id === doc.id);
+                      return (
+                        <InternalDocRow
+                          key={doc.id}
+                          doc={doc}
+                          uploads={docUploads}
+                          caseId={id!}
+                          onStatusChange={(status) => updateDocStatus.mutate({ docId: doc.id, status })}
+                          onRefresh={() => {
+                            queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+                            queryClient.invalidateQueries({ queryKey: ["uploaded-docs", id] });
+                            queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                          }}
+                        />
+                      );
+                    })}
+                    <AddDocumentRow caseId={id!} onAdded={() => {
+                      queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+                    }} />
                   </CardContent>
                 </CollapsibleContent>
               </Card>
