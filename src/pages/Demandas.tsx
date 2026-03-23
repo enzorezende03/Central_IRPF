@@ -129,7 +129,7 @@ export default function Demandas() {
                   <TableHead className="min-w-[100px]">Status Interno</TableHead>
                   <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
                   <TableHead className="hidden md:table-cell">Prioridade</TableHead>
-                  <TableHead className="hidden lg:table-cell">Cobrança</TableHead>
+                  
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
