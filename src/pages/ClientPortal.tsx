@@ -116,6 +116,19 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  // ── Fetch form templates (for conditional config) ──
+  const { data: formTemplates = [] } = useQuery({
+    queryKey: ["portal-form-templates"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("form_question_templates")
+        .select("*")
+        .eq("is_active", true);
+      return data ?? [];
+    },
+    enabled: !!caseId,
+  });
+
   const { data: answers = [] } = useQuery({
     queryKey: ["portal-answers", caseId],
     queryFn: async () => {
