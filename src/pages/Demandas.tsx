@@ -19,6 +19,8 @@ export default function Demandas() {
   const [search, setSearch] = useState("");
   const [tagFilter, setTagFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
+  const [internalStatusFilter, setInternalStatusFilter] = useState("all");
+  const [clientStatusFilter, setClientStatusFilter] = useState("all");
 
   const owners = useMemo(() => {
     const set = new Set<string>();
