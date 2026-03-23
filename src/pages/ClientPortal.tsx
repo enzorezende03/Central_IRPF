@@ -23,9 +23,10 @@ import type { Database } from "@/integrations/supabase/types";
 type DocumentStatus = Database["public"]["Enums"]["document_status"];
 
 const STATUS_STEPS = [
-  { key: "aguardando_cliente", label: "Aguardando Documentos" },
-  { key: "documentos_em_analise", label: "Em Análise" },
+  { key: "aguardando_documentos", label: "Aguardando Documentos" },
+  { key: "em_analise", label: "Em Análise" },
   { key: "em_andamento", label: "Em Andamento" },
+  { key: "previa_enviada", label: "Prévia Enviada" },
   { key: "finalizado", label: "Finalizado" },
 ] as const;
 
