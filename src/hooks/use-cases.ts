@@ -5,6 +5,7 @@ import type { Tables } from "@/integrations/supabase/types";
 export type CaseWithClient = Tables<"irpf_cases"> & {
   clients: Tables<"clients"> | null;
   billing: Tables<"billing">[];
+  final_deliverables: Tables<"final_deliverables">[];
 };
 
 async function fetchCasesWithClients(): Promise<CaseWithClient[]> {
