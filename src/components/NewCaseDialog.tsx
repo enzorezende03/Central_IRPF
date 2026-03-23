@@ -149,10 +149,11 @@ export function NewCaseDialog() {
         .eq("is_active", true)
         .order("sort_order");
       if (formTemplates && formTemplates.length > 0) {
+        const validTypes = ["text", "yes_no", "number", "date", "file"];
         const questionInserts = formTemplates.map((t: any) => ({
           case_id: newCase.id,
           question: t.question,
-          answer_type: t.answer_type ?? "text",
+          answer_type: validTypes.includes(t.answer_type) ? t.answer_type : "text",
           is_required: false,
           sort_order: t.sort_order,
         }));
