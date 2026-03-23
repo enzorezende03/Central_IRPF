@@ -97,7 +97,7 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
                     </div>
                     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <PriorityBadge priority={c.priority} />
-                      {billing && <BillingBadge status={billing.billing_status} />}
+                      {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}
                     </div>
                     {billing && (
                       <p className="text-xs font-medium mt-1.5 text-right text-muted-foreground">

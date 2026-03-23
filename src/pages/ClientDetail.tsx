@@ -335,7 +335,7 @@ export default function ClientDetail() {
                 ))}
               </SelectContent>
             </Select>
-            {billing && <BillingBadge status={billing.billing_status} />}
+            {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}
           </div>
         </div>
 
