@@ -219,7 +219,7 @@ export function NewCaseDialog() {
                   <SelectContent>
                     {clients.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.full_name} — {c.cpf}
+                        {c.full_name} — {formatCPF(c.cpf)}
                       </SelectItem>
                     ))}
                   </SelectContent>
