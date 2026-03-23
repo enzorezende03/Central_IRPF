@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { NewClientDialog } from "@/components/NewClientDialog";
 import { ImportClientsDialog } from "@/components/ImportClientsDialog";
+import { EditClientDialog } from "@/components/EditClientDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -91,6 +92,7 @@ export default function Clientes() {
                   <TableHead>Demandas</TableHead>
                   <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
                   <TableHead className="text-center">Ativo</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -127,12 +129,15 @@ export default function Clientes() {
                           onCheckedChange={(checked) => toggleActive.mutate({ id: client.id, is_active: checked })}
                         />
                       </TableCell>
+                      <TableCell>
+                        <EditClientDialog client={client as any} />
+                      </TableCell>
                     </TableRow>
                   );
                 })}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                       Nenhum cliente encontrado.
                     </TableCell>
                   </TableRow>
