@@ -289,7 +289,7 @@ export default function ClientPortal() {
         <div className="sticky top-[88px] z-20 bg-background/95 backdrop-blur-sm pb-2 pt-1 -mx-4 px-4 border-b">
           <div className="flex gap-1">
             {TAB_CONFIG.map((tab) => {
-              const badge = tab.key === "documentos" ? docBadge : tab.key === "formulario" ? formBadge : 0;
+              const badge = tab.key === "documentos" ? docBadge : tab.key === "formulario" ? formBadge : tab.key === "mensagens" ? msgBadge : 0;
               const isActive = activeTab === tab.key;
               return (
                 <button
