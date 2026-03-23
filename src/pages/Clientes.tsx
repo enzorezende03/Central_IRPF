@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { NewClientDialog } from "@/components/NewClientDialog";
 import { ImportClientsDialog } from "@/components/ImportClientsDialog";
+import { EditClientDialog } from "@/components/EditClientDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
