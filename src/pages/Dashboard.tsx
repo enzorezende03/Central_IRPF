@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   DollarSign, TrendingUp, Ban, ArrowRight, Filter,
