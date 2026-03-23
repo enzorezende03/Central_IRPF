@@ -1,0 +1,1 @@
+UPDATE form_question_templates SET conditional_type = 'spouse_data', conditional_label = 'Dados do cônjuge' WHERE id = '2f30d95b-b428-4526-ae5d-e3697863d688';
