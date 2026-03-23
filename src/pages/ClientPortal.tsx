@@ -200,7 +200,22 @@ export default function ClientPortal() {
   }
 
   const client = caseData.clients as Tables<"clients"> | null;
-  const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === caseData.status);
+  // Compute visual step based on actual state
+  const hasPreview = !!(deliverable as any)?.preview_file_url;
+  const allDocsHandled = docRequests.length > 0 && docRequests.every((d) => d.status !== "pendente" && d.status !== "rejeitado");
+  const allDocsApproved = docRequests.length > 0 && docRequests.every((d) => d.status === "aprovado");
+
+  let currentStepIndex = 0; // aguardando_documentos
+  if (caseData.status === "finalizado") {
+    currentStepIndex = 4;
+  } else if (hasPreview) {
+    currentStepIndex = 3; // previa_enviada
+  } else if (allDocsApproved || caseData.status === "em_andamento") {
+    currentStepIndex = 2; // em_andamento
+  } else if (allDocsHandled || caseData.status === "documentos_em_analise") {
+    currentStepIndex = 1; // em_analise
+  }
+
   const isPendencia = caseData.status === "pendencia";
   const isFinished = caseData.status === "finalizado";
   const answeredIds = new Set(answers.map((a) => a.question_id));
