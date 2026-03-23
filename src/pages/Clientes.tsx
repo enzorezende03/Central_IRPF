@@ -110,6 +110,7 @@ export default function Clientes() {
                   <TableHead className="hidden md:table-cell">Telefone</TableHead>
                   <TableHead className="hidden md:table-cell">E-mail</TableHead>
                   <TableHead>Demandas</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tag</TableHead>
                   <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
                   <TableHead className="text-center">Ativo</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
@@ -139,6 +140,13 @@ export default function Clientes() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">{caseCount} demanda(s)</Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {(client.tags ?? []).map((tag) => (
+                            <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                         {new Date(client.created_at).toLocaleDateString("pt-BR")}
@@ -183,7 +191,7 @@ export default function Clientes() {
                 })}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
                       Nenhum cliente encontrado.
                     </TableCell>
                   </TableRow>
