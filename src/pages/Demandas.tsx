@@ -126,6 +126,7 @@ export default function Demandas() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[120px]">Cliente</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tag</TableHead>
                   <TableHead className="hidden md:table-cell">CPF</TableHead>
                   <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
                   <TableHead className="hidden sm:table-cell">Responsável</TableHead>
