@@ -44,6 +44,7 @@ export default function ClientPortal() {
   const { token, org, slug } = useParams<{ token?: string; org?: string; slug?: string }>();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<PortalTab>("inicio");
+  const [lastRead, setLastRead] = useState<string>("");
 
   // Build the identifier: either "org/slug" or plain token
   const identifier = org && slug ? `${org}/${slug}` : token;
