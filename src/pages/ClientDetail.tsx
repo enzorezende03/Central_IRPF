@@ -271,8 +271,7 @@ export default function ClientDetail() {
   const portalUrl = getPortalUrl(linkId);
   const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", linkId, caseData.client_message);
 
-  const answeredIds = new Set(answers.map((a) => a.question_id));
-  const unansweredCount = questions.filter((q) => q.is_required && !answeredIds.has(q.id)).length;
+  const unansweredCount = 0;
   const approvedDocs = docRequests.filter((d) => d.is_required && d.status === "aprovado").length;
   const pendingDocs = docRequests.filter((d) => d.is_required && (d.status === "pendente" || d.status === "rejeitado")).length;
 
