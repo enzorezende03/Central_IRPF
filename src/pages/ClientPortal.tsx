@@ -372,53 +372,15 @@ export default function ClientPortal() {
 
                 {/* Quick actions / pendencies */}
                 {hasPendencies && !isFinished && (
-                  <Card className="border-warning/40">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-warning" />
-                        O que ainda falta
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-1.5">
-                        {pendingDocs.slice(0, 3).map((d) => (
-                          <li key={d.id} className="flex items-center gap-2 text-xs">
-                            <Circle className="h-2.5 w-2.5 text-warning shrink-0" />
-                            <span>Enviar: <strong>{d.title}</strong></span>
-                          </li>
-                        ))}
-                        {rejectedDocs.slice(0, 2).map((d) => (
-                          <li key={d.id} className="flex items-center gap-2 text-xs text-destructive">
-                            <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
-                            <span>Reenviar: <strong>{d.title}</strong></span>
-                          </li>
-                        ))}
-                        {unansweredQuestions.slice(0, 2).map((q) => (
-                          <li key={q.id} className="flex items-center gap-2 text-xs">
-                            <Circle className="h-2.5 w-2.5 text-warning shrink-0" />
-                            <span>Responder: <strong>{q.question}</strong></span>
-                          </li>
-                        ))}
-                      </ul>
-                      {(pendingDocs.length > 3 || unansweredQuestions.length > 2) && (
-                        <p className="text-[10px] text-muted-foreground mt-2">
-                          E mais itens pendentes...
-                        </p>
-                      )}
-                      <div className="flex gap-2 mt-3">
-                        {docBadge > 0 && (
-                          <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => setActiveTab("documentos")}>
-                            <FileText className="h-3.5 w-3.5 mr-1" /> Documentos ({docBadge})
-                          </Button>
-                        )}
-                        {formBadge > 0 && (
-                          <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => setActiveTab("formulario")}>
-                            <HelpCircle className="h-3.5 w-3.5 mr-1" /> Formulário ({formBadge})
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <PendenciesCard
+                    pendingDocs={pendingDocs}
+                    rejectedDocs={rejectedDocs}
+                    unansweredQuestions={unansweredQuestions}
+                    docBadge={docBadge}
+                    formBadge={formBadge}
+                    onGoToDocs={() => setActiveTab("documentos")}
+                    onGoToForm={() => setActiveTab("formulario")}
+                  />
                 )}
 
                 {/* Preview Approval */}
@@ -606,8 +568,96 @@ export default function ClientPortal() {
     </PortalShell>
   );
 }
+// ── Pendencies Card ──
+function PendenciesCard({
+  pendingDocs,
+  rejectedDocs,
+  unansweredQuestions,
+  docBadge,
+  formBadge,
+  onGoToDocs,
+  onGoToForm,
+}: {
+  pendingDocs: any[];
+  rejectedDocs: any[];
+  unansweredQuestions: any[];
+  docBadge: number;
+  formBadge: number;
+  onGoToDocs: () => void;
+  onGoToForm: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
 
-// ── Shell layout ──
+  // Build all items into a single list
+  const allItems: { id: string; type: "pending" | "rejected" | "question"; label: string }[] = [];
+  pendingDocs.forEach((d) => allItems.push({ id: d.id, type: "pending", label: d.title }));
+  rejectedDocs.forEach((d) => allItems.push({ id: d.id, type: "rejected", label: d.title }));
+  unansweredQuestions.forEach((q) => allItems.push({ id: q.id, type: "question", label: q.question }));
+
+  const totalCount = allItems.length;
+  const visibleItems = expanded ? allItems : allItems.slice(0, 3);
+  const hiddenCount = totalCount - 3;
+
+  return (
+    <Card className="border-warning/40">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          O que ainda falta
+          <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 font-bold border-warning/50 text-warning">
+            {totalCount}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-1.5">
+          {visibleItems.map((item) => (
+            <li key={item.id} className={`flex items-center gap-2 text-xs ${item.type === "rejected" ? "text-destructive" : ""}`}>
+              {item.type === "rejected" ? (
+                <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+              ) : (
+                <Circle className="h-2.5 w-2.5 text-warning shrink-0" />
+              )}
+              <span>
+                {item.type === "pending" ? "Enviar" : item.type === "rejected" ? "Reenviar" : "Responder"}:{" "}
+                <strong>{item.label}</strong>
+              </span>
+            </li>
+          ))}
+        </ul>
+        {hiddenCount > 0 && !expanded && (
+          <button
+            onClick={() => setExpanded(true)}
+            className="text-xs text-primary font-medium mt-2 hover:underline"
+          >
+            Ver mais {hiddenCount} {hiddenCount === 1 ? "item" : "itens"} pendentes
+          </button>
+        )}
+        {expanded && hiddenCount > 0 && (
+          <button
+            onClick={() => setExpanded(false)}
+            className="text-xs text-muted-foreground font-medium mt-2 hover:underline"
+          >
+            Ver menos
+          </button>
+        )}
+        <div className="flex gap-2 mt-3">
+          {docBadge > 0 && (
+            <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={onGoToDocs}>
+              <FileText className="h-3.5 w-3.5 mr-1" /> Documentos ({docBadge})
+            </Button>
+          )}
+          {formBadge > 0 && (
+            <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={onGoToForm}>
+              <HelpCircle className="h-3.5 w-3.5 mr-1" /> Formulário ({formBadge})
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function PortalShell({ children }: { children: React.ReactNode }) {
   const logoUrl = useOfficeLogo();
   return (
