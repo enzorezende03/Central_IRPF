@@ -11,7 +11,7 @@ export type CaseWithClient = Tables<"irpf_cases"> & {
 async function fetchCasesWithClients(): Promise<CaseWithClient[]> {
   const { data, error } = await supabase
     .from("irpf_cases")
-    .select("*, clients(*), billing(*)")
+    .select("*, clients(*), billing(*), final_deliverables(*)")
     .order("updated_at", { ascending: false });
 
   if (error) throw error;
