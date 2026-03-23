@@ -134,7 +134,7 @@ export default function Demandas() {
                   <TableHead className="hidden lg:table-cell">Progresso</TableHead>
                   <TableHead className="hidden md:table-cell">Prioridade</TableHead>
                   <TableHead className="hidden lg:table-cell">Cobrança</TableHead>
-                  <TableHead className="hidden lg:table-cell text-right">Honorário</TableHead>
+                  
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
