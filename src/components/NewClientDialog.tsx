@@ -105,7 +105,7 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="nc-phone">Telefone</Label>
-              <Input id="nc-phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(11) 99999-0000" />
+              <Input id="nc-phone" value={form.phone} onChange={(e) => set("phone", maskPhone(e.target.value))} placeholder="(11) 99999-0000" />
             </div>
           </div>
           <div className="space-y-1.5">

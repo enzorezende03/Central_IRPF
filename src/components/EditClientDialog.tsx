@@ -123,7 +123,7 @@ export function EditClientDialog({ client, trigger }: EditClientDialogProps) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ec-phone">Telefone</Label>
-              <Input id="ec-phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+              <Input id="ec-phone" value={form.phone} onChange={(e) => set("phone", maskPhone(e.target.value))} />
             </div>
           </div>
           <div className="space-y-1.5">
