@@ -110,6 +110,7 @@ export default function Clientes() {
                   <TableHead className="hidden md:table-cell">Telefone</TableHead>
                   <TableHead className="hidden md:table-cell">E-mail</TableHead>
                   <TableHead>Demandas</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tag</TableHead>
                   <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
                   <TableHead className="text-center">Ativo</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
