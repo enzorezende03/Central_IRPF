@@ -128,6 +128,11 @@ export default function Clientes() {
                           onCheckedChange={(checked) => toggleActive.mutate({ id: client.id, is_active: checked })}
                         />
                       </TableCell>
+                      <TableCell>
+                        <EditClientDialog client={client as any} />
+                      </TableCell>
+                        />
+                      </TableCell>
                     </TableRow>
                   );
                 })}
