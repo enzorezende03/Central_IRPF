@@ -512,45 +512,6 @@ export default function ClientDetail() {
               </Card>
             </Collapsible>
 
-            {/* ── Timeline ── */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-primary" />
-                  Histórico / Timeline
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {timeline.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Nenhum evento registrado.</p>
-                ) : (
-                  <div className="relative space-y-0">
-                    {timeline.map((event, i) => (
-                      <div key={event.id} className="flex gap-3 pb-4">
-                        <div className="flex flex-col items-center">
-                          <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                          {i < timeline.length - 1 && <div className="flex-1 w-px bg-border" />}
-                        </div>
-                        <div className="flex-1 min-w-0 pb-1">
-                          <p className="text-sm font-medium">{event.event_type}</p>
-                          {event.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
-                          )}
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            {fmtDate(event.created_at)}
-                            {event.created_by && ` · ${event.created_by}`}
-                            {event.visible_to_client && (
-                              <span className="ml-2 text-info">Visível ao cliente</span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
             {/* ── Observações Internas ── */}
             <Card>
               <CardHeader className="pb-3">
@@ -586,6 +547,57 @@ export default function ClientDetail() {
                 queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
               }}
             />
+
+            {/* ── Timeline (colapsável) ── */}
+            <Collapsible>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CollapsibleTrigger className="w-full text-left">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary" />
+                        Histórico / Timeline
+                      </CardTitle>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                    </div>
+                    <CardDescription className="mt-1">
+                      {timeline.length} evento(s) registrado(s)
+                    </CardDescription>
+                  </CollapsibleTrigger>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent>
+                    {timeline.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-6">Nenhum evento registrado.</p>
+                    ) : (
+                      <div className="relative space-y-0">
+                        {timeline.map((event, i) => (
+                          <div key={event.id} className="flex gap-3 pb-4">
+                            <div className="flex flex-col items-center">
+                              <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                              {i < timeline.length - 1 && <div className="flex-1 w-px bg-border" />}
+                            </div>
+                            <div className="flex-1 min-w-0 pb-1">
+                              <p className="text-sm font-medium">{event.event_type}</p>
+                              {event.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
+                              )}
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                {fmtDate(event.created_at)}
+                                {event.created_by && ` · ${event.created_by}`}
+                                {event.visible_to_client && (
+                                  <span className="ml-2 text-info">Visível ao cliente</span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           </div>
         </div>
       </div>
