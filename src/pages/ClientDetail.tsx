@@ -422,6 +422,16 @@ export default function ClientDetail() {
             {/* ── Internal Checklist ── */}
             <InternalChecklistCard caseId={id!} />
 
+            {/* ── Formulário do Cliente ── */}
+            <CaseQuestionsCard
+              caseId={id!}
+              questions={caseQuestions}
+              answers={caseAnswers}
+              onRefresh={() => {
+                queryClient.invalidateQueries({ queryKey: ["case-questions", id] });
+                queryClient.invalidateQueries({ queryKey: ["case-answers", id] });
+              }}
+            />
             {/* ── 9a. Prévia ── */}
             <Card>
               <CardHeader className="pb-3">
