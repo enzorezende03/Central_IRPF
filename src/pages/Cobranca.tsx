@@ -57,7 +57,7 @@ export default function Cobranca() {
   }).length;
 
   const filtered = useMemo(() => {
-    return cases.filter((c) => {
+    const list = cases.filter((c) => {
       const q = search.toLowerCase();
       const name = c.clients?.full_name?.toLowerCase() ?? "";
       const matchSearch = !q || name.includes(q);
@@ -65,7 +65,23 @@ export default function Cobranca() {
       const matchBilling = billingFilter === "all" || billing?.billing_status === billingFilter;
       return matchSearch && matchBilling;
     });
-  }, [cases, search, billingFilter]);
+    if (sortField) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        if (sortField === "cliente") {
+          cmp = (a.clients?.full_name ?? "").localeCompare(b.clients?.full_name ?? "", "pt-BR");
+        } else if (sortField === "honorario") {
+          cmp = (a.billing?.[0]?.amount ?? 0) - (b.billing?.[0]?.amount ?? 0);
+        } else if (sortField === "data_pgto") {
+          const da = a.billing?.[0]?.payment_date ?? "";
+          const db = b.billing?.[0]?.payment_date ?? "";
+          cmp = da.localeCompare(db);
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [cases, search, billingFilter, sortField, sortDir]);
 
   const handleQuickStatusChange = async (billingId: string, newStatus: BillingStatus) => {
     const updates: Record<string, unknown> = { billing_status: newStatus };
