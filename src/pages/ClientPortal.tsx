@@ -1026,7 +1026,7 @@ function DocumentRow({
         </div>
       </div>
       {canUpload && (
-        <div className="w-full flex flex-col gap-1 pl-8 sm:pl-0 sm:w-auto sm:shrink-0">
+        <div className="w-full flex flex-col gap-1 mt-1">
           <input
             ref={fileInputRef}
             type="file"
@@ -1039,23 +1039,23 @@ function DocumentRow({
             <Button
               variant="outline"
               size="sm"
-              className="text-xs h-8 flex-1"
+              className="text-[11px] h-8 flex-1 min-w-0 px-2"
               disabled={uploading || markingNotHave}
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-3.5 w-3.5 mr-1" /> Anexar Arquivo
+              <Upload className="h-3.5 w-3.5 mr-1 shrink-0" /> Anexar Arquivo
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="text-xs h-8 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground flex-1 font-medium"
+              className="text-[11px] h-8 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground flex-1 min-w-0 px-2 font-medium"
               disabled={uploading || markingNotHave}
               onClick={handleNotHave}
             >
               {markingNotHave ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 mr-1 shrink-0 animate-spin" />
               ) : (
-                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                <AlertTriangle className="h-3.5 w-3.5 mr-1 shrink-0" />
               )}
               Não Tenho
             </Button>
