@@ -1026,7 +1026,7 @@ function DocumentRow({
         </div>
       </div>
       {canUpload && (
-        <div className="shrink-0 flex flex-col items-end gap-1">
+        <div className="w-full flex flex-col gap-1">
           <input
             ref={fileInputRef}
             type="file"
@@ -1035,7 +1035,7 @@ function DocumentRow({
             accept={getAcceptString()}
             onChange={handleStageFiles}
           />
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex gap-2 w-full">
             <Button
               variant="outline"
               size="sm"
