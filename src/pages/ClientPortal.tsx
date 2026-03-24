@@ -1039,7 +1039,7 @@ function DocumentRow({
             <Button
               variant="outline"
               size="sm"
-              className="text-xs h-8 flex-1 sm:flex-initial"
+              className="text-xs h-8 flex-1"
               disabled={uploading || markingNotHave}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -1048,7 +1048,7 @@ function DocumentRow({
             <Button
               variant="outline"
               size="sm"
-              className="text-xs h-8 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground flex-1 sm:flex-initial font-medium"
+              className="text-xs h-8 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground flex-1 font-medium"
               disabled={uploading || markingNotHave}
               onClick={handleNotHave}
             >
