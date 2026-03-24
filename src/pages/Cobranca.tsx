@@ -26,6 +26,8 @@ export default function Cobranca() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [billingFilter, setBillingFilter] = useState("all");
+  const [editBilling, setEditBilling] = useState<Database["public"]["Tables"]["billing"]["Row"] | null>(null);
+  const [editClientName, setEditClientName] = useState("");
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
