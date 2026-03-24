@@ -207,6 +207,13 @@ export default function Cobranca() {
             </Table>
           </div>
         )}
+
+        <EditBillingDialog
+          open={!!editBilling}
+          onOpenChange={(open) => { if (!open) setEditBilling(null); }}
+          billing={editBilling}
+          clientName={editClientName}
+        />
       </div>
     </InternalLayout>
   );
