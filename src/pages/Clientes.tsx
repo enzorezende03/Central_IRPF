@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, Users, Mail, Phone, Trash2 } from "lucide-react";
+import { Search, Users, Mail, Phone, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatCPF, formatPhone } from "@/lib/format-utils";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,10 +17,24 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type SortField = "full_name" | "created_at" | null;
+type SortDir = "asc" | "desc";
+
 export default function Clientes() {
   const [search, setSearch] = useState("");
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const queryClient = useQueryClient();
   const { role } = useAuth();
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
 
   // Fetch all clients directly
   const { data: allClients = [], isLoading: loadingClients } = useQuery({
@@ -74,12 +88,24 @@ export default function Clientes() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return allClients.filter((client) => {
+    const list = allClients.filter((client) => {
       const name = client.full_name.toLowerCase();
       const cpf = client.cpf;
       return !q || name.includes(q) || cpf.includes(q);
     });
-  }, [allClients, search]);
+    if (sortField) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        if (sortField === "full_name") {
+          cmp = a.full_name.localeCompare(b.full_name, "pt-BR");
+        } else {
+          cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [allClients, search, sortField, sortDir]);
 
   return (
     <InternalLayout>
@@ -105,13 +131,23 @@ export default function Clientes() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Nome</TableHead>
+                  <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("full_name")}>
+                    <span className="flex items-center gap-1">
+                      Nome
+                      {sortField === "full_name" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="min-w-[110px]">CPF</TableHead>
                   <TableHead className="hidden md:table-cell">Telefone</TableHead>
                   <TableHead className="hidden md:table-cell">E-mail</TableHead>
                   <TableHead>Demandas</TableHead>
                   <TableHead className="hidden sm:table-cell">Tag</TableHead>
-                  <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
+                  <TableHead className="hidden lg:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("created_at")}>
+                    <span className="flex items-center gap-1">
+                      Cadastro
+                      {sortField === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="text-center">Ativo</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
