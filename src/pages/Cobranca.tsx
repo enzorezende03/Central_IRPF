@@ -119,6 +119,8 @@ export default function Cobranca() {
                   <TableHead className="min-w-[100px]">Status</TableHead>
                   <TableHead className="hidden md:table-cell">Data Pgto</TableHead>
                   <TableHead className="hidden lg:table-cell">Forma</TableHead>
+                  <TableHead className="hidden md:table-cell">Arq. REC</TableHead>
+                  <TableHead className="hidden md:table-cell">Arq. DEC</TableHead>
                   <TableHead className="min-w-[90px]">Ação</TableHead>
                 </TableRow>
               </TableHeader>
@@ -159,6 +161,24 @@ export default function Cobranca() {
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                         {billing?.payment_method ?? "—"}
                       </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">
+                        {c.final_deliverables?.[0]?.receipt_file_url ? (
+                          <a href={c.final_deliverables[0].receipt_file_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3 text-success" /> Ver
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">
+                        {c.final_deliverables?.[0]?.irpf_file_url ? (
+                          <a href={c.final_deliverables[0].irpf_file_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3 text-success" /> Ver
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           {!isIncluso && billing && billing.billing_status !== "pago" && (
@@ -198,7 +218,7 @@ export default function Cobranca() {
                 })}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">
                       Nenhuma cobrança encontrada.
                     </TableCell>
                   </TableRow>
