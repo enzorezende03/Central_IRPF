@@ -46,7 +46,7 @@ export default function Demandas() {
   }, [cases]);
 
   const filtered = useMemo(() => {
-    return cases.filter((c) => {
+    const list = cases.filter((c) => {
       const q = search.toLowerCase();
       const name = c.clients?.full_name?.toLowerCase() ?? "";
       const matchSearch = !q || name.includes(q);
