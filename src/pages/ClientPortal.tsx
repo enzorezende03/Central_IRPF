@@ -1089,7 +1089,7 @@ function DocumentRow({
               </Button>
             </div>
           )}
-          <p className="text-[9px] text-muted-foreground text-right">
+          <p className="text-[9px] text-muted-foreground text-center w-full">
             Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
           </p>
         </div>
