@@ -144,10 +144,20 @@ export default function Demandas() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Cliente</TableHead>
+                  <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
+                    <span className="flex items-center gap-1">
+                      Cliente
+                      {sortField === "cliente" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell">Tag</TableHead>
                   <TableHead className="hidden md:table-cell">CPF</TableHead>
-                  <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
+                  <TableHead className="hidden lg:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("ano")}>
+                    <span className="flex items-center gap-1">
+                      Ano-base
+                      {sortField === "ano" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell">Responsável</TableHead>
                   <TableHead className="min-w-[100px]">Status Interno</TableHead>
                   <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
