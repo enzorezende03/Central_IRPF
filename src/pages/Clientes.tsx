@@ -88,12 +88,24 @@ export default function Clientes() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return allClients.filter((client) => {
+    const list = allClients.filter((client) => {
       const name = client.full_name.toLowerCase();
       const cpf = client.cpf;
       return !q || name.includes(q) || cpf.includes(q);
     });
-  }, [allClients, search]);
+    if (sortField) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        if (sortField === "full_name") {
+          cmp = a.full_name.localeCompare(b.full_name, "pt-BR");
+        } else {
+          cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [allClients, search, sortField, sortDir]);
 
   return (
     <InternalLayout>
