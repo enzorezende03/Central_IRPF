@@ -131,13 +131,23 @@ export default function Clientes() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Nome</TableHead>
+                  <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("full_name")}>
+                    <span className="flex items-center gap-1">
+                      Nome
+                      {sortField === "full_name" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="min-w-[110px]">CPF</TableHead>
                   <TableHead className="hidden md:table-cell">Telefone</TableHead>
                   <TableHead className="hidden md:table-cell">E-mail</TableHead>
                   <TableHead>Demandas</TableHead>
                   <TableHead className="hidden sm:table-cell">Tag</TableHead>
-                  <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
+                  <TableHead className="hidden lg:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("created_at")}>
+                    <span className="flex items-center gap-1">
+                      Cadastro
+                      {sortField === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="text-center">Ativo</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
