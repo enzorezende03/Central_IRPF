@@ -1026,7 +1026,7 @@ function DocumentRow({
         </div>
       </div>
       {canUpload && (
-        <div className="w-full flex flex-col gap-1">
+        <div className="w-full flex flex-col gap-1 pl-8 sm:pl-0 sm:w-auto sm:shrink-0">
           <input
             ref={fileInputRef}
             type="file"
