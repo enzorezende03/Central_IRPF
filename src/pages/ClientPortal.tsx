@@ -1033,7 +1033,7 @@ function DocumentRow({
             className="hidden"
             multiple
             accept={getAcceptString()}
-            onChange={handleUpload}
+            onChange={handleStageFiles}
           />
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
@@ -1043,11 +1043,7 @@ function DocumentRow({
               disabled={uploading || markingNotHave}
               onClick={() => fileInputRef.current?.click()}
             >
-              {uploading ? (
-                <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
-              ) : (
-                <><Upload className="h-3.5 w-3.5 mr-1" /> Enviar Arquivo</>
-              )}
+              <Upload className="h-3.5 w-3.5 mr-1" /> Anexar Arquivo
             </Button>
             <Button
               variant="outline"
@@ -1064,6 +1060,35 @@ function DocumentRow({
               Não Tenho
             </Button>
           </div>
+          {stagedFiles.length > 0 && (
+            <div className="w-full space-y-1.5 mt-1">
+              {stagedFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 text-[11px] bg-muted/60 rounded px-2 py-1">
+                  <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  <span className="flex-1 truncate">{f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveStaged(i)}
+                    className="text-destructive hover:text-destructive/80 text-xs font-medium"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <Button
+                size="sm"
+                className="w-full text-xs h-8 mt-1"
+                disabled={uploading}
+                onClick={handleSendFiles}
+              >
+                {uploading ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
+                ) : (
+                  <><Send className="h-3.5 w-3.5 mr-1" /> Enviar {stagedFiles.length} arquivo{stagedFiles.length > 1 ? "s" : ""}</>
+                )}
+              </Button>
+            </div>
+          )}
           <p className="text-[9px] text-muted-foreground text-right">
             Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
           </p>
