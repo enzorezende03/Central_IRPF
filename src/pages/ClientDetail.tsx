@@ -424,15 +424,15 @@ export default function ClientDetail() {
                   {portalUrl}
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <Button variant="outline" size="sm" onClick={() => copyToClipboard(portalUrl, "Link", "Link copiado", `Link do portal copiado para ${client?.full_name}`)}>
-                  <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar Link
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => copyToClipboard(portalUrl, "Link", "Link copiado", `Link do portal copiado para ${client?.full_name}`)}>
+                  <Copy className="h-3.5 w-3.5 mr-1" /> Copiar Link
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => copyToClipboard(whatsappMsg, "Mensagem WhatsApp", "WhatsApp copiado", `Mensagem WhatsApp copiada para ${client?.full_name}`)}>
-                  <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> WhatsApp
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => copyToClipboard(whatsappMsg, "Mensagem WhatsApp", "WhatsApp copiado", `Mensagem WhatsApp copiada para ${client?.full_name}`)}>
+                  <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleOpenPortal}>
-                  <Eye className="h-3.5 w-3.5 mr-1.5" /> Abrir
+                <Button variant="outline" size="sm" className="text-xs" onClick={handleOpenPortal}>
+                  <Eye className="h-3.5 w-3.5 mr-1" /> Abrir
                 </Button>
               </div>
             </div>
