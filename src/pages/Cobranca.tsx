@@ -119,6 +119,8 @@ export default function Cobranca() {
                   <TableHead className="min-w-[100px]">Status</TableHead>
                   <TableHead className="hidden md:table-cell">Data Pgto</TableHead>
                   <TableHead className="hidden lg:table-cell">Forma</TableHead>
+                  <TableHead className="hidden md:table-cell">Arq. REC</TableHead>
+                  <TableHead className="hidden md:table-cell">Arq. DEC</TableHead>
                   <TableHead className="min-w-[90px]">Ação</TableHead>
                 </TableRow>
               </TableHeader>
