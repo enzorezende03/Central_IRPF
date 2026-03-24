@@ -926,11 +926,10 @@ function DocumentRow({
 
   const canUpload = doc.status === "pendente" || doc.status === "rejeitado";
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleStageFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Validate all files first
     for (const file of Array.from(files)) {
       const validationError = validateFile(file);
       if (validationError) {
@@ -940,9 +939,19 @@ function DocumentRow({
       }
     }
 
+    setStagedFiles((prev) => [...prev, ...Array.from(files)]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleRemoveStaged = (index: number) => {
+    setStagedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSendFiles = async () => {
+    if (stagedFiles.length === 0) return;
     setUploading(true);
     try {
-      for (const file of Array.from(files)) {
+      for (const file of stagedFiles) {
         const filePath = buildStoragePath(caseId, file.name, doc.id);
         const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, file);
 
@@ -960,16 +969,16 @@ function DocumentRow({
 
       await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
 
-      // Log timeline
       await supabase.from("case_timeline").insert({
         case_id: caseId,
         event_type: "Documento enviado",
-        description: `Cliente enviou "${doc.title}" (${files.length} arquivo(s))`,
+        description: `Cliente enviou "${doc.title}" (${stagedFiles.length} arquivo(s))`,
         visible_to_client: true,
         created_by: "Cliente",
       });
 
       toast.success(`✅ Documento "${doc.title}" enviado com sucesso!`);
+      setStagedFiles([]);
       await checkAllDocsComplete();
       onSuccess();
     } catch (err: any) {
@@ -977,7 +986,6 @@ function DocumentRow({
       toast.error("Erro ao enviar documento. Verifique sua conexão e tente novamente.");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
