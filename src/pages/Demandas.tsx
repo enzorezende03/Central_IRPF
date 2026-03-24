@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { formatCPF } from "@/lib/format-utils";
-import { Search } from "lucide-react";
+import { Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
@@ -21,6 +21,17 @@ export default function Demandas() {
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [internalStatusFilter, setInternalStatusFilter] = useState("all");
   const [clientStatusFilter, setClientStatusFilter] = useState("all");
+  const [sortField, setSortField] = useState<"cliente" | "ano" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (field: "cliente" | "ano") => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
 
   const owners = useMemo(() => {
     const set = new Set<string>();
@@ -35,7 +46,7 @@ export default function Demandas() {
   }, [cases]);
 
   const filtered = useMemo(() => {
-    return cases.filter((c) => {
+    const list = cases.filter((c) => {
       const q = search.toLowerCase();
       const name = c.clients?.full_name?.toLowerCase() ?? "";
       const matchSearch = !q || name.includes(q);
@@ -46,7 +57,19 @@ export default function Demandas() {
       const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
       return matchSearch && matchTag && matchOwner && matchInternal && matchClient;
     });
-  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter]);
+    if (sortField) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        if (sortField === "cliente") {
+          cmp = (a.clients?.full_name ?? "").localeCompare(b.clients?.full_name ?? "", "pt-BR");
+        } else if (sortField === "ano") {
+          cmp = (a.base_year ?? 0) - (b.base_year ?? 0);
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir]);
 
   return (
     <InternalLayout>
@@ -121,10 +144,20 @@ export default function Demandas() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Cliente</TableHead>
+                  <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
+                    <span className="flex items-center gap-1">
+                      Cliente
+                      {sortField === "cliente" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell">Tag</TableHead>
                   <TableHead className="hidden md:table-cell">CPF</TableHead>
-                  <TableHead className="hidden lg:table-cell">Ano-base</TableHead>
+                  <TableHead className="hidden lg:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("ano")}>
+                    <span className="flex items-center gap-1">
+                      Ano-base
+                      {sortField === "ano" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell">Responsável</TableHead>
                   <TableHead className="min-w-[100px]">Status Interno</TableHead>
                   <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
