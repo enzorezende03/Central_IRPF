@@ -858,6 +858,7 @@ function DocumentRow({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [markingNotHave, setMarkingNotHave] = useState(false);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
 
   const checkAllDocsComplete = async () => {
     const { data: remaining } = await supabase
