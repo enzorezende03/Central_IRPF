@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import {
-  Search, DollarSign, TrendingUp, Ban, CheckCircle, Pencil,
+  Search, DollarSign, TrendingUp, Ban, CheckCircle, Pencil, ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
@@ -26,6 +26,19 @@ export default function Cobranca() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [billingFilter, setBillingFilter] = useState("all");
+  type SortField = "cliente" | "honorario" | "data_pgto" | null;
+  type SortDir = "asc" | "desc";
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
   const [editBilling, setEditBilling] = useState<Database["public"]["Tables"]["billing"]["Row"] | null>(null);
   const [editClientName, setEditClientName] = useState("");
 
@@ -44,7 +57,7 @@ export default function Cobranca() {
   }).length;
 
   const filtered = useMemo(() => {
-    return cases.filter((c) => {
+    const list = cases.filter((c) => {
       const q = search.toLowerCase();
       const name = c.clients?.full_name?.toLowerCase() ?? "";
       const matchSearch = !q || name.includes(q);
@@ -52,7 +65,23 @@ export default function Cobranca() {
       const matchBilling = billingFilter === "all" || billing?.billing_status === billingFilter;
       return matchSearch && matchBilling;
     });
-  }, [cases, search, billingFilter]);
+    if (sortField) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        if (sortField === "cliente") {
+          cmp = (a.clients?.full_name ?? "").localeCompare(b.clients?.full_name ?? "", "pt-BR");
+        } else if (sortField === "honorario") {
+          cmp = (a.billing?.[0]?.amount ?? 0) - (b.billing?.[0]?.amount ?? 0);
+        } else if (sortField === "data_pgto") {
+          const da = a.billing?.[0]?.payment_date ?? "";
+          const db = b.billing?.[0]?.payment_date ?? "";
+          cmp = da.localeCompare(db);
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [cases, search, billingFilter, sortField, sortDir]);
 
   const handleQuickStatusChange = async (billingId: string, newStatus: BillingStatus) => {
     const updates: Record<string, unknown> = { billing_status: newStatus };
@@ -112,12 +141,27 @@ export default function Cobranca() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Cliente</TableHead>
+                  <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
+                    <span className="flex items-center gap-1">
+                      Cliente
+                      {sortField === "cliente" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell">Responsável</TableHead>
                   <TableHead className="hidden sm:table-cell">Tipo</TableHead>
-                  <TableHead className="min-w-[90px]">Honorário</TableHead>
+                  <TableHead className="min-w-[90px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("honorario")}>
+                    <span className="flex items-center gap-1">
+                      Honorário
+                      {sortField === "honorario" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="min-w-[100px]">Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Data Pgto</TableHead>
+                  <TableHead className="hidden md:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("data_pgto")}>
+                    <span className="flex items-center gap-1">
+                      Data Pgto
+                      {sortField === "data_pgto" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="hidden lg:table-cell">Forma</TableHead>
                   <TableHead className="hidden md:table-cell">Arq. REC</TableHead>
                   <TableHead className="hidden md:table-cell">Arq. DEC</TableHead>
