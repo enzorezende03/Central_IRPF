@@ -160,23 +160,38 @@ export default function Cobranca() {
                         {billing?.payment_method ?? "—"}
                       </TableCell>
                       <TableCell>
-                        {!isIncluso && billing && billing.billing_status !== "pago" && (
-                          <div className="flex gap-1">
-                            {billing.billing_status === "nao_cobrado" && (
-                              <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => handleQuickStatusChange(billing.id, "cobrado")}>
-                                Cobrar
+                        <div className="flex items-center gap-1">
+                          {!isIncluso && billing && billing.billing_status !== "pago" && (
+                            <>
+                              {billing.billing_status === "nao_cobrado" && (
+                                <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => handleQuickStatusChange(billing.id, "cobrado")}>
+                                  Cobrar
+                                </Button>
+                              )}
+                              <Button variant="default" size="sm" className="text-xs h-7" onClick={() => handleQuickStatusChange(billing.id, "pago")}>
+                                <CheckCircle className="h-3 w-3 mr-1" /> Pago
                               </Button>
-                            )}
-                            <Button variant="default" size="sm" className="text-xs h-7" onClick={() => handleQuickStatusChange(billing.id, "pago")}>
-                              <CheckCircle className="h-3 w-3 mr-1" /> Pago
+                            </>
+                          )}
+                          {!isIncluso && billing?.billing_status === "pago" && (
+                            <span className="text-xs text-success flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" /> Quitado
+                            </span>
+                          )}
+                          {!isIncluso && billing && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => {
+                                setEditBilling(billing);
+                                setEditClientName(c.clients?.full_name ?? "");
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                          </div>
-                        )}
-                        {(isIncluso || billing?.billing_status === "pago") && !isIncluso && (
-                          <span className="text-xs text-success flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3" /> Quitado
-                          </span>
-                        )}
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
