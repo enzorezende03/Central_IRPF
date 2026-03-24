@@ -1026,7 +1026,7 @@ function DocumentRow({
         </div>
       </div>
       {canUpload && (
-        <div className="shrink-0 flex flex-col items-end gap-1">
+        <div className="w-full flex flex-col gap-1">
           <input
             ref={fileInputRef}
             type="file"
@@ -1035,11 +1035,11 @@ function DocumentRow({
             accept={getAcceptString()}
             onChange={handleStageFiles}
           />
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex gap-2 w-full">
             <Button
               variant="outline"
               size="sm"
-              className="text-xs h-8 flex-1 sm:flex-initial"
+              className="text-xs h-8 flex-1"
               disabled={uploading || markingNotHave}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -1048,7 +1048,7 @@ function DocumentRow({
             <Button
               variant="outline"
               size="sm"
-              className="text-xs h-8 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground flex-1 sm:flex-initial font-medium"
+              className="text-xs h-8 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground flex-1 font-medium"
               disabled={uploading || markingNotHave}
               onClick={handleNotHave}
             >
@@ -1089,7 +1089,7 @@ function DocumentRow({
               </Button>
             </div>
           )}
-          <p className="text-[9px] text-muted-foreground text-right">
+          <p className="text-[9px] text-muted-foreground text-center w-full">
             Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
           </p>
         </div>
@@ -1345,7 +1345,7 @@ function QuestionRow({
                   variant="outline"
                   size="sm"
                   onClick={() => setText(opt.value)}
-                  className={`justify-start ${text === opt.value ? "border-primary bg-primary/10" : ""}`}
+                  className={`justify-start text-left whitespace-normal h-auto py-2 ${text === opt.value ? "border-primary bg-primary/10" : ""}`}
                 >
                   {opt.label}
                 </Button>
