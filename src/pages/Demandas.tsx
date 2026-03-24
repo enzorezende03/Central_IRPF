@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { formatCPF } from "@/lib/format-utils";
-import { Search } from "lucide-react";
+import { Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
