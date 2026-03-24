@@ -858,6 +858,7 @@ function DocumentRow({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [markingNotHave, setMarkingNotHave] = useState(false);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
 
   const checkAllDocsComplete = async () => {
     const { data: remaining } = await supabase
@@ -925,11 +926,10 @@ function DocumentRow({
 
   const canUpload = doc.status === "pendente" || doc.status === "rejeitado";
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleStageFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Validate all files first
     for (const file of Array.from(files)) {
       const validationError = validateFile(file);
       if (validationError) {
@@ -939,9 +939,19 @@ function DocumentRow({
       }
     }
 
+    setStagedFiles((prev) => [...prev, ...Array.from(files)]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleRemoveStaged = (index: number) => {
+    setStagedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSendFiles = async () => {
+    if (stagedFiles.length === 0) return;
     setUploading(true);
     try {
-      for (const file of Array.from(files)) {
+      for (const file of stagedFiles) {
         const filePath = buildStoragePath(caseId, file.name, doc.id);
         const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, file);
 
@@ -959,16 +969,16 @@ function DocumentRow({
 
       await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
 
-      // Log timeline
       await supabase.from("case_timeline").insert({
         case_id: caseId,
         event_type: "Documento enviado",
-        description: `Cliente enviou "${doc.title}" (${files.length} arquivo(s))`,
+        description: `Cliente enviou "${doc.title}" (${stagedFiles.length} arquivo(s))`,
         visible_to_client: true,
         created_by: "Cliente",
       });
 
       toast.success(`✅ Documento "${doc.title}" enviado com sucesso!`);
+      setStagedFiles([]);
       await checkAllDocsComplete();
       onSuccess();
     } catch (err: any) {
@@ -976,7 +986,6 @@ function DocumentRow({
       toast.error("Erro ao enviar documento. Verifique sua conexão e tente novamente.");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -1024,7 +1033,7 @@ function DocumentRow({
             className="hidden"
             multiple
             accept={getAcceptString()}
-            onChange={handleUpload}
+            onChange={handleStageFiles}
           />
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
@@ -1034,11 +1043,7 @@ function DocumentRow({
               disabled={uploading || markingNotHave}
               onClick={() => fileInputRef.current?.click()}
             >
-              {uploading ? (
-                <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
-              ) : (
-                <><Upload className="h-3.5 w-3.5 mr-1" /> Enviar Arquivo</>
-              )}
+              <Upload className="h-3.5 w-3.5 mr-1" /> Anexar Arquivo
             </Button>
             <Button
               variant="outline"
@@ -1055,6 +1060,35 @@ function DocumentRow({
               Não Tenho
             </Button>
           </div>
+          {stagedFiles.length > 0 && (
+            <div className="w-full space-y-1.5 mt-1">
+              {stagedFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 text-[11px] bg-muted/60 rounded px-2 py-1">
+                  <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  <span className="flex-1 truncate">{f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveStaged(i)}
+                    className="text-destructive hover:text-destructive/80 text-xs font-medium"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <Button
+                size="sm"
+                className="w-full text-xs h-8 mt-1"
+                disabled={uploading}
+                onClick={handleSendFiles}
+              >
+                {uploading ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
+                ) : (
+                  <><Send className="h-3.5 w-3.5 mr-1" /> Enviar {stagedFiles.length} arquivo{stagedFiles.length > 1 ? "s" : ""}</>
+                )}
+              </Button>
+            </div>
+          )}
           <p className="text-[9px] text-muted-foreground text-right">
             Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
           </p>
