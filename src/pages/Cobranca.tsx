@@ -26,6 +26,19 @@ export default function Cobranca() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [billingFilter, setBillingFilter] = useState("all");
+  type SortField = "cliente" | "honorario" | "data_pgto" | null;
+  type SortDir = "asc" | "desc";
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
   const [editBilling, setEditBilling] = useState<Database["public"]["Tables"]["billing"]["Row"] | null>(null);
   const [editClientName, setEditClientName] = useState("");
 
