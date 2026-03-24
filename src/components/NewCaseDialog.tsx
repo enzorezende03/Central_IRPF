@@ -320,6 +320,21 @@ export function NewCaseDialog() {
               </div>
             </div>
 
+            {billingType === "cobranca_extra" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="nd-fee">Valor da Cobrança (R$)</Label>
+                <Input
+                  id="nd-fee"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Ex: 350,00"
+                  value={feeAmount}
+                  onChange={(e) => setFeeAmount(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Este valor será usado apenas no financeiro.</p>
+              </div>
+            )}
+
 
             {/* Document selection */}
             {docTemplates.length > 0 && (
