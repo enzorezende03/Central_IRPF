@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import {
-  Search, DollarSign, TrendingUp, Ban, CheckCircle,
+  Search, DollarSign, TrendingUp, Ban, CheckCircle, Pencil,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
