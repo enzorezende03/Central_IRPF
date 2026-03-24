@@ -1345,7 +1345,7 @@ function QuestionRow({
                   variant="outline"
                   size="sm"
                   onClick={() => setText(opt.value)}
-                  className={`justify-start ${text === opt.value ? "border-primary bg-primary/10" : ""}`}
+                  className={`justify-start text-left whitespace-normal h-auto py-2 ${text === opt.value ? "border-primary bg-primary/10" : ""}`}
                 >
                   {opt.label}
                 </Button>
