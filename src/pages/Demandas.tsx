@@ -57,7 +57,19 @@ export default function Demandas() {
       const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
       return matchSearch && matchTag && matchOwner && matchInternal && matchClient;
     });
-  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter]);
+    if (sortField) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        if (sortField === "cliente") {
+          cmp = (a.clients?.full_name ?? "").localeCompare(b.clients?.full_name ?? "", "pt-BR");
+        } else if (sortField === "ano") {
+          cmp = (a.base_year ?? 0) - (b.base_year ?? 0);
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir]);
 
   return (
     <InternalLayout>
