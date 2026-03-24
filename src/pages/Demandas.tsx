@@ -21,6 +21,17 @@ export default function Demandas() {
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [internalStatusFilter, setInternalStatusFilter] = useState("all");
   const [clientStatusFilter, setClientStatusFilter] = useState("all");
+  const [sortField, setSortField] = useState<"cliente" | "ano" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (field: "cliente" | "ano") => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
 
   const owners = useMemo(() => {
     const set = new Set<string>();
