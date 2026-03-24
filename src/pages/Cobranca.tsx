@@ -141,12 +141,27 @@ export default function Cobranca() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Cliente</TableHead>
+                  <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
+                    <span className="flex items-center gap-1">
+                      Cliente
+                      {sortField === "cliente" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell">Responsável</TableHead>
                   <TableHead className="hidden sm:table-cell">Tipo</TableHead>
-                  <TableHead className="min-w-[90px]">Honorário</TableHead>
+                  <TableHead className="min-w-[90px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("honorario")}>
+                    <span className="flex items-center gap-1">
+                      Honorário
+                      {sortField === "honorario" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="min-w-[100px]">Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Data Pgto</TableHead>
+                  <TableHead className="hidden md:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("data_pgto")}>
+                    <span className="flex items-center gap-1">
+                      Data Pgto
+                      {sortField === "data_pgto" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </span>
+                  </TableHead>
                   <TableHead className="hidden lg:table-cell">Forma</TableHead>
                   <TableHead className="hidden md:table-cell">Arq. REC</TableHead>
                   <TableHead className="hidden md:table-cell">Arq. DEC</TableHead>
