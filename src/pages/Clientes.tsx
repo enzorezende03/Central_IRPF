@@ -17,10 +17,24 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type SortField = "full_name" | "created_at" | null;
+type SortDir = "asc" | "desc";
+
 export default function Clientes() {
   const [search, setSearch] = useState("");
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const queryClient = useQueryClient();
   const { role } = useAuth();
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
 
   // Fetch all clients directly
   const { data: allClients = [], isLoading: loadingClients } = useQuery({
