@@ -53,3 +53,22 @@ export function maskPhone(value: string): string {
   if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
+
+/**
+ * Title-case a name: capitalize only the first letter of each word.
+ * Prepositions (da, de, do, dos, das, e) stay lowercase unless they are the first word.
+ */
+const LOWERCASE_WORDS = new Set(["da", "de", "do", "dos", "das", "e"]);
+
+export function titleCaseName(name: string): string {
+  return name
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((word, index) => {
+      const lower = word.toLowerCase();
+      if (index > 0 && LOWERCASE_WORDS.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+}
