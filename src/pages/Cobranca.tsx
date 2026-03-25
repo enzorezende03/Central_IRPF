@@ -83,7 +83,7 @@ export default function Cobranca() {
       });
     }
     return list;
-  }, [cases, search, billingFilter, sortField, sortDir]);
+  }, [cases, search, billingFilter, typeFilter, sortField, sortDir]);
 
   const handleQuickStatusChange = async (billingId: string, newStatus: BillingStatus) => {
     const updates: Record<string, unknown> = { billing_status: newStatus };
