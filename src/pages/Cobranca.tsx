@@ -64,7 +64,8 @@ export default function Cobranca() {
       const matchSearch = !q || name.includes(q);
       const billing = c.billing?.[0];
       const matchBilling = billingFilter === "all" || billing?.billing_status === billingFilter;
-      return matchSearch && matchBilling;
+      const matchType = typeFilter === "all" || billing?.billing_type === typeFilter;
+      return matchSearch && matchBilling && matchType;
     });
     if (sortField) {
       list.sort((a, b) => {
