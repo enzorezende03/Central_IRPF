@@ -46,7 +46,7 @@ export function NewClientDialog({ trigger, onCreated }: NewClientDialogProps) {
       const { data, error } = await supabase
         .from("clients")
         .insert({
-          full_name: form.full_name.trim(),
+          full_name: titleCaseName(form.full_name),
           cpf: form.cpf.trim(),
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,

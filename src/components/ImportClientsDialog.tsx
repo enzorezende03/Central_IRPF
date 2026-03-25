@@ -84,7 +84,7 @@ function mapRow(row: Record<string, any>): ParsedClient {
   if (!cpf) errors.push("CPF obrigatório");
 
   return {
-    full_name,
+    full_name: titleCaseName(full_name),
     cpf,
     email,
     phone,
