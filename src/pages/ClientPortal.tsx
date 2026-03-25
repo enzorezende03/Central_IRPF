@@ -4,7 +4,7 @@ import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import {
   FileText, Upload, CheckCircle, Circle, AlertTriangle, Download,
   MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
-  Home, ClipboardList, HelpCircle,
+  Home, ClipboardList, HelpCircle, RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
@@ -1106,7 +1106,102 @@ function DocumentRow({
   );
 }
 
-// ── Question Row ──
+// ── Replace File Button (for "enviado" docs) ──
+function ReplaceFileButton({
+  doc,
+  caseId,
+  clientId,
+  onSuccess,
+}: {
+  doc: Tables<"document_requests">;
+  caseId: string;
+  clientId?: string;
+  onSuccess: () => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+
+  const handleStageFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    for (const file of Array.from(files)) {
+      const err = validateFile(file);
+      if (err) { toast.error(err); if (fileInputRef.current) fileInputRef.current.value = ""; return; }
+    }
+    setStagedFiles((prev) => [...prev, ...Array.from(files)]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSendReplacement = async () => {
+    if (stagedFiles.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of stagedFiles) {
+        const filePath = buildStoragePath(caseId, file.name, doc.id);
+        const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, file);
+        await supabase.from("uploaded_documents").insert({
+          case_id: caseId,
+          document_request_id: doc.id,
+          client_id: clientId ?? null,
+          file_name: file.name,
+          file_url: fileUrl,
+          file_type: file.type || null,
+          uploaded_by: "client",
+        });
+      }
+      // Set status back to "enviado" (re-triggers analysis)
+      await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
+      await supabase.from("case_timeline").insert({
+        case_id: caseId,
+        event_type: "Documento substituído",
+        description: `Cliente solicitou substituição de "${doc.title}" (${stagedFiles.length} arquivo(s))`,
+        visible_to_client: true,
+        created_by: "Cliente",
+      });
+      toast.success(`Documento "${doc.title}" substituído com sucesso!`);
+      setStagedFiles([]);
+      onSuccess();
+    } catch {
+      toast.error("Erro ao substituir documento.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="w-full flex flex-col gap-1 mt-1">
+      <input ref={fileInputRef} type="file" className="hidden" multiple accept={getAcceptString()} onChange={handleStageFiles} />
+      <Button
+        variant="outline"
+        size="sm"
+        className="text-[11px] h-8 w-full px-2"
+        disabled={uploading}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <RefreshCw className="h-3.5 w-3.5 mr-1 shrink-0" /> Substituir Arquivo
+      </Button>
+      {stagedFiles.length > 0 && (
+        <div className="w-full space-y-1.5 mt-1">
+          {stagedFiles.map((f, i) => (
+            <div key={i} className="flex items-center gap-2 text-[11px] bg-muted/60 rounded px-2 py-1">
+              <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <span className="flex-1 truncate">{f.name}</span>
+              <button type="button" onClick={() => setStagedFiles((prev) => prev.filter((_, idx) => idx !== i))} className="text-destructive hover:text-destructive/80 text-xs font-medium">✕</button>
+            </div>
+          ))}
+          <Button size="sm" className="w-full text-xs h-8 mt-1" disabled={uploading} onClick={handleSendReplacement}>
+            {uploading ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</> : <><Send className="h-3.5 w-3.5 mr-1" /> Enviar Substituição</>}
+          </Button>
+        </div>
+      )}
+      <p className="text-[9px] text-muted-foreground text-center w-full">
+        Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
+      </p>
+    </div>
+  );
+}
+
 function QuestionRow({
   question,
   answer,
