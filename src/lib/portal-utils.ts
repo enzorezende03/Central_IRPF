@@ -24,7 +24,7 @@ export function getWhatsAppMessage(clientName: string, slugOrToken: string, cust
       .replace("[nome]", clientName)
       .replace("[link]", link);
   }
-  return `Olá, ${clientName}. Para darmos andamento ao seu IRPF, envie seus documentos e responda as pendências neste link:\n${link}`;
+  return `Olá ${clientName}. Tudo bem?\n\nPara darmos andamento ao seu Imposto de Renda, pedimos que envie seus documentos e responda as pendências pelo link abaixo: ${link}.\n\nNeste portal você também pode acompanhar o status da sua declaração e, se precisar, nos enviar dúvidas por mensagem.`;
 }
 
 export async function logTimelineEvent(
