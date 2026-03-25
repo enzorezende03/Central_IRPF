@@ -68,7 +68,16 @@ export function titleCaseName(name: string): string {
     .map((word, index) => {
       const lower = word.toLowerCase();
       if (index > 0 && LOWERCASE_WORDS.has(lower)) return lower;
-      return lower.charAt(0).toUpperCase() + lower.slice(1);
+      let result = lower.charAt(0).toUpperCase() + lower.slice(1);
+      // Add dot after single-letter abbreviations (e.g. "C" → "C.")
+      if (/^[A-Za-z]$/.test(result)) {
+        result += ".";
+      }
+      // Add dot after "Jr" or "jr" → "Jr."
+      if (/^[Jj]r$/.test(result)) {
+        result += ".";
+      }
+      return result;
     })
     .join(" ");
 }
