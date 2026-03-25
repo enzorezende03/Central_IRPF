@@ -19,12 +19,13 @@ export function getPortalUrl(slugOrToken: string) {
 
 export function getWhatsAppMessage(clientName: string, slugOrToken: string, customMessage?: string | null) {
   const link = getPortalUrl(slugOrToken);
+  const firstName = clientName.split(" ")[0];
   if (customMessage) {
     return customMessage
-      .replace("[nome]", clientName)
+      .replace("[nome]", firstName)
       .replace("[link]", link);
   }
-  return `Olá ${clientName}. Tudo bem?\n\nPara darmos andamento ao seu Imposto de Renda, pedimos que envie seus documentos e responda as pendências pelo link abaixo: ${link}.\n\nNeste portal você também pode acompanhar o status da sua declaração e, se precisar, nos enviar dúvidas por mensagem.`;
+  return `Olá ${firstName}. Tudo bem?\n\nPara darmos andamento ao seu Imposto de Renda, pedimos que envie seus documentos e responda as pendências pelo link abaixo: ${link}.\n\nNeste portal você também pode acompanhar o status da sua declaração e, se precisar, nos enviar dúvidas por mensagem.`;
 }
 
 export async function logTimelineEvent(
