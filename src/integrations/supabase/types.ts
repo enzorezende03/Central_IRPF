@@ -321,6 +321,7 @@ export type Database = {
       final_deliverables: {
         Row: {
           case_id: string
+          dec_file_url: string | null
           guide_url: string | null
           has_guide: boolean
           id: string
@@ -328,12 +329,14 @@ export type Database = {
           preview_feedback: string | null
           preview_file_url: string | null
           preview_status: Database["public"]["Enums"]["preview_status"] | null
+          rec_file_url: string | null
           receipt_file_url: string | null
           sent_to_client: boolean
           uploaded_at: string
         }
         Insert: {
           case_id: string
+          dec_file_url?: string | null
           guide_url?: string | null
           has_guide?: boolean
           id?: string
@@ -341,12 +344,14 @@ export type Database = {
           preview_feedback?: string | null
           preview_file_url?: string | null
           preview_status?: Database["public"]["Enums"]["preview_status"] | null
+          rec_file_url?: string | null
           receipt_file_url?: string | null
           sent_to_client?: boolean
           uploaded_at?: string
         }
         Update: {
           case_id?: string
+          dec_file_url?: string | null
           guide_url?: string | null
           has_guide?: boolean
           id?: string
@@ -354,6 +359,7 @@ export type Database = {
           preview_feedback?: string | null
           preview_file_url?: string | null
           preview_status?: Database["public"]["Enums"]["preview_status"] | null
+          rec_file_url?: string | null
           receipt_file_url?: string | null
           sent_to_client?: boolean
           uploaded_at?: string
