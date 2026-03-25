@@ -302,8 +302,8 @@ export default function ClientDetail() {
   const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", linkId, caseData.client_message);
 
   const unansweredCount = 0;
-  const approvedDocs = docRequests.filter((d) => d.is_required && d.status === "aprovado").length;
-  const pendingDocs = docRequests.filter((d) => d.is_required && (d.status === "pendente" || d.status === "rejeitado")).length;
+  const approvedDocs = docRequests.filter((d) => d.status === "aprovado").length;
+  const pendingDocs = docRequests.filter((d) => d.status === "pendente" || d.status === "rejeitado").length;
 
   const copyToClipboard = async (text: string, label: string, eventType: string, description: string) => {
     navigator.clipboard.writeText(text);
