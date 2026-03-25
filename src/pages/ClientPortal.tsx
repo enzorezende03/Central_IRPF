@@ -990,26 +990,23 @@ function DocumentRow({
   };
 
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border transition-colors ${
+    <div className={`flex flex-col gap-3 p-4 rounded-lg border transition-colors ${
       doc.status === "rejeitado" ? "border-destructive/30 bg-destructive/5" :
       doc.status === "aprovado" ? "border-success/30 bg-success/5" :
       "hover:bg-muted/50"
     }`}>
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex items-start gap-3">
         {statusIcon[doc.status]}
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium ${doc.status === "aprovado" ? "line-through text-muted-foreground" : ""}`}>
+          <p className={`text-sm font-medium leading-snug ${doc.status === "aprovado" ? "line-through text-muted-foreground" : ""}`}>
             {doc.title}
           </p>
-          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-[10px] text-muted-foreground">
               {doc.category === "nao_possui" ? "Informado — Não possuo" : statusLabel[doc.status]}
             </span>
             {doc.is_required && (
               <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>
-            )}
-            {doc.category && (
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{doc.category}</span>
             )}
           </div>
           {uploadedDocs.length > 0 && (
@@ -1018,7 +1015,7 @@ function DocumentRow({
                 <div key={ud.id} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <CheckCircle className="h-3 w-3 text-success shrink-0" />
                   <span className="truncate">{ud.file_name}</span>
-                  <span>· {new Date(ud.uploaded_at).toLocaleDateString("pt-BR")}</span>
+                  <span className="shrink-0">· {new Date(ud.uploaded_at).toLocaleDateString("pt-BR")}</span>
                 </div>
               ))}
             </div>
