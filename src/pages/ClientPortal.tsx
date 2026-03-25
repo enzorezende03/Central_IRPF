@@ -1094,6 +1094,14 @@ function DocumentRow({
           </p>
         </div>
       )}
+      {doc.status === "enviado" && !canUpload && (
+        <ReplaceFileButton
+          doc={doc}
+          caseId={caseId}
+          clientId={clientId}
+          onSuccess={onSuccess}
+        />
+      )}
     </div>
   );
 }
