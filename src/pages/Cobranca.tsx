@@ -26,6 +26,7 @@ export default function Cobranca() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [billingFilter, setBillingFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   type SortField = "cliente" | "honorario" | "data_pgto" | null;
   type SortDir = "asc" | "desc";
   const [sortField, setSortField] = useState<SortField>(null);
@@ -63,7 +64,8 @@ export default function Cobranca() {
       const matchSearch = !q || name.includes(q);
       const billing = c.billing?.[0];
       const matchBilling = billingFilter === "all" || billing?.billing_status === billingFilter;
-      return matchSearch && matchBilling;
+      const matchType = typeFilter === "all" || billing?.billing_type === typeFilter;
+      return matchSearch && matchBilling && matchType;
     });
     if (sortField) {
       list.sort((a, b) => {
@@ -81,7 +83,7 @@ export default function Cobranca() {
       });
     }
     return list;
-  }, [cases, search, billingFilter, sortField, sortDir]);
+  }, [cases, search, billingFilter, typeFilter, sortField, sortDir]);
 
   const handleQuickStatusChange = async (billingId: string, newStatus: BillingStatus) => {
     const updates: Record<string, unknown> = { billing_status: newStatus };
@@ -127,6 +129,17 @@ export default function Cobranca() {
             <SelectContent>
               <SelectItem value="all">Todas cobranças</SelectItem>
               {Object.entries(BILLING_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tipos</SelectItem>
+              {Object.entries(BILLING_TYPE_LABELS).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v}</SelectItem>
               ))}
             </SelectContent>
