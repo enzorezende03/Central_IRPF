@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logTimelineEvent, generateSlug } from "@/lib/portal-utils";
+import { titleCaseName } from "@/lib/format-utils";
 import * as XLSX from "xlsx";
 
 interface ParsedClient {

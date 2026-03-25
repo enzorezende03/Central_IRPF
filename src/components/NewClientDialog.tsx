@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { titleCaseName } from "@/lib/format-utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
