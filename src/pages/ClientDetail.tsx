@@ -514,19 +514,51 @@ export default function ClientDetail() {
             <Collapsible>
               <Card>
                 <CardHeader className="pb-3">
-                  <CollapsibleTrigger className="w-full text-left">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        Checklist Documental
-                      </CardTitle>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
-                    </div>
-                    <CardDescription className="mt-1">
-                      {approvedDocs} aprovados · {pendingDocs} pendentes · {docRequests.length} total
-                    </CardDescription>
-                  </CollapsibleTrigger>
-                </CardHeader>
+                   <CollapsibleTrigger className="w-full text-left">
+                     <div className="flex items-center justify-between">
+                       <CardTitle className="text-base flex items-center gap-2">
+                         <FileText className="h-4 w-4 text-primary" />
+                         Checklist Documental
+                       </CardTitle>
+                       <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                     </div>
+                     <CardDescription className="mt-1">
+                       {approvedDocs} aprovados · {pendingDocs} pendentes · {docRequests.length} total
+                     </CardDescription>
+                   </CollapsibleTrigger>
+                   {uploadedDocs.length > 0 && (
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       className="mt-2 w-full text-xs"
+                       onClick={async (e) => {
+                         e.stopPropagation();
+                         toast.info("Iniciando download dos documentos...");
+                         for (const doc of uploadedDocs) {
+                           try {
+                             const res = await fetch(doc.file_url);
+                             const blob = await res.blob();
+                             const a = document.createElement("a");
+                             a.href = URL.createObjectURL(blob);
+                             a.download = doc.file_name;
+                             document.body.appendChild(a);
+                             a.click();
+                             document.body.removeChild(a);
+                             URL.revokeObjectURL(a.href);
+                             // Small delay between downloads to avoid browser blocking
+                             await new Promise((r) => setTimeout(r, 500));
+                           } catch {
+                             toast.error(`Erro ao baixar: ${doc.file_name}`);
+                           }
+                         }
+                         toast.success(`${uploadedDocs.length} documento(s) baixado(s)!`);
+                       }}
+                     >
+                       <Download className="h-3.5 w-3.5 mr-1.5" />
+                       Baixar Todos ({uploadedDocs.length})
+                     </Button>
+                   )}
+                 </CardHeader>
                 <CollapsibleContent>
                   <CardContent className="space-y-2">
                     {docRequests.map((doc) => {
