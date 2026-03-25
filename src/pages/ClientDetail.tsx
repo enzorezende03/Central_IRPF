@@ -1097,7 +1097,7 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
     <div className="space-y-3">
       <div className="flex items-center gap-2 p-2.5 rounded-lg border">
         <FileText className={`h-4 w-4 shrink-0 ${deliverable?.irpf_file_url ? "text-success" : "text-muted-foreground"}`} />
-        <span className="text-sm flex-1">{deliverable?.irpf_file_url ? "Declaração IRPF Final" : "Enviar Declaração IRPF"}</span>
+        <span className="text-sm flex-1">{deliverable?.irpf_file_url ? "Arquivo DEC" : "Enviar Arquivo DEC"}</span>
         {deliverable?.irpf_file_url && (
           <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
             <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
@@ -1110,7 +1110,7 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
       </div>
       <div className="flex items-center gap-2 p-2.5 rounded-lg border">
         <FileText className={`h-4 w-4 shrink-0 ${deliverable?.receipt_file_url ? "text-success" : "text-muted-foreground"}`} />
-        <span className="text-sm flex-1">{deliverable?.receipt_file_url ? "Recibo de Entrega" : "Enviar Recibo de Entrega"}</span>
+        <span className="text-sm flex-1">{deliverable?.receipt_file_url ? "Arquivo REC" : "Enviar Arquivo REC"}</span>
         {deliverable?.receipt_file_url && (
           <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
             <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
