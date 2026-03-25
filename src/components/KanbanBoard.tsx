@@ -10,9 +10,11 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-type KanbanColumn = CaseStatus | "previa_enviada";
+type KanbanColumn = CaseStatus | "previa_enviada" | "solicitacao_documentacao" | "procuracao";
 
 const COLUMNS: KanbanColumn[] = [
+  "solicitacao_documentacao",
+  "procuracao",
   "aguardando_cliente",
   "documentos_em_analise",
   "em_andamento",
@@ -23,10 +25,14 @@ const COLUMNS: KanbanColumn[] = [
 
 const COLUMN_LABELS: Record<KanbanColumn, string> = {
   ...STATUS_LABELS,
+  solicitacao_documentacao: "Solicitação de Documentação",
+  procuracao: "Procuração",
   previa_enviada: "Envio de Prévia",
 };
 
 const columnColors: Record<KanbanColumn, string> = {
+  solicitacao_documentacao: "border-t-amber-500",
+  procuracao: "border-t-cyan-500",
   aguardando_cliente: "border-t-warning",
   documentos_em_analise: "border-t-info",
   em_andamento: "border-t-primary",
@@ -36,6 +42,8 @@ const columnColors: Record<KanbanColumn, string> = {
 };
 
 const dotColors: Record<KanbanColumn, string> = {
+  solicitacao_documentacao: "bg-amber-500",
+  procuracao: "bg-cyan-500",
   aguardando_cliente: "bg-warning",
   documentos_em_analise: "bg-info",
   em_andamento: "bg-primary",
@@ -44,9 +52,31 @@ const dotColors: Record<KanbanColumn, string> = {
   finalizado: "bg-success",
 };
 
+function getChecklistColumn(c: CaseWithClient): KanbanColumn | null {
+  if (c.status !== "aguardando_cliente") return null;
+
+  const checklist = (c.internal_checklist ?? []).sort((a, b) => a.sort_order - b.sort_order);
+  if (checklist.length === 0) return null;
+
+  const solicitarDoc = checklist[0];
+  const procuracao = checklist[1];
+
+  if (!solicitarDoc?.checked) {
+    return "solicitacao_documentacao";
+  }
+
+  if (procuracao && !procuracao.checked) {
+    return "procuracao";
+  }
+
+  return null;
+}
+
 export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
   const grouped = useMemo(() => {
     const map: Record<KanbanColumn, CaseWithClient[]> = {
+      solicitacao_documentacao: [],
+      procuracao: [],
       aguardando_cliente: [],
       documentos_em_analise: [],
       em_andamento: [],
@@ -59,9 +89,19 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
         ? c.final_deliverables[0]
         : c.final_deliverables;
       const hasPreview = fd?.preview_file_url;
+
       if (hasPreview && c.status !== "finalizado") {
         map.previa_enviada.push(c);
-      } else if (map[c.status]) {
+        return;
+      }
+
+      const checklistCol = getChecklistColumn(c);
+      if (checklistCol) {
+        map[checklistCol].push(c);
+        return;
+      }
+
+      if (map[c.status]) {
         map[c.status].push(c);
       }
     });
