@@ -1062,24 +1062,31 @@ function PreviewCard({ caseId, deliverable, onRefresh }: { caseId: string; deliv
 function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
   const irpfRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState<"irpf" | "receipt" | null>(null);
+  const recRef = useRef<HTMLInputElement>(null);
+  const decRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<"irpf" | "receipt" | "rec" | "dec" | null>(null);
 
-  const handleUpload = async (type: "irpf" | "receipt", file: File) => {
+  const UPLOAD_CONFIG = {
+    irpf: { bucket: "declaracoes_finais", field: "irpf_file_url", label: "Declaração IRPF" },
+    receipt: { bucket: "recibos_entrega", field: "receipt_file_url", label: "Recibo de Entrega" },
+    rec: { bucket: "recibos_entrega", field: "rec_file_url", label: "Arquivo REC" },
+    dec: { bucket: "declaracoes_finais", field: "dec_file_url", label: "Arquivo DEC" },
+  } as const;
+
+  const handleUpload = async (type: keyof typeof UPLOAD_CONFIG, file: File) => {
     const err = validateFile(file);
     if (err) { toast.error(err); return; }
     setUploading(type);
-    const bucket = type === "irpf" ? "declaracoes_finais" : "recibos_entrega";
+    const cfg = UPLOAD_CONFIG[type];
     try {
-      const url = await uploadFileToBucket(bucket, buildStoragePath(caseId, file.name), file);
-      const field = type === "irpf" ? "irpf_file_url" : "receipt_file_url";
+      const url = await uploadFileToBucket(cfg.bucket, buildStoragePath(caseId, file.name), file);
       if (deliverable) {
-        await supabase.from("final_deliverables").update({ [field]: url }).eq("id", deliverable.id);
+        await supabase.from("final_deliverables").update({ [cfg.field]: url } as any).eq("id", deliverable.id);
       } else {
-        await supabase.from("final_deliverables").insert({ case_id: caseId, [field]: url } as any);
+        await supabase.from("final_deliverables").insert({ case_id: caseId, [cfg.field]: url } as any);
       }
-      const label = type === "irpf" ? "Declaração IRPF" : "Recibo de Entrega";
-      await logTimelineEvent(caseId, `${label} enviada`, `Arquivo: ${file.name}`, true);
-      toast.success(`${label} enviada!`);
+      await logTimelineEvent(caseId, `${cfg.label} enviado(a)`, `Arquivo: ${file.name}`, true);
+      toast.success(`${cfg.label} enviado(a)!`);
       onRefresh();
     } catch { toast.error("Erro ao enviar."); } finally { setUploading(null); }
   };
@@ -1093,35 +1100,37 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
     onRefresh();
   };
 
+  const fileUrl = (field: string) => (deliverable as any)?.[field] as string | null | undefined;
+
+  const renderRow = (type: keyof typeof UPLOAD_CONFIG, ref: React.RefObject<HTMLInputElement>) => {
+    const cfg = UPLOAD_CONFIG[type];
+    const url = fileUrl(cfg.field);
+    return (
+      <div className="flex items-center gap-2 p-2.5 rounded-lg border">
+        <FileText className={`h-4 w-4 shrink-0 ${url ? "text-success" : "text-muted-foreground"}`} />
+        <span className="text-sm flex-1">{url ? cfg.label : `Enviar ${cfg.label}`}</span>
+        {url && (
+          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+            <a href={url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
+          </Button>
+        )}
+        <input ref={ref} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload(type, e.target.files[0])} />
+        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === type} onClick={() => ref.current?.click()}>
+          {uploading === type ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {url ? "Substituir" : "Upload"}</>}
+        </Button>
+      </div>
+    );
+  };
+
+  const hasAnyFile = deliverable?.irpf_file_url || deliverable?.receipt_file_url || fileUrl("rec_file_url") || fileUrl("dec_file_url");
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 p-2.5 rounded-lg border">
-        <FileText className={`h-4 w-4 shrink-0 ${deliverable?.irpf_file_url ? "text-success" : "text-muted-foreground"}`} />
-        <span className="text-sm flex-1">{deliverable?.irpf_file_url ? "Declaração IRPF" : "Enviar Declaração IRPF"}</span>
-        {deliverable?.irpf_file_url && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-            <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
-          </Button>
-        )}
-        <input ref={irpfRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload("irpf", e.target.files[0])} />
-        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === "irpf"} onClick={() => irpfRef.current?.click()}>
-          {uploading === "irpf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {deliverable?.irpf_file_url ? "Substituir" : "Upload"}</>}
-        </Button>
-      </div>
-      <div className="flex items-center gap-2 p-2.5 rounded-lg border">
-        <FileText className={`h-4 w-4 shrink-0 ${deliverable?.receipt_file_url ? "text-success" : "text-muted-foreground"}`} />
-        <span className="text-sm flex-1">{deliverable?.receipt_file_url ? "Recibo de Entrega" : "Enviar Recibo de Entrega"}</span>
-        {deliverable?.receipt_file_url && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-            <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
-          </Button>
-        )}
-        <input ref={receiptRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload("receipt", e.target.files[0])} />
-        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === "receipt"} onClick={() => receiptRef.current?.click()}>
-          {uploading === "receipt" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {deliverable?.receipt_file_url ? "Substituir" : "Upload"}</>}
-        </Button>
-      </div>
-      {deliverable && (deliverable.irpf_file_url || deliverable.receipt_file_url) && (
+      {renderRow("irpf", irpfRef)}
+      {renderRow("receipt", receiptRef)}
+      {renderRow("rec", recRef)}
+      {renderRow("dec", decRef)}
+      {deliverable && hasAnyFile && (
         <Button
           variant={deliverable.sent_to_client ? "destructive" : "default"}
           size="sm"
