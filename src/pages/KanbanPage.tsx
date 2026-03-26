@@ -13,10 +13,17 @@ export default function KanbanPage() {
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("all");
 
   const owners = useMemo(() => {
     const set = new Set<string>();
     cases.forEach((c) => c.internal_owner && set.add(c.internal_owner));
+    return Array.from(set).sort();
+  }, [cases]);
+
+  const tags = useMemo(() => {
+    const set = new Set<string>();
+    cases.forEach((c) => c.clients?.tags?.forEach((t) => set.add(t)));
     return Array.from(set).sort();
   }, [cases]);
 
@@ -28,9 +35,10 @@ export default function KanbanPage() {
       const matchSearch = !q || name.includes(q) || cpf.includes(q);
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
       const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
-      return matchSearch && matchOwner && matchPriority;
+      const matchTag = tagFilter === "all" || (c.clients?.tags?.includes(tagFilter) ?? false);
+      return matchSearch && matchOwner && matchPriority && matchTag;
     });
-  }, [cases, search, ownerFilter, priorityFilter]);
+  }, [cases, search, ownerFilter, priorityFilter, tagFilter]);
 
   return (
     <InternalLayout>
