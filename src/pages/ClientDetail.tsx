@@ -938,13 +938,13 @@ function InternalDocRow({
 
   return (
     <div className="p-3 rounded-lg border hover:bg-muted/30 transition-colors space-y-2">
-      <div className="flex items-center gap-3">
-        {statusIcon[doc.status]}
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 shrink-0">{statusIcon[doc.status]}</div>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm ${doc.status === "aprovado" ? "text-muted-foreground line-through" : "font-medium"}`}>
+          <p className={`text-sm break-words ${doc.status === "aprovado" ? "text-muted-foreground line-through" : "font-medium"}`}>
             {doc.title}
           </p>
-          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             {doc.category === "nao_possui" && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-warning/15 text-warning border-warning/30">
                 Cliente não possui
@@ -953,8 +953,7 @@ function InternalDocRow({
             {doc.category && doc.category !== "nao_possui" && <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{doc.category}</span>}
             {doc.is_required && <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>}
           </div>
-        </div>
-        <div className="flex gap-1 shrink-0 flex-wrap justify-end">
+          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
           {(doc.status === "enviado" || (doc.status === "pendente" && uploads.length > 0)) && (
             <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => onStatusChange("aprovado")}>
               <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
