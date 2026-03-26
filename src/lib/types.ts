@@ -1,4 +1,4 @@
-export type DemandStatus = 'aguardando_cliente' | 'documentos_em_analise' | 'em_andamento' | 'pendencia' | 'finalizado';
+export type DemandStatus = 'aguardando_cliente' | 'documentos_em_analise' | 'em_andamento' | 'pendencia' | 'finalizado' | 'impedida' | 'reaberta';
 export type BillingStatus = 'nao_cobrado' | 'cobrado' | 'pago';
 export type BillingType = 'incluso_mensalidade' | 'cobranca_extra';
 export type Priority = 'baixa' | 'media' | 'alta' | 'urgente';
@@ -9,6 +9,8 @@ export const STATUS_LABELS: Record<DemandStatus, string> = {
   em_andamento: 'Em Andamento',
   pendencia: 'Pendência',
   finalizado: 'Finalizado',
+  impedida: 'Impedida',
+  reaberta: 'Reaberta',
 };
 
 export const BILLING_LABELS: Record<BillingStatus, string> = {
