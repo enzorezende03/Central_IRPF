@@ -470,7 +470,7 @@ export default function ClientDetail() {
                     <CardDescription>Envie a prévia para aprovação do cliente</CardDescription>
                   </div>
                   <CopyStageMessageButton
-                    message={`Olá!\n\nIdentificamos que você possui uma nova mensagem importante no seu atendimento de Imposto de Renda.\n\nPedimos, por gentileza, que acesse o aplicativo e verifique o quanto antes para dar continuidade ao seu processo.\n\n${portalUrl}`}
+                    message={`Olá!\n\nEnviamos a prévia do seu Imposto de Renda.\n\nPor favor, acesse a Central do IRPF, pelo link: ${portalUrl} e, se estiver tudo certo, realize a aprovação.\n\nQualquer dúvida, estamos à disposição!`}
                     label="Copiar msg"
                     toastLabel="Mensagem da prévia copiada!"
                   />
@@ -496,7 +496,7 @@ export default function ClientDetail() {
                     <CardDescription>Declaração IRPF final e recibo de entrega</CardDescription>
                   </div>
                   <CopyStageMessageButton
-                    message={`Olá!\n\nIdentificamos que você possui uma nova mensagem importante no seu atendimento de Imposto de Renda.\n\nPedimos, por gentileza, que acesse o aplicativo e verifique o quanto antes para dar continuidade ao seu processo.\n\n${portalUrl}`}
+                    message={`Olá!\n\nSua declaração de Imposto de Renda foi finalizada.\nAcesse pelo link da Central do IR no aplicativo ou pelo link: ${portalUrl} para conferência.\n\nEstamos à disposição para qualquer dúvida!`}
                     label="Copiar msg"
                     toastLabel="Mensagem da declaração copiada!"
                   />
