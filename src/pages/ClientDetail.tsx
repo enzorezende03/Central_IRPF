@@ -364,6 +364,35 @@ export default function ClientDetail() {
               </SelectContent>
             </Select>
             {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}
+            <Separator orientation="vertical" className="h-5 hidden sm:block" />
+            {(caseData as any).internal_status !== "impedida" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-rose-600 border-rose-300 hover:bg-rose-50 hover:text-rose-700"
+                onClick={async () => {
+                  const { error } = await supabase
+                    .from("irpf_cases")
+                    .update({ internal_status: "impedida" })
+                    .eq("id", id!);
+                  if (error) {
+                    toast.error("Erro ao impedir demanda");
+                    return;
+                  }
+                  await logTimelineEvent(id!, "Demanda impedida", "Demanda marcada como impedida pelo escritório", false);
+                  toast.success("Demanda marcada como impedida");
+                  invalidateAll();
+                }}
+              >
+                <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                Impedir
+              </Button>
+            ) : (
+              <Badge className="bg-rose-500/15 text-rose-600 border-rose-500/30 border">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Impedida
+              </Badge>
+            )}
           </div>
         </div>
 
