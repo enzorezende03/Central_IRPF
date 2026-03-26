@@ -18,8 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCases } from "@/hooks/use-cases";
-import { supabase } from "@/integrations/supabase/client";
 import { STATUS_LABELS } from "@/lib/types";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
+import { MessageCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
@@ -42,20 +43,7 @@ export default function Dashboard() {
   const [ownerFilter, setOwnerFilter] = useState("todos");
   const [statFilter, setStatFilter] = useState<string | null>(null);
 
-  // Fetch recent client activity from timeline
-  const { data: recentActivity = [] } = useQuery({
-    queryKey: ["dashboard-activity"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("case_timeline")
-        .select("*, irpf_cases!inner(id, clients(full_name))")
-        .in("event_type", ["Documentação completa", "Ajustes solicitados", "Prévia aprovada"])
-        .eq("created_by", "Cliente")
-        .order("created_at", { ascending: false })
-        .limit(10);
-      return (data as any) ?? [];
-    },
-  });
+  const { data: unreadMessages = [] } = useUnreadMessages();
 
   // Extract unique owners
   const owners = useMemo(() => {
@@ -305,59 +293,49 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Client Activity Notifications */}
+        {/* Unread Messages */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
-                <Bell className="h-4 w-4 text-primary" />
-                Atividade dos Clientes
+                <MessageCircle className="h-4 w-4 text-primary" />
+                Mensagens Não Lidas
               </CardTitle>
-              {recentActivity.length > 0 && (
-                <Badge variant="secondary" className="text-xs">{recentActivity.length} recentes</Badge>
+              {unreadMessages.length > 0 && (
+                <Badge variant="destructive" className="text-xs">{unreadMessages.length} não lidas</Badge>
               )}
             </div>
-            <CardDescription>Ações recentes dos clientes no portal</CardDescription>
+            <CardDescription>Mensagens dos clientes aguardando resposta</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentActivity.length === 0 ? (
+            {unreadMessages.length === 0 ? (
               <div className="text-center py-8">
-                <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Nenhum cliente finalizou o envio ainda.</p>
+                <CheckCircle className="h-8 w-8 text-success mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Todas as mensagens foram respondidas!</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {recentActivity.map((item: any) => {
-                  const clientName = item.irpf_cases?.clients?.full_name ?? "Cliente";
-                  const caseId = item.irpf_cases?.id ?? item.case_id;
-                  const timeAgo = formatTimeAgo(item.created_at);
-
-                  return (
-                    <Link
-                      key={item.id}
-                      to={`/demandas/${caseId}`}
-                      className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                    >
-                      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${
-                        item.event_type === "Ajustes solicitados" ? "bg-warning/10" :
-                        item.event_type === "Prévia aprovada" ? "bg-primary/10" : "bg-success/10"
-                      }`}>
-                        {item.event_type === "Ajustes solicitados" ? (
-                          <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-                        ) : item.event_type === "Prévia aprovada" ? (
-                          <CheckCircle className="h-3.5 w-3.5 text-primary" />
-                        ) : (
-                          <CheckCircle className="h-3.5 w-3.5 text-success" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{clientName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">{timeAgo}</span>
-                    </Link>
-                  );
-                })}
+                {unreadMessages.map((item) => (
+                  <Link
+                    key={item.case_id}
+                    to={`/demandas/${item.case_id}`}
+                    className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="mt-0.5 rounded-full p-1.5 shrink-0 bg-destructive/10">
+                      <MessageCircle className="h-3.5 w-3.5 text-destructive" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{item.client_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{item.last_message}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-[10px] text-muted-foreground">{formatTimeAgo(item.last_message_at)}</span>
+                      {item.unread_count > 1 && (
+                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">{item.unread_count}</Badge>
+                      )}
+                    </div>
+                  </Link>
+                ))}
               </div>
             )}
           </CardContent>

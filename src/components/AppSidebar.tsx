@@ -5,6 +5,8 @@ import { useOfficeLogo } from "@/hooks/use-office-logo";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
+import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
@@ -36,6 +38,8 @@ export function AppSidebar() {
   const { user, role, profileName, signOut, hasPermission } = useAuth();
   const navigate = useNavigate();
   const logoUrl = useOfficeLogo();
+  const { data: unreadMessages = [] } = useUnreadMessages();
+  const unreadCount = unreadMessages.length;
 
   const handleLogout = async () => {
     await signOut();
@@ -80,7 +84,21 @@ export function AppSidebar() {
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && (
+                        <span className="flex-1 flex items-center justify-between">
+                          {item.title}
+                          {item.title === "Mensagens" && unreadCount > 0 && (
+                            <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5 text-[10px] flex items-center justify-center">
+                              {unreadCount}
+                            </Badge>
+                          )}
+                        </span>
+                      )}
+                      {collapsed && item.title === "Mensagens" && unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center px-1">
+                          {unreadCount}
+                        </span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
