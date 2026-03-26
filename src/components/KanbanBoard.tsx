@@ -90,9 +90,23 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
       em_andamento: [],
       previa_enviada: [],
       pendencia: [],
+      impedida: [],
+      reaberta: [],
       finalizado: [],
     };
     cases.forEach((c) => {
+      const internalStatus = (c as any).internal_status ?? c.status;
+
+      // Check impedida/reaberta first (internal_status based)
+      if (internalStatus === "impedida") {
+        map.impedida.push(c);
+        return;
+      }
+      if (internalStatus === "reaberta") {
+        map.reaberta.push(c);
+        return;
+      }
+
       const fd = Array.isArray(c.final_deliverables)
         ? c.final_deliverables[0]
         : c.final_deliverables;
