@@ -470,8 +470,8 @@ export default function ClientDetail() {
                     <CardDescription>Envie a prévia para aprovação do cliente</CardDescription>
                   </div>
                   <CopyStageMessageButton
-                    message={`Olá ${firstName}. Tudo bem?\n\nSua prévia da declaração do Imposto de Renda já está disponível para revisão. Por favor, acesse o link abaixo para visualizar e aprovar:\n\n${portalUrl}\n\nCaso tenha alguma dúvida ou ajuste, é só nos informar pelo portal.`}
-                    label="Copiar msg prévia"
+                    message={`Olá!\n\nIdentificamos que você possui uma nova mensagem importante no seu atendimento de Imposto de Renda.\n\nPedimos, por gentileza, que acesse o aplicativo e verifique o quanto antes para dar continuidade ao seu processo.\n\n${portalUrl}`}
+                    label="Copiar msg"
                     toastLabel="Mensagem da prévia copiada!"
                   />
                 </div>
@@ -496,8 +496,8 @@ export default function ClientDetail() {
                     <CardDescription>Declaração IRPF final e recibo de entrega</CardDescription>
                   </div>
                   <CopyStageMessageButton
-                    message={`Olá ${firstName}. Tudo bem?\n\nSua declaração do Imposto de Renda foi finalizada e já está disponível no portal. Acesse o link abaixo para baixar sua declaração e recibo de entrega:\n\n${portalUrl}\n\nQualquer dúvida, estamos à disposição!`}
-                    label="Copiar msg declaração"
+                    message={`Olá!\n\nIdentificamos que você possui uma nova mensagem importante no seu atendimento de Imposto de Renda.\n\nPedimos, por gentileza, que acesse o aplicativo e verifique o quanto antes para dar continuidade ao seu processo.\n\n${portalUrl}`}
+                    label="Copiar msg"
                     toastLabel="Mensagem da declaração copiada!"
                   />
                 </div>
@@ -636,7 +636,7 @@ export default function ClientDetail() {
             <MessagesSection
               caseId={id!}
               messages={caseMessages}
-              copyMessage={`Olá ${firstName}. Tudo bem?\n\nVocê tem uma nova mensagem sobre sua declaração do Imposto de Renda. Por favor, acesse o portal para visualizar:\n\n${portalUrl}\n\nQualquer dúvida, estamos à disposição!`}
+              copyMessage={`Olá!\n\nIdentificamos que você possui uma nova mensagem importante no seu atendimento de Imposto de Renda.\n\nPedimos, por gentileza, que acesse o aplicativo e verifique o quanto antes para dar continuidade ao seu processo.\n\n${portalUrl}`}
               onRefresh={() => {
                 queryClient.invalidateQueries({ queryKey: ["case-messages", id] });
                 queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
