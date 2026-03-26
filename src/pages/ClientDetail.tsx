@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { formatCPF, formatPhone } from "@/lib/format-utils";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import {
@@ -16,6 +16,7 @@ import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -183,6 +184,8 @@ export default function ClientDetail() {
 
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
+  const [showImpedirDialog, setShowImpedirDialog] = useState(false);
+  const [impedirJustificativa, setImpedirJustificativa] = useState("");
 
   const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
 
@@ -321,6 +324,7 @@ export default function ClientDetail() {
   };
 
   return (
+    <>
     <InternalLayout>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
         {/* ── 1. Header ── */}
@@ -370,19 +374,7 @@ export default function ClientDetail() {
                 variant="outline"
                 size="sm"
                 className="text-rose-600 border-rose-300 hover:bg-rose-50 hover:text-rose-700"
-                onClick={async () => {
-                  const { error } = await supabase
-                    .from("irpf_cases")
-                    .update({ internal_status: "impedida" })
-                    .eq("id", id!);
-                  if (error) {
-                    toast.error("Erro ao impedir demanda");
-                    return;
-                  }
-                  await logTimelineEvent(id!, "Demanda impedida", "Demanda marcada como impedida pelo escritório", false);
-                  toast.success("Demanda marcada como impedida");
-                  invalidateAll();
-                }}
+                onClick={() => setShowImpedirDialog(true)}
               >
                 <AlertCircle className="h-3.5 w-3.5 mr-1" />
                 Impedir
@@ -726,6 +718,52 @@ export default function ClientDetail() {
         </div>
       </div>
     </InternalLayout>
+
+    {/* Dialog de Justificativa para Impedimento */}
+    <Dialog open={showImpedirDialog} onOpenChange={(open) => { setShowImpedirDialog(open); if (!open) setImpedirJustificativa(""); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Impedir Demanda</DialogTitle>
+          <DialogDescription>Informe o motivo do impedimento. Esta justificativa será registrada no histórico.</DialogDescription>
+        </DialogHeader>
+        <Textarea
+          placeholder="Descreva o motivo do impedimento..."
+          value={impedirJustificativa}
+          onChange={(e) => setImpedirJustificativa(e.target.value)}
+          className="min-h-[100px]"
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowImpedirDialog(false); setImpedirJustificativa(""); }}>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={!impedirJustificativa.trim()}
+            onClick={async () => {
+              const justificativa = impedirJustificativa.trim();
+              if (!justificativa) return;
+              const { error } = await supabase
+                .from("irpf_cases")
+                .update({ internal_status: "impedida" })
+                .eq("id", id!);
+              if (error) {
+                toast.error("Erro ao impedir demanda");
+                return;
+              }
+              await logTimelineEvent(id!, "Demanda impedida", `Motivo: ${justificativa}`, false);
+              toast.success("Demanda marcada como impedida");
+              setShowImpedirDialog(false);
+              setImpedirJustificativa("");
+              invalidateAll();
+            }}
+          >
+            <AlertCircle className="h-3.5 w-3.5 mr-1" />
+            Confirmar Impedimento
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
   );
 }
 
