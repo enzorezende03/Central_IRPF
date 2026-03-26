@@ -1162,8 +1162,18 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
   } as const;
 
   const handleUpload = async (type: keyof typeof UPLOAD_CONFIG, file: File) => {
-    const err = validateFile(file);
-    if (err) { toast.error(err); return; }
+    // REC and DEC have specific extension requirements – skip generic validation
+    if (type === "rec") {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (ext !== "rec") { toast.error("Apenas arquivos .REC são aceitos."); return; }
+    } else if (type === "dec") {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (ext !== "dec") { toast.error("Apenas arquivos .DEC são aceitos."); return; }
+    } else {
+      const err = validateFile(file);
+      if (err) { toast.error(err); return; }
+    }
+    if (file.size > 10 * 1024 * 1024) { toast.error(`Arquivo "${file.name}" excede o limite de 10 MB.`); return; }
     setUploading(type);
     const cfg = UPLOAD_CONFIG[type];
     try {
@@ -1202,7 +1212,7 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
             <a href={url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
           </Button>
         )}
-        <input ref={ref} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload(type, e.target.files[0])} />
+        <input ref={ref} type="file" className="hidden" accept={type === "rec" ? ".rec" : type === "dec" ? ".dec" : getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload(type, e.target.files[0])} />
         <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === type} onClick={() => ref.current?.click()}>
           {uploading === type ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {url ? "Substituir" : "Upload"}</>}
         </Button>
