@@ -1253,14 +1253,34 @@ function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliver
   );
 }
 
+// ── Copy Stage Message Button ──
+function CopyStageMessageButton({ message, label, toastLabel }: { message: string; label: string; toastLabel: string }) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="text-xs shrink-0"
+      onClick={() => {
+        navigator.clipboard.writeText(message);
+        toast.success(toastLabel);
+      }}
+    >
+      <MessageCircle className="h-3.5 w-3.5 mr-1" />
+      {label}
+    </Button>
+  );
+}
+
 // ── Messages Section (Chat) ──
 function MessagesSection({
   caseId,
   messages,
+  copyMessage,
   onRefresh,
 }: {
   caseId: string;
   messages: any[];
+  copyMessage: string;
   onRefresh: () => void;
 }) {
   const [newMsg, setNewMsg] = useState("");
@@ -1291,11 +1311,20 @@ function MessagesSection({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Send className="h-4 w-4 text-primary" />
-          Mensagens ao Cliente
-        </CardTitle>
-        <CardDescription>Visíveis no portal do cliente</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Send className="h-4 w-4 text-primary" />
+              Mensagens ao Cliente
+            </CardTitle>
+            <CardDescription>Visíveis no portal do cliente</CardDescription>
+          </div>
+          <CopyStageMessageButton
+            message={copyMessage}
+            label="Copiar msg"
+            toastLabel="Mensagem copiada!"
+          />
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div ref={scrollRef} className="max-h-64 overflow-y-auto space-y-2">
