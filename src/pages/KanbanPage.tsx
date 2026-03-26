@@ -66,6 +66,15 @@ export default function KanbanPage() {
               {Object.entries(PRIORITY_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas tags</SelectItem>
+              {tags.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
         {isLoading ? (
