@@ -85,14 +85,54 @@ async function fetchMessageThreads(): Promise<MessageThread[]> {
 
 export default function Mensagens() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "pending" | "replied">("all");
+  const caseNamesRef = useRef<Map<string, string>>(new Map());
 
   const { data: threads = [], isLoading } = useQuery({
     queryKey: ["message-threads"],
     queryFn: fetchMessageThreads,
     refetchInterval: 30000,
   });
+
+  // Keep a map of caseId -> clientName for realtime alerts
+  useEffect(() => {
+    for (const t of threads) {
+      caseNamesRef.current.set(t.caseId, t.clientName);
+    }
+  }, [threads]);
+
+  // Realtime subscription for new client messages
+  useEffect(() => {
+    const channel = supabase
+      .channel("client-messages-alert")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "case_messages" },
+        (payload) => {
+          const msg = payload.new as any;
+          if (msg.sender === "client") {
+            const clientName = caseNamesRef.current.get(msg.case_id) || "Cliente";
+            const firstName = clientName.split(" ")[0];
+            toast.info(`Nova mensagem de ${firstName}`, {
+              description: msg.message?.substring(0, 80) + (msg.message?.length > 80 ? "..." : ""),
+              action: {
+                label: "Ver",
+                onClick: () => navigate(`/demandas/${msg.case_id}`),
+              },
+              duration: 10000,
+            });
+            queryClient.invalidateQueries({ queryKey: ["message-threads"] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [navigate, queryClient]);
 
   const filtered = useMemo(() => {
     let result = threads;
