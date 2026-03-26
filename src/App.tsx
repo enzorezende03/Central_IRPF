@@ -12,6 +12,7 @@ import KanbanPage from "./pages/KanbanPage";
 import Cobranca from "./pages/Cobranca";
 import Clientes from "./pages/Clientes";
 import Configuracoes from "./pages/Configuracoes";
+import Mensagens from "./pages/Mensagens";
 import ClientPortal from "./pages/ClientPortal";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/demandas/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
             <Route path="/cobranca" element={<ProtectedRoute><Cobranca /></ProtectedRoute>} />
+            <Route path="/mensagens" element={<ProtectedRoute><Mensagens /></ProtectedRoute>} />
             <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
             <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
