@@ -16,6 +16,7 @@ import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -183,6 +184,8 @@ export default function ClientDetail() {
 
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
+  const [showImpedirDialog, setShowImpedirDialog] = useState(false);
+  const [impedirJustificativa, setImpedirJustificativa] = useState("");
 
   const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
 
