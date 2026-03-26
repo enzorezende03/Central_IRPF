@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut,
+  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle,
 } from "lucide-react";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
 import { NavLink } from "@/components/NavLink";
@@ -24,6 +24,7 @@ const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, permission: null },
   { title: "Demandas IRPF", url: "/demandas", icon: FileText, permission: "acesso_demandas" },
   { title: "Kanban Operacional", url: "/kanban", icon: Kanban, permission: "acesso_demandas" },
+  { title: "Mensagens", url: "/mensagens", icon: MessageCircle, permission: "acesso_demandas" },
   { title: "Cobrança", url: "/cobranca", icon: DollarSign, permission: "acesso_cobranca" },
   { title: "Clientes", url: "/clientes", icon: Users, permission: "acesso_demandas" },
   { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "acesso_configuracao" },
