@@ -717,6 +717,52 @@ export default function ClientDetail() {
         </div>
       </div>
     </InternalLayout>
+
+    {/* Dialog de Justificativa para Impedimento */}
+    <Dialog open={showImpedirDialog} onOpenChange={(open) => { setShowImpedirDialog(open); if (!open) setImpedirJustificativa(""); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Impedir Demanda</DialogTitle>
+          <DialogDescription>Informe o motivo do impedimento. Esta justificativa será registrada no histórico.</DialogDescription>
+        </DialogHeader>
+        <Textarea
+          placeholder="Descreva o motivo do impedimento..."
+          value={impedirJustificativa}
+          onChange={(e) => setImpedirJustificativa(e.target.value)}
+          className="min-h-[100px]"
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowImpedirDialog(false); setImpedirJustificativa(""); }}>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={!impedirJustificativa.trim()}
+            onClick={async () => {
+              const justificativa = impedirJustificativa.trim();
+              if (!justificativa) return;
+              const { error } = await supabase
+                .from("irpf_cases")
+                .update({ internal_status: "impedida" })
+                .eq("id", id!);
+              if (error) {
+                toast.error("Erro ao impedir demanda");
+                return;
+              }
+              await logTimelineEvent(id!, "Demanda impedida", `Motivo: ${justificativa}`, false);
+              toast.success("Demanda marcada como impedida");
+              setShowImpedirDialog(false);
+              setImpedirJustificativa("");
+              invalidateAll();
+            }}
+          >
+            <AlertCircle className="h-3.5 w-3.5 mr-1" />
+            Confirmar Impedimento
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
   );
 }
 
