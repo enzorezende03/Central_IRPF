@@ -5,6 +5,8 @@ import { useOfficeLogo } from "@/hooks/use-office-logo";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
+import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
