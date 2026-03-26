@@ -954,25 +954,26 @@ function InternalDocRow({
             {doc.is_required && <Badge variant="outline" className="text-[10px] px-1 py-0">Obrigatório</Badge>}
           </div>
           <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-          {(doc.status === "enviado" || (doc.status === "pendente" && uploads.length > 0)) && (
-            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => onStatusChange("aprovado")}>
-              <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
+            {(doc.status === "enviado" || (doc.status === "pendente" && uploads.length > 0)) && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => onStatusChange("aprovado")}>
+                <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
+              </Button>
+            )}
+            {doc.status === "enviado" && (
+              <Button variant="ghost" size="sm" className="text-xs h-7 text-destructive" onClick={() => onStatusChange("rejeitado")}>
+                Rejeitar
+              </Button>
+            )}
+            {doc.status === "rejeitado" && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => onStatusChange("pendente")}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1" /> Solicitar novamente
+              </Button>
+            )}
+            <input ref={fileInputRef} type="file" className="hidden" multiple accept={getAcceptString()} onChange={handleOfficeUpload} />
+            <Button variant="ghost" size="sm" className="text-xs h-7" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
             </Button>
-          )}
-          {doc.status === "enviado" && (
-            <Button variant="ghost" size="sm" className="text-xs h-7 text-destructive" onClick={() => onStatusChange("rejeitado")}>
-              Rejeitar
-            </Button>
-          )}
-          {doc.status === "rejeitado" && (
-            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => onStatusChange("pendente")}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Solicitar novamente
-            </Button>
-          )}
-          <input ref={fileInputRef} type="file" className="hidden" multiple accept={getAcceptString()} onChange={handleOfficeUpload} />
-          <Button variant="ghost" size="sm" className="text-xs h-7" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-          </Button>
+          </div>
         </div>
       </div>
       {uploads.length > 0 && (
