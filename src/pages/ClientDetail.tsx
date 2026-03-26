@@ -324,6 +324,7 @@ export default function ClientDetail() {
   };
 
   return (
+    <>
     <InternalLayout>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
         {/* ── 1. Header ── */}
