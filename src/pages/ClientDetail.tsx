@@ -297,9 +297,11 @@ export default function ClientDetail() {
   }
 
   const client = caseData.clients as Tables<"clients"> | null;
+  const clientName = client?.full_name ?? "Cliente";
+  const firstName = clientName.split(" ")[0];
   const linkId = caseData.portal_slug || caseData.portal_token;
   const portalUrl = getPortalUrl(linkId);
-  const whatsappMsg = getWhatsAppMessage(client?.full_name ?? "Cliente", linkId, caseData.client_message);
+  const whatsappMsg = getWhatsAppMessage(clientName, linkId, caseData.client_message);
 
   const unansweredCount = 0;
   const approvedDocs = docRequests.filter((d) => d.status === "aprovado").length;
@@ -459,11 +461,20 @@ export default function ClientDetail() {
             {/* ── 9a. Prévia ── */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-primary" />
-                  Prévia da Declaração
-                </CardTitle>
-                <CardDescription>Envie a prévia para aprovação do cliente</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-primary" />
+                      Prévia da Declaração
+                    </CardTitle>
+                    <CardDescription>Envie a prévia para aprovação do cliente</CardDescription>
+                  </div>
+                  <CopyStageMessageButton
+                    message={`Olá ${firstName}. Tudo bem?\n\nSua prévia da declaração do Imposto de Renda já está disponível para revisão. Por favor, acesse o link abaixo para visualizar e aprovar:\n\n${portalUrl}\n\nCaso tenha alguma dúvida ou ajuste, é só nos informar pelo portal.`}
+                    label="Copiar msg prévia"
+                    toastLabel="Mensagem da prévia copiada!"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <PreviewCard caseId={id!} deliverable={deliverable} onRefresh={() => {
@@ -476,11 +487,20 @@ export default function ClientDetail() {
             {/* ── 9b. Declaração / Recibo ── */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Download className="h-4 w-4 text-primary" />
-                  Declaração e Recibo
-                </CardTitle>
-                <CardDescription>Declaração IRPF final e recibo de entrega</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Download className="h-4 w-4 text-primary" />
+                      Declaração e Recibo
+                    </CardTitle>
+                    <CardDescription>Declaração IRPF final e recibo de entrega</CardDescription>
+                  </div>
+                  <CopyStageMessageButton
+                    message={`Olá ${firstName}. Tudo bem?\n\nSua declaração do Imposto de Renda foi finalizada e já está disponível no portal. Acesse o link abaixo para baixar sua declaração e recibo de entrega:\n\n${portalUrl}\n\nQualquer dúvida, estamos à disposição!`}
+                    label="Copiar msg declaração"
+                    toastLabel="Mensagem da declaração copiada!"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <DeclarationReceiptCard caseId={id!} deliverable={deliverable} onRefresh={() => {
@@ -616,6 +636,7 @@ export default function ClientDetail() {
             <MessagesSection
               caseId={id!}
               messages={caseMessages}
+              copyMessage={`Olá ${firstName}. Tudo bem?\n\nVocê tem uma nova mensagem sobre sua declaração do Imposto de Renda. Por favor, acesse o portal para visualizar:\n\n${portalUrl}\n\nQualquer dúvida, estamos à disposição!`}
               onRefresh={() => {
                 queryClient.invalidateQueries({ queryKey: ["case-messages", id] });
                 queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
@@ -1232,14 +1253,34 @@ function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliver
   );
 }
 
+// ── Copy Stage Message Button ──
+function CopyStageMessageButton({ message, label, toastLabel }: { message: string; label: string; toastLabel: string }) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="text-xs shrink-0"
+      onClick={() => {
+        navigator.clipboard.writeText(message);
+        toast.success(toastLabel);
+      }}
+    >
+      <MessageCircle className="h-3.5 w-3.5 mr-1" />
+      {label}
+    </Button>
+  );
+}
+
 // ── Messages Section (Chat) ──
 function MessagesSection({
   caseId,
   messages,
+  copyMessage,
   onRefresh,
 }: {
   caseId: string;
   messages: any[];
+  copyMessage: string;
   onRefresh: () => void;
 }) {
   const [newMsg, setNewMsg] = useState("");
@@ -1270,11 +1311,20 @@ function MessagesSection({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Send className="h-4 w-4 text-primary" />
-          Mensagens ao Cliente
-        </CardTitle>
-        <CardDescription>Visíveis no portal do cliente</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Send className="h-4 w-4 text-primary" />
+              Mensagens ao Cliente
+            </CardTitle>
+            <CardDescription>Visíveis no portal do cliente</CardDescription>
+          </div>
+          <CopyStageMessageButton
+            message={copyMessage}
+            label="Copiar msg"
+            toastLabel="Mensagem copiada!"
+          />
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div ref={scrollRef} className="max-h-64 overflow-y-auto space-y-2">
