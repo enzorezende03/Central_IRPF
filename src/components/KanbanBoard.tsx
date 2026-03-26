@@ -18,10 +18,10 @@ const COLUMNS: KanbanColumn[] = [
   "aguardando_cliente",
   "documentos_em_analise",
   "em_andamento",
-  "previa_enviada",
-  "pendencia",
   "impedida",
   "reaberta",
+  "previa_enviada",
+  "pendencia",
   "finalizado",
 ];
 

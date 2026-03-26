@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { formatCPF, formatPhone } from "@/lib/format-utils";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import {
@@ -370,19 +370,7 @@ export default function ClientDetail() {
                 variant="outline"
                 size="sm"
                 className="text-rose-600 border-rose-300 hover:bg-rose-50 hover:text-rose-700"
-                onClick={async () => {
-                  const { error } = await supabase
-                    .from("irpf_cases")
-                    .update({ internal_status: "impedida" })
-                    .eq("id", id!);
-                  if (error) {
-                    toast.error("Erro ao impedir demanda");
-                    return;
-                  }
-                  await logTimelineEvent(id!, "Demanda impedida", "Demanda marcada como impedida pelo escritório", false);
-                  toast.success("Demanda marcada como impedida");
-                  invalidateAll();
-                }}
+                onClick={() => setShowImpedirDialog(true)}
               >
                 <AlertCircle className="h-3.5 w-3.5 mr-1" />
                 Impedir
