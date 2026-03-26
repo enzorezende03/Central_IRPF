@@ -10,7 +10,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-type KanbanColumn = CaseStatus | "previa_enviada" | "solicitacao_documentacao" | "procuracao";
+type KanbanColumn = CaseStatus | "previa_enviada" | "solicitacao_documentacao" | "procuracao" | "impedida" | "reaberta";
 
 const COLUMNS: KanbanColumn[] = [
   "solicitacao_documentacao",
@@ -20,6 +20,8 @@ const COLUMNS: KanbanColumn[] = [
   "em_andamento",
   "previa_enviada",
   "pendencia",
+  "impedida",
+  "reaberta",
   "finalizado",
 ];
 
@@ -28,6 +30,8 @@ const COLUMN_LABELS: Record<KanbanColumn, string> = {
   solicitacao_documentacao: "Solicitação de Documentação",
   procuracao: "Procuração",
   previa_enviada: "Envio de Prévia",
+  impedida: "Impedida",
+  reaberta: "Reaberta",
 };
 
 const columnColors: Record<KanbanColumn, string> = {
@@ -38,6 +42,8 @@ const columnColors: Record<KanbanColumn, string> = {
   em_andamento: "border-t-primary",
   previa_enviada: "border-t-violet-500",
   pendencia: "border-t-destructive",
+  impedida: "border-t-rose-500",
+  reaberta: "border-t-teal-500",
   finalizado: "border-t-success",
 };
 
@@ -49,6 +55,8 @@ const dotColors: Record<KanbanColumn, string> = {
   em_andamento: "bg-primary",
   previa_enviada: "bg-violet-500",
   pendencia: "bg-destructive",
+  impedida: "bg-rose-500",
+  reaberta: "bg-teal-500",
   finalizado: "bg-success",
 };
 
@@ -82,9 +90,23 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
       em_andamento: [],
       previa_enviada: [],
       pendencia: [],
+      impedida: [],
+      reaberta: [],
       finalizado: [],
     };
     cases.forEach((c) => {
+      const internalStatus = (c as any).internal_status ?? c.status;
+
+      // Check impedida/reaberta first (internal_status based)
+      if (internalStatus === "impedida") {
+        map.impedida.push(c);
+        return;
+      }
+      if (internalStatus === "reaberta") {
+        map.reaberta.push(c);
+        return;
+      }
+
       const fd = Array.isArray(c.final_deliverables)
         ? c.final_deliverables[0]
         : c.final_deliverables;
