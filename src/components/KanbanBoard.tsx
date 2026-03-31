@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { CaseWithClient } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 
 import type { Database } from "@/integrations/supabase/types";
