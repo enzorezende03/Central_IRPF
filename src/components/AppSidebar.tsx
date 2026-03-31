@@ -110,9 +110,24 @@ export function AppSidebar() {
                         </span>
                       )}
                       {collapsed && item.title === "Mensagens" && unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center px-1">
-                          {unreadCount}
-                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center px-1">
+                              {unreadCount}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-[220px]">
+                            <p className="font-semibold text-xs mb-1">Mensagens pendentes:</p>
+                            <ul className="text-xs space-y-0.5">
+                              {unreadMessages.slice(0, 5).map((m) => (
+                                <li key={m.case_id} className="truncate">• {m.client_name} ({m.unread_count})</li>
+                              ))}
+                              {unreadMessages.length > 5 && (
+                                <li className="text-muted-foreground">e mais {unreadMessages.length - 5}...</li>
+                              )}
+                            </ul>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
