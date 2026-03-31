@@ -54,6 +54,7 @@ export function AppSidebar() {
   );
 
   return (
+    <TooltipProvider>
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         {!collapsed ? (
