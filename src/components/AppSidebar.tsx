@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle,
 } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
