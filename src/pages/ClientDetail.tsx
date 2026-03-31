@@ -181,6 +181,22 @@ export default function ClientDetail() {
     },
     enabled: !!id,
   });
+  // ── Fetch internal checklist for procuração badge ──
+  const { data: checklistItems = [] } = useQuery({
+    queryKey: ["internal-checklist", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("internal_checklist")
+        .select("*")
+        .eq("case_id", id!);
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
+
+  const procItem = checklistItems.find((item) =>
+    item.label.toLowerCase().includes("procura")
+  );
 
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
@@ -368,7 +384,17 @@ export default function ClientDetail() {
               </SelectContent>
             </Select>
             {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}
-            <Separator orientation="vertical" className="h-5 hidden sm:block" />
+            {procItem?.checked ? (
+              <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 border">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Procuração OK
+              </Badge>
+            ) : (
+              <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30 border">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Sem Procuração
+              </Badge>
+            )}
             {(caseData as any).internal_status !== "impedida" ? (
               <Button
                 variant="outline"
