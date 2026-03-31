@@ -54,6 +54,7 @@ export default function KanbanPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos responsáveis</SelectItem>
+              <SelectItem value="__none__">Sem responsável</SelectItem>
               {owners.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
             </SelectContent>
           </Select>
