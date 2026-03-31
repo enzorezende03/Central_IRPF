@@ -1104,98 +1104,117 @@ function DocumentRow({
   );
 }
 
-// ── Replace File Button (for "enviado" docs) ──
-function ReplaceFileButton({
+// ── Uploaded File Row with individual replace ──
+function UploadedFileRow({
+  uploadedDoc,
   doc,
   caseId,
   clientId,
+  canReplace,
   onSuccess,
 }: {
+  uploadedDoc: Tables<"uploaded_documents">;
   doc: Tables<"document_requests">;
   caseId: string;
   clientId?: string;
+  canReplace: boolean;
   onSuccess: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+  const [replacingFile, setReplacingFile] = useState<File | null>(null);
 
-  const handleStageFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectReplacement = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    for (const file of Array.from(files)) {
-      const err = validateFile(file);
-      if (err) { toast.error(err); if (fileInputRef.current) fileInputRef.current.value = ""; return; }
+    const file = files[0];
+    const err = validateFile(file);
+    if (err) {
+      toast.error(err);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
     }
-    setStagedFiles((prev) => [...prev, ...Array.from(files)]);
+    setReplacingFile(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleSendReplacement = async () => {
-    if (stagedFiles.length === 0) return;
+  const handleConfirmReplace = async () => {
+    if (!replacingFile) return;
     setUploading(true);
     try {
-      for (const file of stagedFiles) {
-        const filePath = buildStoragePath(caseId, file.name, doc.id);
-        const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, file);
-        await supabase.from("uploaded_documents").insert({
-          case_id: caseId,
-          document_request_id: doc.id,
-          client_id: clientId ?? null,
-          file_name: file.name,
-          file_url: fileUrl,
-          file_type: file.type || null,
-          uploaded_by: "client",
-        });
-      }
-      // Set status back to "enviado" (re-triggers analysis)
+      const filePath = buildStoragePath(caseId, replacingFile.name, doc.id);
+      const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, replacingFile);
+
+      // Delete old uploaded_document record
+      await supabase.from("uploaded_documents").delete().eq("id", uploadedDoc.id);
+
+      // Insert new one
+      await supabase.from("uploaded_documents").insert({
+        case_id: caseId,
+        document_request_id: doc.id,
+        client_id: clientId ?? null,
+        file_name: replacingFile.name,
+        file_url: fileUrl,
+        file_type: replacingFile.type || null,
+        uploaded_by: "client",
+      });
+
+      // Keep status as-is (rejeitado stays rejeitado for re-analysis, or enviado)
       await supabase.from("document_requests").update({ status: "enviado" as DocumentStatus }).eq("id", doc.id);
+
       await supabase.from("case_timeline").insert({
         case_id: caseId,
         event_type: "Documento substituído",
-        description: `Cliente solicitou substituição de "${doc.title}" (${stagedFiles.length} arquivo(s))`,
+        description: `Cliente substituiu arquivo "${uploadedDoc.file_name}" por "${replacingFile.name}" em "${doc.title}"`,
         visible_to_client: true,
         created_by: "Cliente",
       });
-      toast.success(`Documento "${doc.title}" substituído com sucesso!`);
-      setStagedFiles([]);
+
+      toast.success(`Arquivo "${uploadedDoc.file_name}" substituído com sucesso!`);
+      setReplacingFile(null);
       onSuccess();
     } catch {
-      toast.error("Erro ao substituir documento.");
+      toast.error("Erro ao substituir arquivo.");
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div className="w-full flex flex-col gap-1 mt-1">
-      <input ref={fileInputRef} type="file" className="hidden" multiple accept={getAcceptString()} onChange={handleStageFiles} />
-      <Button
-        variant="outline"
-        size="sm"
-        className="text-[11px] h-8 w-full px-2"
-        disabled={uploading}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <RefreshCw className="h-3.5 w-3.5 mr-1 shrink-0" /> Substituir Arquivo
-      </Button>
-      {stagedFiles.length > 0 && (
-        <div className="w-full space-y-1.5 mt-1">
-          {stagedFiles.map((f, i) => (
-            <div key={i} className="flex items-center gap-2 text-[11px] bg-muted/60 rounded px-2 py-1">
-              <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
-              <span className="flex-1 truncate">{f.name}</span>
-              <button type="button" onClick={() => setStagedFiles((prev) => prev.filter((_, idx) => idx !== i))} className="text-destructive hover:text-destructive/80 text-xs font-medium">✕</button>
-            </div>
-          ))}
-          <Button size="sm" className="w-full text-xs h-8 mt-1" disabled={uploading} onClick={handleSendReplacement}>
-            {uploading ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</> : <><Send className="h-3.5 w-3.5 mr-1" /> Enviar Substituição</>}
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <CheckCircle className="h-3 w-3 text-success shrink-0" />
+        <span className="truncate flex-1">{uploadedDoc.file_name}</span>
+        <span className="shrink-0">· {new Date(uploadedDoc.uploaded_at).toLocaleDateString("pt-BR")}</span>
+        {canReplace && (
+          <>
+            <input ref={fileInputRef} type="file" className="hidden" accept={getAcceptString()} onChange={handleSelectReplacement} />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-primary hover:text-primary/80 text-[10px] font-medium shrink-0 underline"
+              disabled={uploading}
+            >
+              Substituir
+            </button>
+          </>
+        )}
+      </div>
+      {replacingFile && (
+        <div className="flex items-center gap-2 text-[11px] bg-muted/60 rounded px-2 py-1 ml-4">
+          <RefreshCw className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <span className="flex-1 truncate">Novo: {replacingFile.name}</span>
+          <button type="button" onClick={() => setReplacingFile(null)} className="text-destructive hover:text-destructive/80 text-xs font-medium">✕</button>
+          <Button
+            size="sm"
+            className="text-[10px] h-6 px-2"
+            disabled={uploading}
+            onClick={handleConfirmReplace}
+          >
+            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Enviar"}
           </Button>
         </div>
       )}
-      <p className="text-[9px] text-muted-foreground text-center w-full">
-        Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
-      </p>
     </div>
   );
 }
