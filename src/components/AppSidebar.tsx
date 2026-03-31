@@ -176,5 +176,6 @@ export function AppSidebar() {
         )}
       </SidebarFooter>
     </Sidebar>
+    </TooltipProvider>
   );
 }
