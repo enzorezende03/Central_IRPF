@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle,
 } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -88,16 +89,46 @@ export function AppSidebar() {
                         <span className="flex-1 flex items-center justify-between">
                           {item.title}
                           {item.title === "Mensagens" && unreadCount > 0 && (
-                            <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5 text-[10px] flex items-center justify-center">
-                              {unreadCount}
-                            </Badge>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5 text-[10px] flex items-center justify-center">
+                                  {unreadCount}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="max-w-[220px]">
+                                <p className="font-semibold text-xs mb-1">Mensagens pendentes:</p>
+                                <ul className="text-xs space-y-0.5">
+                                  {unreadMessages.slice(0, 5).map((m) => (
+                                    <li key={m.case_id} className="truncate">• {m.client_name} ({m.unread_count})</li>
+                                  ))}
+                                  {unreadMessages.length > 5 && (
+                                    <li className="text-muted-foreground">e mais {unreadMessages.length - 5}...</li>
+                                  )}
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                         </span>
                       )}
                       {collapsed && item.title === "Mensagens" && unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center px-1">
-                          {unreadCount}
-                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center px-1">
+                              {unreadCount}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-[220px]">
+                            <p className="font-semibold text-xs mb-1">Mensagens pendentes:</p>
+                            <ul className="text-xs space-y-0.5">
+                              {unreadMessages.slice(0, 5).map((m) => (
+                                <li key={m.case_id} className="truncate">• {m.client_name} ({m.unread_count})</li>
+                              ))}
+                              {unreadMessages.length > 5 && (
+                                <li className="text-muted-foreground">e mais {unreadMessages.length - 5}...</li>
+                              )}
+                            </ul>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
