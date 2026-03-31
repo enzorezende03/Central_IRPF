@@ -1012,11 +1012,15 @@ function DocumentRow({
           {uploadedDocs.length > 0 && (
             <div className="mt-1.5 space-y-1">
               {uploadedDocs.map((ud) => (
-                <div key={ud.id} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <CheckCircle className="h-3 w-3 text-success shrink-0" />
-                  <span className="truncate">{ud.file_name}</span>
-                  <span className="shrink-0">· {new Date(ud.uploaded_at).toLocaleDateString("pt-BR")}</span>
-                </div>
+                <UploadedFileRow
+                  key={ud.id}
+                  uploadedDoc={ud}
+                  doc={doc}
+                  caseId={caseId}
+                  clientId={clientId}
+                  canReplace={canUpload}
+                  onSuccess={onSuccess}
+                />
               ))}
             </div>
           )}
