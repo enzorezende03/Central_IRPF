@@ -4,7 +4,8 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CaseWithClient } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
-import { BillingBadge, PriorityBadge } from "@/components/StatusBadge";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -170,8 +171,20 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
                       {formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}
                     </p>
                     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                      <PriorityBadge priority={c.priority} />
-                      {billing && <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />}
+                      {(() => {
+                        const checklist = (c.internal_checklist ?? []).sort((a, b) => a.sort_order - b.sort_order);
+                        const procItem = checklist.find((item) => item.label.toLowerCase().includes("procura"));
+                        const hasProcuracao = procItem?.checked;
+                        return hasProcuracao ? (
+                          <Badge variant="outline" className="bg-success/15 text-success border-success/30 text-xs gap-1">
+                            <CheckCircle2 className="h-3 w-3" /> Procuração OK
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-warning/15 text-warning border-warning/30 text-xs gap-1">
+                            <AlertCircle className="h-3 w-3" /> Sem Procuração
+                          </Badge>
+                        );
+                      })()}
                     </div>
                     {billing && (
                       <p className="text-xs font-medium mt-1.5 text-right text-muted-foreground">
