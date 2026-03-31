@@ -33,7 +33,7 @@ export default function KanbanPage() {
       const name = c.clients?.full_name?.toLowerCase() ?? "";
       const cpf = c.clients?.cpf ?? "";
       const matchSearch = !q || name.includes(q) || cpf.includes(q);
-      const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
+      const matchOwner = ownerFilter === "all" || (ownerFilter === "__none__" ? !c.internal_owner : c.internal_owner === ownerFilter);
       const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
       const matchTag = tagFilter === "all" || (c.clients?.tags?.includes(tagFilter) ?? false);
       return matchSearch && matchOwner && matchPriority && matchTag;
