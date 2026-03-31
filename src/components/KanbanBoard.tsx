@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { CaseWithClient } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 
 import type { Database } from "@/integrations/supabase/types";
@@ -171,8 +172,12 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
                       {formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}
                     </p>
                     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                      <PriorityBadge priority={c.priority} />
+                      {billing && (
+                        <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />
+                      )}
                       {(() => {
-                        const checklist = (c.internal_checklist ?? []).sort((a, b) => a.sort_order - b.sort_order);
+                        const checklist = (c.internal_checklist ?? []);
                         const procItem = checklist.find((item) => item.label.toLowerCase().includes("procura"));
                         const hasProcuracao = procItem?.checked;
                         return hasProcuracao ? (
