@@ -181,6 +181,22 @@ export default function ClientDetail() {
     },
     enabled: !!id,
   });
+  // ── Fetch internal checklist for procuração badge ──
+  const { data: checklistItems = [] } = useQuery({
+    queryKey: ["internal-checklist", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("internal_checklist")
+        .select("*")
+        .eq("case_id", id!);
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
+
+  const procItem = checklistItems.find((item) =>
+    item.label.toLowerCase().includes("procura")
+  );
 
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
