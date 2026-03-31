@@ -1092,12 +1092,9 @@ function DocumentRow({
         </div>
       )}
       {doc.status === "enviado" && !canUpload && (
-        <ReplaceFileButton
-          doc={doc}
-          caseId={caseId}
-          clientId={clientId}
-          onSuccess={onSuccess}
-        />
+        <p className="text-[10px] text-muted-foreground italic mt-1 text-center">
+          Documento em análise pela contabilidade. Aguarde a aprovação ou rejeição para enviar novos arquivos.
+        </p>
       )}
     </div>
   );
