@@ -1095,9 +1095,9 @@ function DocumentRow({
           </p>
         </div>
       )}
-      {doc.status === "enviado" && !canUpload && (
+      {doc.status === "aprovado" && (
         <p className="text-[10px] text-muted-foreground italic mt-1 text-center">
-          Documento em análise pela contabilidade. Aguarde a aprovação ou rejeição para enviar novos arquivos.
+          Documento aprovado pela contabilidade.
         </p>
       )}
     </div>
