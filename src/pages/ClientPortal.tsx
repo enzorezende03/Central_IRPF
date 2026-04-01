@@ -924,7 +924,7 @@ function DocumentRow({
     rejeitado: "Rejeitado — Reenvie o documento",
   } satisfies Record<DocumentStatus, string>;
 
-  const canUpload = doc.status === "pendente" || doc.status === "rejeitado";
+  const canUpload = doc.status !== "aprovado";
 
   const handleStageFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1095,9 +1095,9 @@ function DocumentRow({
           </p>
         </div>
       )}
-      {doc.status === "enviado" && !canUpload && (
+      {doc.status === "aprovado" && (
         <p className="text-[10px] text-muted-foreground italic mt-1 text-center">
-          Documento em análise pela contabilidade. Aguarde a aprovação ou rejeição para enviar novos arquivos.
+          Documento aprovado pela contabilidade.
         </p>
       )}
     </div>
