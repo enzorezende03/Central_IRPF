@@ -924,7 +924,7 @@ function DocumentRow({
     rejeitado: "Rejeitado — Reenvie o documento",
   } satisfies Record<DocumentStatus, string>;
 
-  const canUpload = doc.status === "pendente" || doc.status === "rejeitado";
+  const canUpload = doc.status !== "aprovado";
 
   const handleStageFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
