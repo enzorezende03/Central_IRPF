@@ -5,6 +5,7 @@ export type Priority = 'baixa' | 'media' | 'alta' | 'urgente';
 
 export const STATUS_LABELS: Record<DemandStatus, string> = {
   aguardando_cliente: 'Aguardando Cliente',
+  documentos_parciais: 'Documentos Parciais',
   documentos_em_analise: 'Documentos em Análise',
   em_andamento: 'Em Andamento',
   pendencia: 'Pendência',

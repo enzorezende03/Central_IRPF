@@ -3,6 +3,7 @@ import { DemandStatus, BillingStatus, Priority, STATUS_LABELS, BILLING_LABELS, P
 
 const statusColors: Record<DemandStatus, string> = {
   aguardando_cliente: "bg-warning/15 text-warning border-warning/30",
+  documentos_parciais: "bg-amber-500/15 text-amber-600 border-amber-500/30",
   documentos_em_analise: "bg-info/15 text-info border-info/30",
   em_andamento: "bg-primary/15 text-primary border-primary/30",
   pendencia: "bg-destructive/15 text-destructive border-destructive/30",
