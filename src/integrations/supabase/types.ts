@@ -455,6 +455,7 @@ export type Database = {
           client_message: string | null
           created_at: string
           declaration_type: string
+          docs_received_at: string | null
           id: string
           internal_notes: string | null
           internal_owner: string | null
@@ -473,6 +474,7 @@ export type Database = {
           client_message?: string | null
           created_at?: string
           declaration_type?: string
+          docs_received_at?: string | null
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
@@ -491,6 +493,7 @@ export type Database = {
           client_message?: string | null
           created_at?: string
           declaration_type?: string
+          docs_received_at?: string | null
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
