@@ -1183,3 +1183,48 @@ function FormQuestionDialog({
     </Dialog>
   );
 }
+
+function ResetPasswordButton({ email, name }: { email: string; name: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleReset = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: { action: "reset_password", email },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`E-mail de redefinição de senha enviado para ${name || email}`);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao enviar e-mail de redefinição.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8" title="Reenviar senha">
+          <KeyRound className="h-3.5 w-3.5" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Reenviar senha</AlertDialogTitle>
+          <AlertDialogDescription>
+            Será enviado um e-mail de redefinição de senha para <strong>{name || email}</strong> ({email}). Deseja continuar?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleReset} disabled={loading}>
+            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+            Enviar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
