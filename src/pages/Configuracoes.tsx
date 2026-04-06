@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, Building2, CreditCard, UserPlus, Trash2, Pencil, Loader2, Upload, ImageIcon, FileText, Plus, GripVertical, Check, ListChecks, MessageSquare } from "lucide-react";
+import { Shield, Building2, CreditCard, UserPlus, Trash2, Pencil, Loader2, Upload, ImageIcon, FileText, Plus, GripVertical, Check, ListChecks, MessageSquare, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -158,6 +158,7 @@ export default function Configuracoes() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <EditUserDialog user={u} />
+                            <ResetPasswordButton email={u.email} name={u.full_name} />
                             {u.id !== user?.id && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -1180,5 +1181,50 @@ function FormQuestionDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ResetPasswordButton({ email, name }: { email: string; name: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleReset = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: { action: "reset_password", email },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`E-mail de redefinição de senha enviado para ${name || email}`);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao enviar e-mail de redefinição.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8" title="Reenviar senha">
+          <KeyRound className="h-3.5 w-3.5" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Reenviar senha</AlertDialogTitle>
+          <AlertDialogDescription>
+            Será enviado um e-mail de redefinição de senha para <strong>{name || email}</strong> ({email}). Deseja continuar?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleReset} disabled={loading}>
+            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+            Enviar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

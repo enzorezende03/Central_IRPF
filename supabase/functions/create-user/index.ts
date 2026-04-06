@@ -110,6 +110,23 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // RESET PASSWORD
+    if (action === "reset_password") {
+      const { email } = body;
+      if (!email) return json({ error: "E-mail é obrigatório." }, 400);
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const anonClient = createClient(supabaseUrl, anonKey);
+
+      const { error } = await anonClient.auth.resetPasswordForEmail(email, {
+        redirectTo: `${req.headers.get("origin") || supabaseUrl}/reset-password`,
+      });
+      if (error) return json({ error: error.message }, 400);
+
+      return json({ success: true });
+    }
+
     // DELETE
     if (action === "delete") {
       const { user_id } = body;
