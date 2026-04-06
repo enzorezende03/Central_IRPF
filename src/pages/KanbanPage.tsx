@@ -1,19 +1,30 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search } from "lucide-react";
 import { InternalLayout } from "@/components/InternalLayout";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { KanbanSettingsDialog } from "@/components/KanbanSettingsDialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCases } from "@/hooks/use-cases";
+import { useKanbanPreferences } from "@/hooks/use-kanban-preferences";
 import { PRIORITY_LABELS } from "@/lib/types";
 
 export default function KanbanPage() {
   const { data: cases = [], isLoading } = useCases();
+  const { preferences } = useKanbanPreferences();
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
+
+  // Apply saved filters on load
+  useEffect(() => {
+    const sf = preferences.saved_filters;
+    if (sf.owner) setOwnerFilter(sf.owner);
+    if (sf.priority) setPriorityFilter(sf.priority);
+    if (sf.tag) setTagFilter(sf.tag);
+  }, [preferences.saved_filters]);
 
   const owners = useMemo(() => {
     const set = new Set<string>();
@@ -48,6 +59,7 @@ export default function KanbanPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
+          <KanbanSettingsDialog />
           <Select value={ownerFilter} onValueChange={setOwnerFilter}>
             <SelectTrigger className="w-44">
               <SelectValue placeholder="Responsável" />
@@ -81,7 +93,7 @@ export default function KanbanPage() {
         {isLoading ? (
           <Skeleton className="h-96 rounded-xl" />
         ) : (
-          <KanbanBoard cases={filtered} />
+          <KanbanBoard cases={filtered} columnOrder={preferences.column_order} hiddenColumns={preferences.hidden_columns} />
         )}
       </div>
     </InternalLayout>
