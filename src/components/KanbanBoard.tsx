@@ -6,18 +6,19 @@ import { CaseWithClient } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock } from "lucide-react";
 
 import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-type KanbanColumn = CaseStatus | "previa_enviada" | "solicitacao_documentacao" | "procuracao" | "impedida" | "reaberta";
+type KanbanColumn = CaseStatus | "previa_enviada" | "solicitacao_documentacao" | "procuracao" | "impedida" | "reaberta" | "documentos_parciais";
 
 const COLUMNS: KanbanColumn[] = [
   "solicitacao_documentacao",
   "procuracao",
   "aguardando_cliente",
+  "documentos_parciais",
   "documentos_em_analise",
   "em_andamento",
   "impedida",
@@ -31,6 +32,7 @@ const COLUMN_LABELS: Record<KanbanColumn, string> = {
   ...STATUS_LABELS,
   solicitacao_documentacao: "Solicitação de Documentação",
   procuracao: "Procuração",
+  documentos_parciais: "Documentos Parciais",
   previa_enviada: "Envio de Prévia",
   impedida: "Impedida",
   reaberta: "Reaberta",
@@ -40,6 +42,7 @@ const columnColors: Record<KanbanColumn, string> = {
   solicitacao_documentacao: "border-t-amber-500",
   procuracao: "border-t-cyan-500",
   aguardando_cliente: "border-t-warning",
+  documentos_parciais: "border-t-orange-500",
   documentos_em_analise: "border-t-info",
   em_andamento: "border-t-primary",
   previa_enviada: "border-t-violet-500",
@@ -53,6 +56,7 @@ const dotColors: Record<KanbanColumn, string> = {
   solicitacao_documentacao: "bg-amber-500",
   procuracao: "bg-cyan-500",
   aguardando_cliente: "bg-warning",
+  documentos_parciais: "bg-orange-500",
   documentos_em_analise: "bg-info",
   em_andamento: "bg-primary",
   previa_enviada: "bg-violet-500",
@@ -88,6 +92,7 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
       solicitacao_documentacao: [],
       procuracao: [],
       aguardando_cliente: [],
+      documentos_parciais: [],
       documentos_em_analise: [],
       em_andamento: [],
       previa_enviada: [],
@@ -111,7 +116,11 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
         map.reaberta.push(c);
         return;
       }
-
+      // Check documentos_parciais (internal_status based)
+      if (internalStatus === "documentos_parciais") {
+        map.documentos_parciais.push(c);
+        return;
+      }
       const fd = Array.isArray(c.final_deliverables)
         ? c.final_deliverables[0]
         : c.final_deliverables;
@@ -131,6 +140,12 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
       if (map[c.status]) {
         map[c.status].push(c);
       }
+    });
+    // Sort documentos_em_analise by docs_received_at (earliest first for prioritization)
+    map.documentos_em_analise.sort((a, b) => {
+      const dateA = (a as any).docs_received_at ?? a.updated_at;
+      const dateB = (b as any).docs_received_at ?? b.updated_at;
+      return new Date(dateA).getTime() - new Date(dateB).getTime();
     });
     return map;
   }, [cases]);
@@ -194,6 +209,12 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
                         );
                       })()}
                     </div>
+                    {(c as any).docs_received_at && status === "documentos_em_analise" && (
+                      <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Recebido: {new Date((c as any).docs_received_at).toLocaleDateString("pt-BR")}
+                      </p>
+                    )}
                     {billing && (
                       <p className="text-xs font-medium mt-1.5 text-right text-muted-foreground">
                         {fmt(billing.amount)}

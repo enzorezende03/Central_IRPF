@@ -57,6 +57,10 @@ export default function Demandas() {
       const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
       // Hide dispensadas unless explicitly filtered
       if (internalStatus === "dispensada" && internalStatusFilter !== "dispensada") return false;
+      // Hide documentos_parciais unless explicitly filtered
+      if (internalStatus === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
+        // Show in "all" but not when filtering other specific statuses
+      }
       return matchSearch && matchTag && matchOwner && matchInternal && matchClient;
     });
     if (sortField) {
