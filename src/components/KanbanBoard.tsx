@@ -86,7 +86,7 @@ function getChecklistColumn(c: CaseWithClient): KanbanColumn | null {
   return null;
 }
 
-export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
+export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: CaseWithClient[]; columnOrder?: string[]; hiddenColumns?: string[] }) {
   const grouped = useMemo(() => {
     const map: Record<KanbanColumn, CaseWithClient[]> = {
       solicitacao_documentacao: [],
@@ -150,12 +150,16 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
     return map;
   }, [cases]);
 
+  const visibleColumns = (columnOrder ?? COLUMNS).filter(
+    (col) => !(hiddenColumns ?? []).includes(col)
+  ) as KanbanColumn[];
+
   const fmt = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
     <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-3 px-3 sm:mx-0 sm:px-0">
-      {COLUMNS.map((status) => (
+      {visibleColumns.map((status) => (
         <div
           key={status}
           className={`flex-shrink-0 w-64 sm:w-72 rounded-xl border border-t-4 ${columnColors[status]} bg-card`}

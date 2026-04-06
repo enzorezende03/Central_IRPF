@@ -516,6 +516,36 @@ export type Database = {
           },
         ]
       }
+      kanban_preferences: {
+        Row: {
+          column_order: string[]
+          created_at: string
+          hidden_columns: string[]
+          id: string
+          saved_filters: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          column_order?: string[]
+          created_at?: string
+          hidden_columns?: string[]
+          id?: string
+          saved_filters?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          column_order?: string[]
+          created_at?: string
+          hidden_columns?: string[]
+          id?: string
+          saved_filters?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       office_settings: {
         Row: {
           address: string
