@@ -99,6 +99,9 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
     cases.forEach((c) => {
       const internalStatus = (c as any).internal_status ?? c.status;
 
+      // Skip dispensadas from Kanban
+      if (internalStatus === "dispensada") return;
+
       // Check impedida/reaberta first (internal_status based)
       if (internalStatus === "impedida") {
         map.impedida.push(c);

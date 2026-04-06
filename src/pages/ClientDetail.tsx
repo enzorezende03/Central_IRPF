@@ -424,10 +424,34 @@ export default function ClientDetail() {
                 Dispensar
               </Button>
             ) : (
-              <Badge className="bg-slate-500/15 text-slate-600 border-slate-500/30 border">
-                <X className="h-3 w-3 mr-1" />
-                Dispensada
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-slate-500/15 text-slate-600 border-slate-500/30 border">
+                  <X className="h-3 w-3 mr-1" />
+                  Dispensada
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-teal-600 border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from("irpf_cases")
+                      .update({ internal_status: "aguardando_cliente" })
+                      .eq("id", id!);
+                    if (error) {
+                      toast.error("Erro ao reverter dispensa");
+                      return;
+                    }
+                    await logTimelineEvent(id!, "Dispensa revertida", "Demanda reativada pelo escritório", false);
+                    toast.success("Demanda reativada!");
+                    queryClient.invalidateQueries({ queryKey: ["case-detail", id] });
+                    queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
+                  }}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                  Reverter Dispensa
+                </Button>
+              </div>
             )}
           </div>
         </div>
