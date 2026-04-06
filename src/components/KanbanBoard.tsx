@@ -6,7 +6,7 @@ import { CaseWithClient } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock } from "lucide-react";
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -209,6 +209,12 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
                         );
                       })()}
                     </div>
+                    {(c as any).docs_received_at && status === "documentos_em_analise" && (
+                      <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Recebido: {new Date((c as any).docs_received_at).toLocaleDateString("pt-BR")}
+                      </p>
+                    )}
                     {billing && (
                       <p className="text-xs font-medium mt-1.5 text-right text-muted-foreground">
                         {fmt(billing.amount)}
