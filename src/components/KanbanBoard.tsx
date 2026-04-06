@@ -116,6 +116,10 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
         map.reaberta.push(c);
         return;
       }
+      // Check documentos_parciais (internal_status based)
+      if (internalStatus === "documentos_parciais") {
+        map.documentos_parciais.push(c);
+        return;
 
       const fd = Array.isArray(c.final_deliverables)
         ? c.final_deliverables[0]
