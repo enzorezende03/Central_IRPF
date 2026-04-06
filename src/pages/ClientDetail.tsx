@@ -456,6 +456,15 @@ export default function ClientDetail() {
           </div>
         </div>
 
+        {(caseData as any).internal_status === "dispensada" && (
+          <div className="rounded-lg border border-slate-300 bg-slate-100 p-4 text-center text-slate-500">
+            <X className="h-5 w-5 mx-auto mb-1" />
+            <p className="font-medium">Demanda dispensada</p>
+            <p className="text-sm">Todas as ações estão desativadas. Use "Reverter Dispensa" para reativar.</p>
+          </div>
+        )}
+
+        <div className={`${(caseData as any).internal_status === "dispensada" ? "opacity-50 pointer-events-none select-none" : ""}`}>
 
         {/* ── Info Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -783,6 +792,7 @@ export default function ClientDetail() {
               </Card>
             </Collapsible>
           </div>
+        </div>
         </div>
       </div>
     </InternalLayout>
