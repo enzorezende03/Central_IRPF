@@ -158,6 +158,7 @@ export default function Configuracoes() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <EditUserDialog user={u} />
+                            <ResetPasswordButton email={u.email} name={u.full_name} />
                             {u.id !== user?.id && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
