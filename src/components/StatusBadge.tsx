@@ -9,6 +9,7 @@ const statusColors: Record<DemandStatus, string> = {
   finalizado: "bg-success/15 text-success border-success/30",
   impedida: "bg-rose-500/15 text-rose-600 border-rose-500/30",
   reaberta: "bg-teal-500/15 text-teal-600 border-teal-500/30",
+  dispensada: "bg-slate-500/15 text-slate-600 border-slate-500/30",
 };
 
 const billingColors: Record<BillingStatus, string> = {

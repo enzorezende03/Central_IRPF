@@ -202,6 +202,8 @@ export default function ClientDetail() {
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
   const [showImpedirDialog, setShowImpedirDialog] = useState(false);
   const [impedirJustificativa, setImpedirJustificativa] = useState("");
+  const [showDispensarDialog, setShowDispensarDialog] = useState(false);
+  const [dispensarJustificativa, setDispensarJustificativa] = useState("");
 
   const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
 
@@ -409,6 +411,22 @@ export default function ClientDetail() {
               <Badge className="bg-rose-500/15 text-rose-600 border-rose-500/30 border">
                 <AlertCircle className="h-3 w-3 mr-1" />
                 Impedida
+              </Badge>
+            )}
+            {(caseData as any).internal_status !== "dispensada" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-slate-600 border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                onClick={() => setShowDispensarDialog(true)}
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Dispensar
+              </Button>
+            ) : (
+              <Badge className="bg-slate-500/15 text-slate-600 border-slate-500/30 border">
+                <X className="h-3 w-3 mr-1" />
+                Dispensada
               </Badge>
             )}
           </div>
@@ -785,6 +803,53 @@ export default function ClientDetail() {
           >
             <AlertCircle className="h-3.5 w-3.5 mr-1" />
             Confirmar Impedimento
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* ── Dispensar Dialog ── */}
+    <Dialog open={showDispensarDialog} onOpenChange={setShowDispensarDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Dispensar Demanda</DialogTitle>
+          <DialogDescription>
+            Informe o motivo pelo qual o cliente não irá fazer o IR conosco. Essa informação ficará registrada na timeline.
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          placeholder="Descreva o motivo da dispensa..."
+          value={dispensarJustificativa}
+          onChange={(e) => setDispensarJustificativa(e.target.value)}
+          className="min-h-[100px]"
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowDispensarDialog(false); setDispensarJustificativa(""); }}>
+            Cancelar
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={!dispensarJustificativa.trim()}
+            onClick={async () => {
+              const justificativa = dispensarJustificativa.trim();
+              if (!justificativa) return;
+              const { error } = await supabase
+                .from("irpf_cases")
+                .update({ internal_status: "dispensada" })
+                .eq("id", id!);
+              if (error) {
+                toast.error("Erro ao dispensar demanda");
+                return;
+              }
+              await logTimelineEvent(id!, "Demanda dispensada", `Motivo: ${justificativa}`, false);
+              toast.success("Demanda marcada como dispensada");
+              setShowDispensarDialog(false);
+              setDispensarJustificativa("");
+              invalidateAll();
+            }}
+          >
+            <X className="h-3.5 w-3.5 mr-1" />
+            Confirmar Dispensa
           </Button>
         </DialogFooter>
       </DialogContent>
