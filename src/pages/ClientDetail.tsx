@@ -408,10 +408,33 @@ export default function ClientDetail() {
                 Impedir
               </Button>
             ) : (
-              <Badge className="bg-rose-500/15 text-rose-600 border-rose-500/30 border">
-                <AlertCircle className="h-3 w-3 mr-1" />
-                Impedida
-              </Badge>
+              <>
+                <Badge className="bg-rose-500/15 text-rose-600 border-rose-500/30 border">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Impedida
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-teal-600 border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from("irpf_cases")
+                      .update({ internal_status: "aguardando_cliente" })
+                      .eq("id", id!);
+                    if (error) {
+                      toast.error("Erro ao reabrir demanda");
+                      return;
+                    }
+                    await logTimelineEvent(id!, "Impedimento resolvido", "Demanda reaberta manualmente pelo escritório", false);
+                    toast.success("Demanda reaberta com sucesso");
+                    invalidateAll();
+                  }}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                  Reabrir
+                </Button>
+              </>
             )}
             {(caseData as any).internal_status !== "dispensada" ? (
               <Button
