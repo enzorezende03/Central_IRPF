@@ -353,10 +353,26 @@ export default function ClientPortal() {
                         );
                       })}
                     </div>
-                    {isPendencia && (
+                    {isPendencia && !isImpedida && (
                       <div className="mt-3 flex items-center gap-2 text-destructive bg-destructive/10 p-2.5 rounded-lg">
                         <AlertTriangle className="h-4 w-4 shrink-0" />
                         <p className="text-xs font-medium">Existem pendências que precisam da sua atenção.</p>
+                      </div>
+                    )}
+                    {isImpedida && (
+                      <div className="mt-3 space-y-1.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3 rounded-lg">
+                        <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                          <AlertTriangle className="h-4 w-4 shrink-0" />
+                          <p className="text-xs font-bold">Declaração Impedida</p>
+                        </div>
+                        {impedimentoEvent?.description && (
+                          <p className="text-xs text-rose-700 dark:text-rose-300 ml-6">
+                            {impedimentoEvent.description.replace(/^Motivo:\s*/, "")}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-rose-500 dark:text-rose-400 ml-6">
+                          Entre em contato com o escritório ou envie uma mensagem para resolver esta pendência.
+                        </p>
                       </div>
                     )}
                   </CardContent>
