@@ -851,7 +851,7 @@ export default function ClientDetail() {
                 toast.error("Erro ao impedir demanda");
                 return;
               }
-              await logTimelineEvent(id!, "Demanda impedida", `Motivo: ${justificativa}`, false);
+              await logTimelineEvent(id!, "Demanda impedida", `Motivo: ${justificativa}`, true);
               toast.success("Demanda marcada como impedida");
               setShowImpedirDialog(false);
               setImpedirJustificativa("");
