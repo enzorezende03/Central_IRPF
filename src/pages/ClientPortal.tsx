@@ -267,6 +267,7 @@ export default function ClientPortal() {
   const impedimentoEvent = isImpedida
     ? timeline.find((t) => t.event_type === "Demanda impedida")
     : null;
+  const isDocsParciais = (caseData as any).internal_status === "documentos_parciais";
   const isPendencia = caseData.status === "pendencia";
   const isFinished = caseData.status === "finalizado";
   const answeredIds = new Set(answers.map((a) => a.question_id));
