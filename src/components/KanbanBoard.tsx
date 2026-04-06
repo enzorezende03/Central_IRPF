@@ -12,12 +12,13 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-type KanbanColumn = CaseStatus | "previa_enviada" | "solicitacao_documentacao" | "procuracao" | "impedida" | "reaberta";
+type KanbanColumn = CaseStatus | "previa_enviada" | "solicitacao_documentacao" | "procuracao" | "impedida" | "reaberta" | "documentos_parciais";
 
 const COLUMNS: KanbanColumn[] = [
   "solicitacao_documentacao",
   "procuracao",
   "aguardando_cliente",
+  "documentos_parciais",
   "documentos_em_analise",
   "em_andamento",
   "impedida",
@@ -31,6 +32,7 @@ const COLUMN_LABELS: Record<KanbanColumn, string> = {
   ...STATUS_LABELS,
   solicitacao_documentacao: "Solicitação de Documentação",
   procuracao: "Procuração",
+  documentos_parciais: "Documentos Parciais",
   previa_enviada: "Envio de Prévia",
   impedida: "Impedida",
   reaberta: "Reaberta",
@@ -40,6 +42,7 @@ const columnColors: Record<KanbanColumn, string> = {
   solicitacao_documentacao: "border-t-amber-500",
   procuracao: "border-t-cyan-500",
   aguardando_cliente: "border-t-warning",
+  documentos_parciais: "border-t-orange-500",
   documentos_em_analise: "border-t-info",
   em_andamento: "border-t-primary",
   previa_enviada: "border-t-violet-500",
@@ -53,6 +56,7 @@ const dotColors: Record<KanbanColumn, string> = {
   solicitacao_documentacao: "bg-amber-500",
   procuracao: "bg-cyan-500",
   aguardando_cliente: "bg-warning",
+  documentos_parciais: "bg-orange-500",
   documentos_em_analise: "bg-info",
   em_andamento: "bg-primary",
   previa_enviada: "bg-violet-500",
@@ -88,6 +92,7 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
       solicitacao_documentacao: [],
       procuracao: [],
       aguardando_cliente: [],
+      documentos_parciais: [],
       documentos_em_analise: [],
       em_andamento: [],
       previa_enviada: [],
