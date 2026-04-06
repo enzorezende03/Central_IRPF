@@ -141,6 +141,12 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
         map[c.status].push(c);
       }
     });
+    // Sort documentos_em_analise by docs_received_at (earliest first for prioritization)
+    map.documentos_em_analise.sort((a, b) => {
+      const dateA = (a as any).docs_received_at ?? a.updated_at;
+      const dateB = (b as any).docs_received_at ?? b.updated_at;
+      return new Date(dateA).getTime() - new Date(dateB).getTime();
+    });
     return map;
   }, [cases]);
 
