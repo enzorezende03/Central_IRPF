@@ -267,6 +267,7 @@ export default function ClientPortal() {
   const impedimentoEvent = isImpedida
     ? timeline.find((t) => t.event_type === "Demanda impedida")
     : null;
+  const isDocsParciais = (caseData as any).internal_status === "documentos_parciais";
   const isPendencia = caseData.status === "pendencia";
   const isFinished = caseData.status === "finalizado";
   const answeredIds = new Set(answers.map((a) => a.question_id));
@@ -378,7 +379,31 @@ export default function ClientPortal() {
                   </CardContent>
                 </Card>
 
-                {/* Client message */}
+                {/* Documentos Parciais Banner */}
+                {isDocsParciais && !isImpedida && (
+                  <Card className="border-amber-300 dark:border-amber-700">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-2.5">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-amber-700 dark:text-amber-400">Documentação Incompleta</p>
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                            Recebemos parte dos seus documentos, mas ainda faltam {pendingDocs.length} documento{pendingDocs.length !== 1 ? "s" : ""} para darmos andamento à sua declaração.
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 text-xs h-7 border-amber-300 text-amber-700 hover:bg-amber-50"
+                            onClick={() => setActiveTab("documentos")}
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            Ver documentos pendentes
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
                 {caseData.client_message && (
                   <Card>
                     <CardContent className="p-4">
