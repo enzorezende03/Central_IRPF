@@ -120,7 +120,7 @@ export function KanbanBoard({ cases }: { cases: CaseWithClient[] }) {
       if (internalStatus === "documentos_parciais") {
         map.documentos_parciais.push(c);
         return;
-
+      }
       const fd = Array.isArray(c.final_deliverables)
         ? c.final_deliverables[0]
         : c.final_deliverables;
