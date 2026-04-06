@@ -793,6 +793,7 @@ export default function ClientDetail() {
             </Collapsible>
           </div>
         </div>
+        </div>
       </div>
     </InternalLayout>
 
