@@ -807,6 +807,53 @@ export default function ClientDetail() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* ── Dispensar Dialog ── */}
+    <Dialog open={showDispensarDialog} onOpenChange={setShowDispensarDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Dispensar Demanda</DialogTitle>
+          <DialogDescription>
+            Informe o motivo pelo qual o cliente não irá fazer o IR conosco. Essa informação ficará registrada na timeline.
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          placeholder="Descreva o motivo da dispensa..."
+          value={dispensarJustificativa}
+          onChange={(e) => setDispensarJustificativa(e.target.value)}
+          className="min-h-[100px]"
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowDispensarDialog(false); setDispensarJustificativa(""); }}>
+            Cancelar
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={!dispensarJustificativa.trim()}
+            onClick={async () => {
+              const justificativa = dispensarJustificativa.trim();
+              if (!justificativa) return;
+              const { error } = await supabase
+                .from("irpf_cases")
+                .update({ internal_status: "dispensada" })
+                .eq("id", id!);
+              if (error) {
+                toast.error("Erro ao dispensar demanda");
+                return;
+              }
+              await logTimelineEvent(id!, "Demanda dispensada", `Motivo: ${justificativa}`, false);
+              toast.success("Demanda marcada como dispensada");
+              setShowDispensarDialog(false);
+              setDispensarJustificativa("");
+              invalidateAll();
+            }}
+          >
+            <X className="h-3.5 w-3.5 mr-1" />
+            Confirmar Dispensa
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </>
   );
 }
