@@ -55,6 +55,8 @@ export default function Demandas() {
       const internalStatus = (c as any).internal_status ?? c.status;
       const matchInternal = internalStatusFilter === "all" || internalStatus === internalStatusFilter;
       const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
+      // Hide dispensadas unless explicitly filtered
+      if (internalStatus === "dispensada" && internalStatusFilter !== "dispensada") return false;
       return matchSearch && matchTag && matchOwner && matchInternal && matchClient;
     });
     if (sortField) {
