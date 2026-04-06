@@ -202,6 +202,8 @@ export default function ClientDetail() {
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
   const [showImpedirDialog, setShowImpedirDialog] = useState(false);
   const [impedirJustificativa, setImpedirJustificativa] = useState("");
+  const [showDispensarDialog, setShowDispensarDialog] = useState(false);
+  const [dispensarJustificativa, setDispensarJustificativa] = useState("");
 
   const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
 
@@ -409,6 +411,22 @@ export default function ClientDetail() {
               <Badge className="bg-rose-500/15 text-rose-600 border-rose-500/30 border">
                 <AlertCircle className="h-3 w-3 mr-1" />
                 Impedida
+              </Badge>
+            )}
+            {(caseData as any).internal_status !== "dispensada" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-slate-600 border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                onClick={() => setShowDispensarDialog(true)}
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Dispensar
+              </Button>
+            ) : (
+              <Badge className="bg-slate-500/15 text-slate-600 border-slate-500/30 border">
+                <X className="h-3 w-3 mr-1" />
+                Dispensada
               </Badge>
             )}
           </div>
