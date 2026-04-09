@@ -346,22 +346,21 @@ export default function ClientDetail() {
     <InternalLayout>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
         {/* ── 1. Header ── */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex items-start gap-4">
           <Link to="/demandas">
             <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold">{client?.full_name ?? "Cliente"}</h1>
+              <h1 className="text-xl font-bold whitespace-nowrap">{client?.full_name ?? "Cliente"}</h1>
               {(client?.tags ?? []).map((tag: string) => (
                 <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
               ))}
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground whitespace-nowrap">
               CPF: {formatCPF(client?.cpf)} · Ano-base {caseData.base_year} · Exercício {caseData.tax_year}
             </p>
-          </div>
-          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center">
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Interno:</span>
               <Select value={(caseData as any).internal_status ?? caseData.status} onValueChange={(v) => updateStatus.mutate(v as CaseStatus)}>
