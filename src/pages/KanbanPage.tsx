@@ -10,21 +10,39 @@ import { useCases } from "@/hooks/use-cases";
 import { useKanbanPreferences } from "@/hooks/use-kanban-preferences";
 import { PRIORITY_LABELS } from "@/lib/types";
 
+const KANBAN_FILTERS_KEY = "kanban-filters";
+
+function loadSavedFilters() {
+  try {
+    const saved = localStorage.getItem(KANBAN_FILTERS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+}
+
 export default function KanbanPage() {
   const { data: cases = [], isLoading } = useCases();
   const { preferences } = useKanbanPreferences();
-  const [search, setSearch] = useState("");
-  const [ownerFilter, setOwnerFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [tagFilter, setTagFilter] = useState("all");
+  const saved = useMemo(() => loadSavedFilters(), []);
+  const [search, setSearch] = useState(saved.search ?? "");
+  const [ownerFilter, setOwnerFilter] = useState(saved.ownerFilter ?? "all");
+  const [priorityFilter, setPriorityFilter] = useState(saved.priorityFilter ?? "all");
+  const [tagFilter, setTagFilter] = useState(saved.tagFilter ?? "all");
 
-  // Apply saved filters on load
+  // Apply saved DB filters only if no localStorage filters exist
   useEffect(() => {
     const sf = preferences.saved_filters;
-    if (sf.owner) setOwnerFilter(sf.owner);
-    if (sf.priority) setPriorityFilter(sf.priority);
-    if (sf.tag) setTagFilter(sf.tag);
+    if (!localStorage.getItem(KANBAN_FILTERS_KEY)) {
+      if (sf.owner) setOwnerFilter(sf.owner);
+      if (sf.priority) setPriorityFilter(sf.priority);
+      if (sf.tag) setTagFilter(sf.tag);
+    }
   }, [preferences.saved_filters]);
+
+  useEffect(() => {
+    localStorage.setItem(KANBAN_FILTERS_KEY, JSON.stringify({
+      search, ownerFilter, priorityFilter, tagFilter,
+    }));
+  }, [search, ownerFilter, priorityFilter, tagFilter]);
 
   const owners = useMemo(() => {
     const set = new Set<string>();
