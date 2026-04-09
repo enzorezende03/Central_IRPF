@@ -14,15 +14,31 @@ import { NewCaseDialog } from "@/components/NewCaseDialog";
 import { useCases } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 
+const DEMANDAS_FILTERS_KEY = "demandas-filters";
+
+function loadSavedFilters() {
+  try {
+    const saved = localStorage.getItem(DEMANDAS_FILTERS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+}
+
 export default function Demandas() {
   const { data: cases = [], isLoading } = useCases();
-  const [search, setSearch] = useState("");
-  const [tagFilter, setTagFilter] = useState("all");
-  const [ownerFilter, setOwnerFilter] = useState("all");
-  const [internalStatusFilter, setInternalStatusFilter] = useState("all");
-  const [clientStatusFilter, setClientStatusFilter] = useState("all");
-  const [sortField, setSortField] = useState<"cliente" | "ano" | null>(null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const saved = useMemo(() => loadSavedFilters(), []);
+  const [search, setSearch] = useState(saved.search ?? "");
+  const [tagFilter, setTagFilter] = useState(saved.tagFilter ?? "all");
+  const [ownerFilter, setOwnerFilter] = useState(saved.ownerFilter ?? "all");
+  const [internalStatusFilter, setInternalStatusFilter] = useState(saved.internalStatusFilter ?? "all");
+  const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
+  const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
+
+  useEffect(() => {
+    localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
+      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir,
+    }));
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir]);
 
   const handleSort = (field: "cliente" | "ano") => {
     if (sortField === field) {
