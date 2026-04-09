@@ -480,6 +480,7 @@ export default function ClientDetail() {
                 </Button>
               </div>
             )}
+            </div>
           </div>
         </div>
 
