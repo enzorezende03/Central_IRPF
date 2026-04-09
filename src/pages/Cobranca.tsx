@@ -86,10 +86,10 @@ export default function Cobranca() {
   }, [cases, search, billingFilter, typeFilter, sortField, sortDir]);
 
   const handleQuickStatusChange = async (billingId: string, newStatus: BillingStatus) => {
-    const updates: Record<string, unknown> = { billing_status: newStatus };
-    if (newStatus === "pago") {
-      updates.payment_date = new Date().toISOString().split("T")[0];
-    }
+    const updates = {
+      billing_status: newStatus,
+      ...(newStatus === "pago" ? { payment_date: new Date().toISOString().split("T")[0] } : {}),
+    };
     const { error } = await supabase.from("billing").update(updates).eq("id", billingId);
     if (error) {
       toast.error("Erro ao atualizar cobrança.");

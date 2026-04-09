@@ -49,18 +49,19 @@ export function EditBillingDialog({ open, onOpenChange, billing, clientName }: E
 
     const parsedAmount = parseFloat(amount.replace(/\./g, "").replace(",", "."));
 
-    const updates: Record<string, unknown> = {
+    let finalPaymentDate = paymentDate || null;
+    if (status === "pago" && !paymentDate) {
+      finalPaymentDate = new Date().toISOString().split("T")[0];
+      setPaymentDate(finalPaymentDate);
+    }
+
+    const updates = {
       amount: isNaN(parsedAmount) ? billing.amount : parsedAmount,
-      billing_status: status,
-      payment_date: paymentDate || null,
+      billing_status: status as Database["public"]["Enums"]["billing_status"],
+      payment_date: finalPaymentDate,
       payment_method: paymentMethod || null,
       notes: notes || null,
     };
-
-    if (status === "pago" && !paymentDate) {
-      updates.payment_date = new Date().toISOString().split("T")[0];
-      setPaymentDate(updates.payment_date as string);
-    }
 
     const { error } = await supabase.from("billing").update(updates).eq("id", billing.id);
     setSaving(false);
