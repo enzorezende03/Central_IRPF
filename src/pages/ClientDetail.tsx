@@ -351,10 +351,10 @@ export default function ClientDetail() {
             <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold truncate">{client?.full_name ?? "Cliente"}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold">{client?.full_name ?? "Cliente"}</h1>
               {(client?.tags ?? []).map((tag: string) => (
-                <Badge key={tag} variant="secondary" className="text-xs shrink-0">{tag}</Badge>
+                <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
               ))}
             </div>
             <p className="text-sm text-muted-foreground">
