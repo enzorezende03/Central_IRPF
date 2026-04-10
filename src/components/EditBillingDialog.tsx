@@ -96,9 +96,9 @@ export function EditBillingDialog({ open, onOpenChange, billing, clientName }: E
       setPaymentDate(finalPaymentDate);
     }
 
-    const updates: Record<string, any> = {
+    const updates = {
       amount: isNaN(parsedAmount) ? billing.amount : parsedAmount,
-      billing_status: status,
+      billing_status: status as Database["public"]["Enums"]["billing_status"],
       payment_date: finalPaymentDate,
       payment_method: paymentMethod || null,
       notes: notes || null,
