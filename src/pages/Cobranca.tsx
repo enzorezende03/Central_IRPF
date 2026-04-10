@@ -151,32 +151,32 @@ export default function Cobranca() {
           <Skeleton className="h-96 rounded-xl" />
         ) : (
           <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
-            <Table>
+            <Table className="table-fixed w-full min-w-[900px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
+                  <TableHead className="w-[18%] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
                     <span className="flex items-center gap-1">
                       Cliente
                       {sortField === "cliente" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                     </span>
                   </TableHead>
-                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
-                  <TableHead className="hidden sm:table-cell">Tipo</TableHead>
-                  <TableHead className="min-w-[90px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("honorario")}>
+                  <TableHead className="w-[12%] hidden sm:table-cell">Responsável</TableHead>
+                  <TableHead className="w-[8%] hidden sm:table-cell">Tipo</TableHead>
+                  <TableHead className="w-[11%] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("honorario")}>
                     <span className="flex items-center gap-1">
                       Honorário
                       {sortField === "honorario" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                     </span>
                   </TableHead>
-                  <TableHead className="min-w-[100px]">Status</TableHead>
-                  <TableHead className="hidden md:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("data_pgto")}>
+                  <TableHead className="w-[10%]">Status</TableHead>
+                  <TableHead className="w-[10%] hidden md:table-cell cursor-pointer select-none hover:text-foreground whitespace-nowrap" onClick={() => handleSort("data_pgto")}>
                     <span className="flex items-center gap-1">
                       Data Pgto
                       {sortField === "data_pgto" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                     </span>
                   </TableHead>
-                  <TableHead className="hidden lg:table-cell">Forma</TableHead>
-                  <TableHead className="min-w-[90px]">Ação</TableHead>
+                  <TableHead className="w-[10%] hidden lg:table-cell">Forma</TableHead>
+                  <TableHead className="w-[21%]">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -187,21 +187,21 @@ export default function Cobranca() {
                   const isPending = billing && billing.billing_status !== "pago" && !isIncluso;
                   return (
                     <TableRow key={c.id} className={isPending ? "border-l-2 border-l-warning" : ""}>
-                      <TableCell className="font-medium">
-                        <Link to={`/demandas/${c.id}`} className="hover:text-primary transition-colors">
+                      <TableCell className="font-medium truncate">
+                        <Link to={`/demandas/${c.id}`} className="hover:text-primary transition-colors" title={c.clients?.full_name ?? ""}>
                           {c.clients?.full_name}
                         </Link>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{c.internal_owner ?? "—"}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground truncate">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell className="hidden sm:table-cell">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isIncluso ? "bg-success/10 text-success" : "bg-primary/10 text-primary"}`}>
-                          {isIncluso ? "Mensalidade" : "Extra"}
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${isIncluso ? "bg-success/10 text-success" : "bg-primary/10 text-primary"}`}>
+                          {isIncluso ? "Mensal." : "Extra"}
                         </span>
                       </TableCell>
-                      <TableCell className="text-sm font-medium">{billing ? fmt(billing.amount) : "—"}</TableCell>
+                      <TableCell className="text-sm font-medium whitespace-nowrap">{billing ? fmt(billing.amount) : "—"}</TableCell>
                       <TableCell>
                         {isIncluso ? (
-                          <span className="text-xs text-success flex items-center gap-1">
+                          <span className="text-xs text-success flex items-center gap-1 whitespace-nowrap">
                             <CheckCircle className="h-3 w-3" /> Incluso
                           </span>
                         ) : billing ? (
@@ -210,10 +210,10 @@ export default function Cobranca() {
                           <span className="text-xs text-muted-foreground">Sem cobrança</span>
                         )}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground whitespace-nowrap">
                         {billing?.payment_date ? new Date(billing.payment_date).toLocaleDateString("pt-BR") : "—"}
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground truncate">
                         {billing?.payment_method ?? "—"}
                       </TableCell>
                       <TableCell>
@@ -231,7 +231,7 @@ export default function Cobranca() {
                             </>
                           )}
                           {!isIncluso && billing?.billing_status === "pago" && (
-                            <span className="text-xs text-success flex items-center gap-1">
+                            <span className="text-xs text-success flex items-center gap-1 whitespace-nowrap">
                               <CheckCircle className="h-3 w-3" /> Quitado
                             </span>
                           )}
