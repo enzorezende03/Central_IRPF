@@ -1,0 +1,1 @@
+ALTER TABLE public.billing ADD COLUMN boleto_url text DEFAULT NULL;

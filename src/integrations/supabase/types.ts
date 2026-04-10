@@ -19,6 +19,7 @@ export type Database = {
           amount: number
           billing_status: Database["public"]["Enums"]["billing_status"]
           billing_type: Database["public"]["Enums"]["billing_type"]
+          boleto_url: string | null
           case_id: string
           created_at: string
           id: string
@@ -31,6 +32,7 @@ export type Database = {
           amount?: number
           billing_status?: Database["public"]["Enums"]["billing_status"]
           billing_type?: Database["public"]["Enums"]["billing_type"]
+          boleto_url?: string | null
           case_id: string
           created_at?: string
           id?: string
@@ -43,6 +45,7 @@ export type Database = {
           amount?: number
           billing_status?: Database["public"]["Enums"]["billing_status"]
           billing_type?: Database["public"]["Enums"]["billing_type"]
+          boleto_url?: string | null
           case_id?: string
           created_at?: string
           id?: string
