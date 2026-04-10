@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BILLING_LABELS } from "@/lib/types";
+import { Upload, FileText, X, Loader2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type BillingRow = Database["public"]["Tables"]["billing"]["Row"];
@@ -26,12 +27,15 @@ const PAYMENT_METHODS = ["PIX", "Boleto", "Cartão de Crédito", "Cartão de Dé
 export function EditBillingDialog({ open, onOpenChange, billing, clientName }: EditBillingDialogProps) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState<BillingStatus>("nao_cobrado");
   const [paymentDate, setPaymentDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [notes, setNotes] = useState("");
+  const [boletoUrl, setBoletoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (billing) {
@@ -40,8 +44,45 @@ export function EditBillingDialog({ open, onOpenChange, billing, clientName }: E
       setPaymentDate(billing.payment_date ?? "");
       setPaymentMethod(billing.payment_method ?? "");
       setNotes(billing.notes ?? "");
+      setBoletoUrl((billing as any).boleto_url ?? null);
     }
   }, [billing]);
+
+  const handleBoletoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !billing) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. Limite: 10 MB.");
+      return;
+    }
+
+    setUploading(true);
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `boletos/${billing.case_id}/${Date.now()}_${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("documentos_clientes")
+      .upload(path, file, { upsert: false });
+
+    if (uploadError) {
+      toast.error("Erro ao fazer upload do boleto.");
+      setUploading(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from("documentos_clientes").getPublicUrl(path);
+    setBoletoUrl(data.publicUrl);
+    setUploading(false);
+    toast.success("Boleto anexado!");
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleRemoveBoleto = () => {
+    setBoletoUrl(null);
+  };
 
   const handleSave = async () => {
     if (!billing) return;
@@ -55,12 +96,13 @@ export function EditBillingDialog({ open, onOpenChange, billing, clientName }: E
       setPaymentDate(finalPaymentDate);
     }
 
-    const updates = {
+    const updates: Record<string, any> = {
       amount: isNaN(parsedAmount) ? billing.amount : parsedAmount,
-      billing_status: status as Database["public"]["Enums"]["billing_status"],
+      billing_status: status,
       payment_date: finalPaymentDate,
       payment_method: paymentMethod || null,
       notes: notes || null,
+      boleto_url: boletoUrl,
     };
 
     const { error } = await supabase.from("billing").update(updates).eq("id", billing.id);
@@ -131,6 +173,57 @@ export function EditBillingDialog({ open, onOpenChange, billing, clientName }: E
             </Select>
           </div>
 
+          {/* Boleto Upload */}
+          <div className="space-y-1.5">
+            <Label>Boleto</Label>
+            {boletoUrl ? (
+              <div className="flex items-center gap-2 p-2 border rounded-lg bg-muted/50">
+                <FileText className="h-4 w-4 text-primary shrink-0" />
+                <a
+                  href={boletoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline truncate flex-1"
+                >
+                  Boleto anexado
+                </a>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={handleRemoveBoleto}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  className="hidden"
+                  onChange={handleBoletoUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+                  ) : (
+                    <><Upload className="h-4 w-4 mr-2" /> Anexar boleto</>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <Label>Observações</Label>
             <Textarea
@@ -143,7 +236,7 @@ export function EditBillingDialog({ open, onOpenChange, billing, clientName }: E
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || uploading}>
               {saving ? "Salvando..." : "Salvar"}
             </Button>
           </div>
