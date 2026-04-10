@@ -86,6 +86,21 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  // ── Fetch billing (for boleto) ──
+  const { data: billingData } = useQuery({
+    queryKey: ["portal-billing", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("billing")
+        .select("*")
+        .eq("case_id", caseId!)
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!caseId,
+  });
+
   // ── Fetch doc requests ──
   const { data: docRequests = [] } = useQuery({
     queryKey: ["portal-docs", caseId],
@@ -465,6 +480,26 @@ export default function ClientPortal() {
                             </a>
                           </Button>
                         )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Boleto disponível */}
+                {(billingData as any)?.boleto_url && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-primary shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Boleto Disponível</p>
+                          <p className="text-xs text-muted-foreground">Clique para visualizar ou baixar o boleto.</p>
+                        </div>
+                        <Button size="sm" asChild>
+                          <a href={(billingData as any).boleto_url} target="_blank" rel="noopener noreferrer">
+                            <Download className="h-4 w-4 mr-1" /> Boleto
+                          </a>
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
