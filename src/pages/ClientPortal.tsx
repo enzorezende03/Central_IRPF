@@ -86,6 +86,21 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  // ── Fetch billing (for boleto) ──
+  const { data: billingData } = useQuery({
+    queryKey: ["portal-billing", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("billing")
+        .select("*")
+        .eq("case_id", caseId!)
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!caseId,
+  });
+
   // ── Fetch doc requests ──
   const { data: docRequests = [] } = useQuery({
     queryKey: ["portal-docs", caseId],
