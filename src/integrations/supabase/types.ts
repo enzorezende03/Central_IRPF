@@ -462,7 +462,6 @@ export type Database = {
           id: string
           internal_notes: string | null
           internal_owner: string | null
-          internal_status: string
           portal_slug: string | null
           portal_token: string
           priority: Database["public"]["Enums"]["case_priority"]
@@ -481,7 +480,6 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
-          internal_status?: string
           portal_slug?: string | null
           portal_token: string
           priority?: Database["public"]["Enums"]["case_priority"]
@@ -500,7 +498,6 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
-          internal_status?: string
           portal_slug?: string | null
           portal_token?: string
           priority?: Database["public"]["Enums"]["case_priority"]
@@ -750,6 +747,10 @@ export type Database = {
         | "em_andamento"
         | "pendencia"
         | "finalizado"
+        | "dispensada"
+        | "impedida"
+        | "documentos_parciais"
+        | "reaberta"
       document_status: "pendente" | "enviado" | "aprovado" | "rejeitado"
       preview_status: "aguardando_revisao" | "aprovado" | "ajustes_solicitados"
       uploaded_by_type: "client" | "office"
@@ -891,6 +892,10 @@ export const Constants = {
         "em_andamento",
         "pendencia",
         "finalizado",
+        "dispensada",
+        "impedida",
+        "documentos_parciais",
+        "reaberta",
       ],
       document_status: ["pendente", "enviado", "aprovado", "rejeitado"],
       preview_status: ["aguardando_revisao", "aprovado", "ajustes_solicitados"],

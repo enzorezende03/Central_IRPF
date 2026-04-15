@@ -68,14 +68,11 @@ export default function Demandas() {
       const matchSearch = !q || name.includes(q);
       const matchTag = tagFilter === "all" || (c.clients?.tags ?? []).includes(tagFilter);
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
-      const internalStatus = (c as any).internal_status ?? c.status;
-      const matchInternal = internalStatusFilter === "all" || internalStatus === internalStatusFilter;
+      const matchInternal = internalStatusFilter === "all" || c.status === internalStatusFilter;
       const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
       // Hide dispensadas unless explicitly filtered
-      if (internalStatus === "dispensada" && internalStatusFilter !== "dispensada") return false;
-      // Hide documentos_parciais unless explicitly filtered
-      if (internalStatus === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
-        // Show in "all" but not when filtering other specific statuses
+      if (c.status === "dispensada" && internalStatusFilter !== "dispensada") return false;
+      if (c.status === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
       }
       return matchSearch && matchTag && matchOwner && matchInternal && matchClient;
     });
@@ -192,7 +189,7 @@ export default function Demandas() {
               <TableBody>
                 {filtered.map((c) => {
                   const billing = c.billing?.[0];
-                  const internalStatus = (c as any).internal_status ?? c.status;
+                  const caseStatus = c.status;
                   return (
                     <TableRow key={c.id} className={`hover:bg-muted/50 ${billing && billing.billing_status !== "pago" ? "border-l-2 border-l-warning" : ""}`}>
                       <TableCell className="font-medium">
@@ -215,7 +212,7 @@ export default function Demandas() {
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell>
-                        <StatusBadge status={internalStatus} />
+                        <StatusBadge status={caseStatus} />
                       </TableCell>
                       <TableCell className="hidden xl:table-cell">
                         <StatusBadge status={c.status} />
