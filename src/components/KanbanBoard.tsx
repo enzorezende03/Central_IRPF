@@ -102,38 +102,24 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       finalizado: [],
     };
     cases.forEach((c) => {
-      const internalStatus = (c as any).internal_status ?? c.status;
+      // ALWAYS use internal_status as the single source of truth (same as Demandas page)
+      const internalStatus = ((c as any).internal_status ?? c.status) as string;
 
       // Skip dispensadas from Kanban
       if (internalStatus === "dispensada") return;
 
-      // Check impedida/reaberta first (internal_status based)
-      if (internalStatus === "impedida") {
-        map.impedida.push(c);
-        return;
-      }
-      if (internalStatus === "reaberta") {
-        map.reaberta.push(c);
-        return;
-      }
-      // Check documentos_parciais (internal_status based)
-      if (internalStatus === "documentos_parciais") {
-        map.documentos_parciais.push(c);
-        return;
-      }
+      // Direct mapping for statuses that map 1:1 to kanban columns
+      if (internalStatus === "impedida") { map.impedida.push(c); return; }
+      if (internalStatus === "reaberta") { map.reaberta.push(c); return; }
+      if (internalStatus === "documentos_parciais") { map.documentos_parciais.push(c); return; }
+      if (internalStatus === "em_andamento") { map.em_andamento.push(c); return; }
+      if (internalStatus === "finalizado") { map.finalizado.push(c); return; }
+      if (internalStatus === "documentos_em_analise") { map.documentos_em_analise.push(c); return; }
 
-      // em_andamento and pendencia should go to their actual columns
-      if (internalStatus === "em_andamento") {
-        map.em_andamento.push(c);
-        return;
-      }
-      if (internalStatus === "pendencia" || c.status === "pendencia") {
-        // Only route to previa_enviada if there's a preview awaiting review
-        const fd = Array.isArray(c.final_deliverables)
-          ? c.final_deliverables[0]
-          : c.final_deliverables;
-        const hasPreview = fd?.preview_file_url;
-        const previewPending = hasPreview && (!fd?.preview_status || fd?.preview_status === "aguardando_revisao");
+      // Pendencia: check if it's actually a preview pending review
+      if (internalStatus === "pendencia") {
+        const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
+        const previewPending = fd?.preview_file_url && (!fd?.preview_status || fd?.preview_status === "aguardando_revisao");
         if (previewPending) {
           map.previa_enviada.push(c);
         } else {
@@ -142,24 +128,21 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
         return;
       }
 
-      // Preview check for other statuses (e.g. aguardando_cliente with preview)
-      const fd = Array.isArray(c.final_deliverables)
-        ? c.final_deliverables[0]
-        : c.final_deliverables;
-      const hasPreview = fd?.preview_file_url;
-      if (hasPreview && c.status !== "finalizado") {
-        map.previa_enviada.push(c);
+      // Aguardando cliente: check checklist sub-columns, then preview
+      if (internalStatus === "aguardando_cliente") {
+        const checklistCol = getChecklistColumn(c);
+        if (checklistCol) { map[checklistCol].push(c); return; }
+
+        const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
+        if (fd?.preview_file_url) { map.previa_enviada.push(c); return; }
+
+        map.aguardando_cliente.push(c);
         return;
       }
 
-      const checklistCol = getChecklistColumn(c);
-      if (checklistCol) {
-        map[checklistCol].push(c);
-        return;
-      }
-
-      if (map[c.status]) {
-        map[c.status].push(c);
+      // Fallback
+      if (map[internalStatus as KanbanColumn]) {
+        map[internalStatus as KanbanColumn].push(c);
       }
     });
     // Sort documentos_em_analise by docs_received_at (earliest first for prioritization)
