@@ -244,6 +244,37 @@ export default function Demandas() {
               </TableBody>
             </Table>
           </div>
+          {/* Pagination */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Exibir</span>
+              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <SelectTrigger className="w-28 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 por página</SelectItem>
+                  <SelectItem value="50">50 por página</SelectItem>
+                  <SelectItem value="100">100 por página</SelectItem>
+                  <SelectItem value="0">Todos</SelectItem>
+                </SelectContent>
+              </Select>
+              <span>— {filtered.length} demanda{filtered.length !== 1 ? "s" : ""}</span>
+            </div>
+            {pageSize > 0 && totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm px-2">
+                  {currentPage} de {totalPages}
+                </span>
+                <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </InternalLayout>
