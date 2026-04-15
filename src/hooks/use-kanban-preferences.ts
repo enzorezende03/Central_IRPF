@@ -8,6 +8,7 @@ const DEFAULT_COLUMNS = [
   "documentos_em_analise",
   "em_andamento",
   "impedida",
+  "previa_enviada",
   "pendencia",
   "finalizado",
 ];
