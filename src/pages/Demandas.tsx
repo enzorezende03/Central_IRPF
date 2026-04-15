@@ -13,6 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewCaseDialog } from "@/components/NewCaseDialog";
 import { useCases } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const DEMANDAS_FILTERS_KEY = "demandas-filters";
 
