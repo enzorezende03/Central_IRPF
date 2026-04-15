@@ -64,7 +64,7 @@ export default function Dashboard() {
     return fd?.preview_file_url && fd?.preview_status !== "aprovado";
   }).length;
 
-  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 
   // Cases filtered by stat card click
   const statFilteredCases = useMemo(() => {
