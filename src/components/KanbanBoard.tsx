@@ -12,8 +12,8 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-// Only real DB statuses, excluding dispensada (hidden from kanban)
-type KanbanColumn = Exclude<CaseStatus, "dispensada" | "reaberta">;
+// Real DB statuses + virtual "previa_enviada" column
+type KanbanColumn = Exclude<CaseStatus, "dispensada" | "reaberta"> | "previa_enviada";
 
 const COLUMNS: KanbanColumn[] = [
   "aguardando_cliente",
@@ -21,6 +21,7 @@ const COLUMNS: KanbanColumn[] = [
   "documentos_em_analise",
   "em_andamento",
   "impedida",
+  "previa_enviada",
   "pendencia",
   "finalizado",
 ];
@@ -31,6 +32,7 @@ const COLUMN_LABELS: Record<KanbanColumn, string> = {
   documentos_em_analise: STATUS_LABELS.documentos_em_analise,
   em_andamento: STATUS_LABELS.em_andamento,
   impedida: STATUS_LABELS.impedida,
+  previa_enviada: "Prévia Enviada",
   pendencia: STATUS_LABELS.pendencia,
   finalizado: STATUS_LABELS.finalizado,
 };
@@ -41,6 +43,7 @@ const columnColors: Record<KanbanColumn, string> = {
   documentos_em_analise: "border-t-info",
   em_andamento: "border-t-primary",
   impedida: "border-t-rose-500",
+  previa_enviada: "border-t-violet-500",
   pendencia: "border-t-destructive",
   finalizado: "border-t-success",
 };
@@ -51,6 +54,7 @@ const dotColors: Record<KanbanColumn, string> = {
   documentos_em_analise: "bg-info",
   em_andamento: "bg-primary",
   impedida: "bg-rose-500",
+  previa_enviada: "bg-violet-500",
   pendencia: "bg-destructive",
   finalizado: "bg-success",
 };
@@ -63,6 +67,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       documentos_em_analise: [],
       em_andamento: [],
       impedida: [],
+      previa_enviada: [],
       pendencia: [],
       finalizado: [],
     };
@@ -71,6 +76,15 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
 
       // Skip dispensadas from Kanban
       if (status === "dispensada") return;
+
+      // Check if case has preview sent and awaiting approval (virtual column)
+      if (status !== "finalizado") {
+        const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
+        if (fd?.preview_file_url && fd?.preview_status !== "aprovado") {
+          map.previa_enviada.push(c);
+          return;
+        }
+      }
 
       // Reaberta maps to em_andamento
       if (status === "reaberta") {
