@@ -3,14 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 const DEFAULT_COLUMNS = [
-  "solicitacao_documentacao",
-  "procuracao",
   "aguardando_cliente",
   "documentos_parciais",
   "documentos_em_analise",
   "em_andamento",
   "impedida",
-  "previa_enviada",
   "pendencia",
   "finalizado",
 ];
