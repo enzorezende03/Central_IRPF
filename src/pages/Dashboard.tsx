@@ -76,9 +76,13 @@ export default function Dashboard() {
       case "pendencia": return filtered.filter((c) => c.status === "pendencia");
       case "previa_enviada": return filtered.filter((c) => { const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables; return fd?.preview_file_url && fd?.preview_status !== "aprovado"; });
       case "finalizado": return filtered.filter((c) => c.status === "finalizado");
+      case "mensagens_pendentes": {
+        const ids = new Set(unreadMessages.map((m) => m.case_id));
+        return filtered.filter((c) => ids.has(c.id));
+      }
       default: return null;
     }
-  }, [statFilter, filtered]);
+  }, [statFilter, filtered, unreadMessages]);
 
   const statFilterLabels: Record<string, string> = {
     total: "Total de Demandas",
@@ -87,6 +91,7 @@ export default function Dashboard() {
     pendencia: "Pendências",
     previa_enviada: "Prévias Enviadas",
     finalizado: "Finalizados",
+    mensagens_pendentes: "Mensagens Pendentes",
   };
 
   const toggleStatFilter = (key: string) => {
