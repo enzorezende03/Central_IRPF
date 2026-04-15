@@ -419,14 +419,14 @@ export default function ClientDetail() {
                   onClick={async () => {
                     const { error } = await supabase
                       .from("irpf_cases")
-                      .update({ status: "aguardando_cliente" })
+                      .update({ status: "em_andamento" })
                       .eq("id", id!);
                     if (error) {
-                      toast.error("Erro ao reabrir demanda");
+                      toast.error("Erro ao retomar demanda");
                       return;
                     }
-                    await logTimelineEvent(id!, "Impedimento resolvido", "Demanda reaberta manualmente pelo escritório", false);
-                    toast.success("Demanda reaberta com sucesso");
+                    await logTimelineEvent(id!, "Impedimento resolvido", "Demanda retornou para Em Andamento manualmente pelo escritório", false);
+                    toast.success("Demanda retornou para Em Andamento");
                     invalidateAll();
                   }}
                 >
