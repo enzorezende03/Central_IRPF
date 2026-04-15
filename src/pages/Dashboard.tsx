@@ -60,6 +60,7 @@ export default function Dashboard() {
   const total = filtered.length;
   const byStatus = (s: CaseStatus) => filtered.filter((c) => c.status === s).length;
   const previaEnviada = filtered.filter((c) => {
+    if (c.status === "finalizado") return false;
     const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
     return fd?.preview_file_url && fd?.preview_status !== "aprovado";
   }).length;
@@ -74,7 +75,7 @@ export default function Dashboard() {
       case "aguardando_cliente": return filtered.filter((c) => c.status === "aguardando_cliente");
       case "em_andamento": return filtered.filter((c) => c.status === "em_andamento" || c.status === "documentos_em_analise");
       case "pendencia": return filtered.filter((c) => c.status === "pendencia");
-      case "previa_enviada": return filtered.filter((c) => { const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables; return fd?.preview_file_url && fd?.preview_status !== "aprovado"; });
+      case "previa_enviada": return filtered.filter((c) => { if (c.status === "finalizado") return false; const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables; return fd?.preview_file_url && fd?.preview_status !== "aprovado"; });
       case "finalizado": return filtered.filter((c) => c.status === "finalizado");
       case "mensagens_pendentes": {
         const ids = new Set(unreadMessages.map((m) => m.case_id));
