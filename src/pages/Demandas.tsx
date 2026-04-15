@@ -191,7 +191,7 @@ export default function Demandas() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((c) => {
+                {paginatedData.map((c) => {
                   const billing = c.billing?.[0];
                   const caseStatus = c.status;
                   return (
