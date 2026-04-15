@@ -10,7 +10,6 @@ const DEFAULT_COLUMNS = [
   "documentos_em_analise",
   "em_andamento",
   "impedida",
-  "reaberta",
   "previa_enviada",
   "pendencia",
   "finalizado",

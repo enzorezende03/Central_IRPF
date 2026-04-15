@@ -12,7 +12,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-type KanbanColumn = Exclude<CaseStatus, "dispensada"> | "previa_enviada" | "solicitacao_documentacao" | "procuracao";
+type KanbanColumn = Exclude<CaseStatus, "dispensada" | "reaberta"> | "previa_enviada" | "solicitacao_documentacao" | "procuracao";
 
 const COLUMNS: KanbanColumn[] = [
   "solicitacao_documentacao",
@@ -22,7 +22,6 @@ const COLUMNS: KanbanColumn[] = [
   "documentos_em_analise",
   "em_andamento",
   "impedida",
-  "reaberta",
   "previa_enviada",
   "pendencia",
   "finalizado",
@@ -35,7 +34,6 @@ const COLUMN_LABELS: Record<KanbanColumn, string> = {
   documentos_parciais: "Documentos Parciais",
   previa_enviada: "Envio de Prévia",
   impedida: "Impedida",
-  reaberta: "Reaberta",
 };
 
 const columnColors: Record<KanbanColumn, string> = {
@@ -48,7 +46,6 @@ const columnColors: Record<KanbanColumn, string> = {
   previa_enviada: "border-t-violet-500",
   pendencia: "border-t-destructive",
   impedida: "border-t-rose-500",
-  reaberta: "border-t-teal-500",
   finalizado: "border-t-success",
 };
 
@@ -62,7 +59,6 @@ const dotColors: Record<KanbanColumn, string> = {
   previa_enviada: "bg-violet-500",
   pendencia: "bg-destructive",
   impedida: "bg-rose-500",
-  reaberta: "bg-teal-500",
   finalizado: "bg-success",
 };
 
@@ -98,7 +94,6 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       previa_enviada: [],
       pendencia: [],
       impedida: [],
-      reaberta: [],
       finalizado: [],
     };
     cases.forEach((c) => {
@@ -109,7 +104,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
 
       // Direct mapping for statuses that map 1:1 to kanban columns
       if (caseStatus === "impedida") { map.impedida.push(c); return; }
-      if (caseStatus === "reaberta") { map.reaberta.push(c); return; }
+      if (caseStatus === "reaberta") { map.em_andamento.push(c); return; }
       if (caseStatus === "documentos_parciais") { map.documentos_parciais.push(c); return; }
       if (caseStatus === "em_andamento") { map.em_andamento.push(c); return; }
       if (caseStatus === "finalizado") { map.finalizado.push(c); return; }
