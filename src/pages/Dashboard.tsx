@@ -200,6 +200,54 @@ export default function Dashboard() {
           </>
         )}
 
+        {/* Unread Messages */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-primary" />
+                Mensagens Não Lidas
+              </CardTitle>
+              {unreadMessages.length > 0 && (
+                <Badge variant="destructive" className="text-xs">{unreadMessages.length} não lidas</Badge>
+              )}
+            </div>
+            <CardDescription>Mensagens dos clientes aguardando resposta</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {unreadMessages.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle className="h-8 w-8 text-success mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Todas as mensagens foram respondidas!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {unreadMessages.map((item) => (
+                  <Link
+                    key={item.case_id}
+                    to={`/demandas/${item.case_id}`}
+                    className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="mt-0.5 rounded-full p-1.5 shrink-0 bg-destructive/10">
+                      <MessageCircle className="h-3.5 w-3.5 text-destructive" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{item.client_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{item.last_message}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-[10px] text-muted-foreground">{formatTimeAgo(item.last_message_at)}</span>
+                      {item.unread_count > 1 && (
+                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">{item.unread_count}</Badge>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Quick Access Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <Card>
@@ -285,54 +333,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Unread Messages */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-primary" />
-                Mensagens Não Lidas
-              </CardTitle>
-              {unreadMessages.length > 0 && (
-                <Badge variant="destructive" className="text-xs">{unreadMessages.length} não lidas</Badge>
-              )}
-            </div>
-            <CardDescription>Mensagens dos clientes aguardando resposta</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {unreadMessages.length === 0 ? (
-              <div className="text-center py-8">
-                <CheckCircle className="h-8 w-8 text-success mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Todas as mensagens foram respondidas!</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {unreadMessages.map((item) => (
-                  <Link
-                    key={item.case_id}
-                    to={`/demandas/${item.case_id}`}
-                    className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="mt-0.5 rounded-full p-1.5 shrink-0 bg-destructive/10">
-                      <MessageCircle className="h-3.5 w-3.5 text-destructive" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{item.client_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{item.last_message}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="text-[10px] text-muted-foreground">{formatTimeAgo(item.last_message_at)}</span>
-                      {item.unread_count > 1 && (
-                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">{item.unread_count}</Badge>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </InternalLayout>
   );
