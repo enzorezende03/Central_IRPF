@@ -34,7 +34,6 @@ const COLUMN_LABELS: Record<KanbanColumn, string> = {
   documentos_parciais: "Documentos Parciais",
   previa_enviada: "Envio de Prévia",
   impedida: "Impedida",
-  reaberta: "Reaberta",
 };
 
 const columnColors: Record<KanbanColumn, string> = {
@@ -47,7 +46,6 @@ const columnColors: Record<KanbanColumn, string> = {
   previa_enviada: "border-t-violet-500",
   pendencia: "border-t-destructive",
   impedida: "border-t-rose-500",
-  reaberta: "border-t-teal-500",
   finalizado: "border-t-success",
 };
 
@@ -61,7 +59,6 @@ const dotColors: Record<KanbanColumn, string> = {
   previa_enviada: "bg-violet-500",
   pendencia: "bg-destructive",
   impedida: "bg-rose-500",
-  reaberta: "bg-teal-500",
   finalizado: "bg-success",
 };
 
