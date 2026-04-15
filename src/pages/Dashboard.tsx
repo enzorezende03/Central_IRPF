@@ -147,11 +147,8 @@ export default function Dashboard() {
               <StatCard label="Docs em Análise" value={byStatus("documentos_em_analise")} icon={FileText} color="text-blue-500" onClick={() => toggleStatFilter("documentos_em_analise")} active={statFilter === "documentos_em_analise"} />
               <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => toggleStatFilter("em_andamento")} active={statFilter === "em_andamento"} />
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => toggleStatFilter("pendencia")} active={statFilter === "pendencia"} />
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => toggleStatFilter("previa_enviada")} active={statFilter === "previa_enviada"} />
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => toggleStatFilter("finalizado")} active={statFilter === "finalizado"} />
-              
             </div>
 
             {/* Filtered cases list from stat card click */}
