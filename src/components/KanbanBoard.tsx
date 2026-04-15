@@ -12,7 +12,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-type KanbanColumn = Exclude<CaseStatus, "dispensada"> | "previa_enviada" | "solicitacao_documentacao" | "procuracao";
+type KanbanColumn = Exclude<CaseStatus, "dispensada" | "reaberta"> | "previa_enviada" | "solicitacao_documentacao" | "procuracao";
 
 const COLUMNS: KanbanColumn[] = [
   "solicitacao_documentacao",
@@ -22,7 +22,6 @@ const COLUMNS: KanbanColumn[] = [
   "documentos_em_analise",
   "em_andamento",
   "impedida",
-  "reaberta",
   "previa_enviada",
   "pendencia",
   "finalizado",
