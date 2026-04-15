@@ -121,11 +121,32 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
         map.documentos_parciais.push(c);
         return;
       }
+
+      // em_andamento and pendencia should go to their actual columns
+      if (internalStatus === "em_andamento") {
+        map.em_andamento.push(c);
+        return;
+      }
+      if (internalStatus === "pendencia" || c.status === "pendencia") {
+        // Only route to previa_enviada if there's a preview awaiting review
+        const fd = Array.isArray(c.final_deliverables)
+          ? c.final_deliverables[0]
+          : c.final_deliverables;
+        const hasPreview = fd?.preview_file_url;
+        const previewPending = hasPreview && (!fd?.preview_status || fd?.preview_status === "aguardando_revisao");
+        if (previewPending) {
+          map.previa_enviada.push(c);
+        } else {
+          map.pendencia.push(c);
+        }
+        return;
+      }
+
+      // Preview check for other statuses (e.g. aguardando_cliente with preview)
       const fd = Array.isArray(c.final_deliverables)
         ? c.final_deliverables[0]
         : c.final_deliverables;
       const hasPreview = fd?.preview_file_url;
-
       if (hasPreview && c.status !== "finalizado") {
         map.previa_enviada.push(c);
         return;
