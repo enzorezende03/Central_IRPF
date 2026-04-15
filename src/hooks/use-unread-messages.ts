@@ -66,8 +66,8 @@ export function useUnreadMessages() {
         });
       }
 
-      // Sort by most recent
-      result.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+      // Sort by oldest unanswered first
+      result.sort((a, b) => new Date(a.last_message_at).getTime() - new Date(b.last_message_at).getTime());
       return result;
     },
     refetchInterval: 30000,
