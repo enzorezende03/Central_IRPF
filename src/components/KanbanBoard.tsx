@@ -94,7 +94,6 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       previa_enviada: [],
       pendencia: [],
       impedida: [],
-      reaberta: [],
       finalizado: [],
     };
     cases.forEach((c) => {
@@ -105,7 +104,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
 
       // Direct mapping for statuses that map 1:1 to kanban columns
       if (caseStatus === "impedida") { map.impedida.push(c); return; }
-      if (caseStatus === "reaberta") { map.reaberta.push(c); return; }
+      if (caseStatus === "reaberta") { map.em_andamento.push(c); return; }
       if (caseStatus === "documentos_parciais") { map.documentos_parciais.push(c); return; }
       if (caseStatus === "em_andamento") { map.em_andamento.push(c); return; }
       if (caseStatus === "finalizado") { map.finalizado.push(c); return; }
