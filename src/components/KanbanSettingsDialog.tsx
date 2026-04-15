@@ -21,7 +21,6 @@ const ALL_COLUMNS = [
   { key: "documentos_em_analise", label: "Documentos em Análise" },
   { key: "em_andamento", label: "Em Andamento" },
   { key: "impedida", label: "Impedida" },
-  { key: "reaberta", label: "Reaberta" },
   { key: "previa_enviada", label: "Envio de Prévia" },
   { key: "pendencia", label: "Pendência" },
   { key: "finalizado", label: "Finalizado" },
