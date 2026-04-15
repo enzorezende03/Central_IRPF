@@ -237,7 +237,7 @@ export default function ClientDetail() {
     mutationFn: async (status: CaseStatus) => {
       const { error } = await supabase
         .from("irpf_cases")
-        .update({ internal_status: status })
+        .update({ status: status })
         .eq("id", id!);
       if (error) throw error;
     },
@@ -362,10 +362,10 @@ export default function ClientDetail() {
             </p>
             <div className="flex flex-wrap gap-2 items-center">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Interno:</span>
-              <Select value={(caseData as any).internal_status ?? caseData.status} onValueChange={(v) => updateStatus.mutate(v as CaseStatus)}>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Status:</span>
+              <Select value={caseData.status} onValueChange={(v) => updateStatus.mutate(v as CaseStatus)}>
                 <SelectTrigger className="w-auto gap-1 border-0 p-0 h-auto shadow-none">
-                  <StatusBadge status={((caseData as any).internal_status ?? caseData.status) as any} />
+                  <StatusBadge status={caseData.status as any} />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(STATUS_LABELS).map(([k, v]) => (
@@ -373,11 +373,6 @@ export default function ClientDetail() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <Separator orientation="vertical" className="h-5 hidden sm:block" />
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Cliente:</span>
-              <StatusBadge status={caseData.status} />
             </div>
             <Select value={caseData.priority} onValueChange={(v) => updatePriority.mutate(v as CasePriority)}>
               <SelectTrigger className="w-auto gap-1 border-0 p-0 h-auto shadow-none">
@@ -401,7 +396,7 @@ export default function ClientDetail() {
                 Sem Procuração
               </Badge>
             )}
-            {(caseData as any).internal_status !== "impedida" ? (
+            {caseData.status !== "impedida" ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -424,7 +419,7 @@ export default function ClientDetail() {
                   onClick={async () => {
                     const { error } = await supabase
                       .from("irpf_cases")
-                      .update({ internal_status: "aguardando_cliente" })
+                      .update({ status: "aguardando_cliente" })
                       .eq("id", id!);
                     if (error) {
                       toast.error("Erro ao reabrir demanda");
@@ -440,7 +435,7 @@ export default function ClientDetail() {
                 </Button>
               </>
             )}
-            {(caseData as any).internal_status !== "dispensada" ? (
+            {caseData.status !== "dispensada" ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -463,7 +458,7 @@ export default function ClientDetail() {
                   onClick={async () => {
                     const { error } = await supabase
                       .from("irpf_cases")
-                      .update({ internal_status: "aguardando_cliente" })
+                      .update({ status: "aguardando_cliente" })
                       .eq("id", id!);
                     if (error) {
                       toast.error("Erro ao reverter dispensa");
@@ -484,7 +479,7 @@ export default function ClientDetail() {
           </div>
         </div>
 
-        {(caseData as any).internal_status === "dispensada" && (
+        {caseData.status === "dispensada" && (
           <div className="rounded-lg border border-slate-300 bg-slate-100 p-4 text-center text-slate-500">
             <X className="h-5 w-5 mx-auto mb-1" />
             <p className="font-medium">Demanda dispensada</p>
@@ -492,7 +487,7 @@ export default function ClientDetail() {
           </div>
         )}
 
-        <div className={`${(caseData as any).internal_status === "dispensada" ? "opacity-50 pointer-events-none select-none" : ""}`}>
+        <div className={`${caseData.status === "dispensada" ? "opacity-50 pointer-events-none select-none" : ""}`}>
 
         {/* ── Info Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -850,7 +845,7 @@ export default function ClientDetail() {
               if (!justificativa) return;
               const { error } = await supabase
                 .from("irpf_cases")
-                .update({ internal_status: "impedida" })
+                .update({ status: "impedida" })
                 .eq("id", id!);
               if (error) {
                 toast.error("Erro ao impedir demanda");
@@ -897,7 +892,7 @@ export default function ClientDetail() {
               if (!justificativa) return;
               const { error } = await supabase
                 .from("irpf_cases")
-                .update({ internal_status: "dispensada" })
+                .update({ status: "dispensada" })
                 .eq("id", id!);
               if (error) {
                 toast.error("Erro ao dispensar demanda");

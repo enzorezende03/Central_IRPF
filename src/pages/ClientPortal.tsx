@@ -278,11 +278,11 @@ export default function ClientPortal() {
     currentStepIndex = 1;
   }
 
-  const isImpedida = (caseData as any).internal_status === "impedida";
+  const isImpedida = caseData.status === "impedida";
   const impedimentoEvent = isImpedida
     ? timeline.find((t) => t.event_type === "Demanda impedida")
     : null;
-  const isDocsParciais = (caseData as any).internal_status === "documentos_parciais";
+  const isDocsParciais = caseData.status === "documentos_parciais";
   const isPendencia = caseData.status === "pendencia";
   const isFinished = caseData.status === "finalizado";
   const answeredIds = new Set(answers.map((a) => a.question_id));

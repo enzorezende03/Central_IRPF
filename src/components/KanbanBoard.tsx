@@ -102,8 +102,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       finalizado: [],
     };
     cases.forEach((c) => {
-      // ALWAYS use internal_status as the single source of truth (same as Demandas page)
-      const internalStatus = ((c as any).internal_status ?? c.status) as string;
+      const caseStatus = c.status as string;
 
       // Skip dispensadas from Kanban
       if (internalStatus === "dispensada") return;
