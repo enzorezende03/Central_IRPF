@@ -40,9 +40,14 @@ export default function Demandas() {
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
-      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir,
+      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir, pageSize,
     }));
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir, pageSize]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir, pageSize]);
 
   const handleSort = (field: "cliente" | "ano") => {
     if (sortField === field) {
