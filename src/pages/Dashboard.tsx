@@ -153,7 +153,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => toggleStatFilter("previa_enviada")} active={statFilter === "previa_enviada"} />
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => toggleStatFilter("finalizado")} active={statFilter === "finalizado"} />
-              <StatCard label="Mensagens Pendentes" value={unreadMessages.length} icon={MessageCircleWarning} color="text-orange-500" onClick={() => toggleStatFilter("mensagens_pendentes")} active={statFilter === "mensagens_pendentes"} />
+              
             </div>
 
             {/* Filtered cases list from stat card click */}
