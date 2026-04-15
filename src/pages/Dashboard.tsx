@@ -73,7 +73,8 @@ export default function Dashboard() {
     switch (statFilter) {
       case "total": return filtered;
       case "aguardando_cliente": return filtered.filter((c) => c.status === "aguardando_cliente");
-      case "em_andamento": return filtered.filter((c) => c.status === "em_andamento" || c.status === "documentos_em_analise");
+      case "documentos_em_analise": return filtered.filter((c) => c.status === "documentos_em_analise");
+      case "em_andamento": return filtered.filter((c) => c.status === "em_andamento");
       case "pendencia": return filtered.filter((c) => c.status === "pendencia");
       case "previa_enviada": return filtered.filter((c) => { if (c.status === "finalizado") return false; const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables; return fd?.preview_file_url && fd?.preview_status !== "aprovado"; });
       case "finalizado": return filtered.filter((c) => c.status === "finalizado");
@@ -84,6 +85,7 @@ export default function Dashboard() {
   const statFilterLabels: Record<string, string> = {
     total: "Total de Demandas",
     aguardando_cliente: "Aguardando Cliente",
+    documentos_em_analise: "Documentos em Análise",
     em_andamento: "Em Andamento",
     pendencia: "Pendências",
     previa_enviada: "Prévias Enviadas",
@@ -142,7 +144,8 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <StatCard label="Total de Demandas" value={total} icon={Users} color="text-primary" onClick={() => toggleStatFilter("total")} active={statFilter === "total"} />
               <StatCard label="Aguardando Cliente" value={byStatus("aguardando_cliente")} icon={Clock} color="text-warning" onClick={() => toggleStatFilter("aguardando_cliente")} active={statFilter === "aguardando_cliente"} />
-              <StatCard label="Em Andamento" value={byStatus("em_andamento") + byStatus("documentos_em_analise")} icon={PlayCircle} color="text-info" onClick={() => toggleStatFilter("em_andamento")} active={statFilter === "em_andamento"} />
+              <StatCard label="Docs em Análise" value={byStatus("documentos_em_analise")} icon={FileText} color="text-blue-500" onClick={() => toggleStatFilter("documentos_em_analise")} active={statFilter === "documentos_em_analise"} />
+              <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => toggleStatFilter("em_andamento")} active={statFilter === "em_andamento"} />
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => toggleStatFilter("pendencia")} active={statFilter === "pendencia"} />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
