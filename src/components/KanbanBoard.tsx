@@ -12,143 +12,90 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-type KanbanColumn = Exclude<CaseStatus, "dispensada" | "reaberta"> | "previa_enviada" | "solicitacao_documentacao" | "procuracao";
+// Only real DB statuses, excluding dispensada (hidden from kanban)
+type KanbanColumn = Exclude<CaseStatus, "dispensada" | "reaberta">;
 
 const COLUMNS: KanbanColumn[] = [
-  "solicitacao_documentacao",
-  "procuracao",
   "aguardando_cliente",
   "documentos_parciais",
   "documentos_em_analise",
   "em_andamento",
   "impedida",
-  "previa_enviada",
   "pendencia",
   "finalizado",
 ];
 
 const COLUMN_LABELS: Record<KanbanColumn, string> = {
-  ...STATUS_LABELS,
-  solicitacao_documentacao: "Solicitação de Documentação",
-  procuracao: "Procuração",
-  documentos_parciais: "Documentos Parciais",
-  previa_enviada: "Envio de Prévia",
-  impedida: "Impedida",
+  aguardando_cliente: STATUS_LABELS.aguardando_cliente,
+  documentos_parciais: STATUS_LABELS.documentos_parciais,
+  documentos_em_analise: STATUS_LABELS.documentos_em_analise,
+  em_andamento: STATUS_LABELS.em_andamento,
+  impedida: STATUS_LABELS.impedida,
+  pendencia: STATUS_LABELS.pendencia,
+  finalizado: STATUS_LABELS.finalizado,
 };
 
 const columnColors: Record<KanbanColumn, string> = {
-  solicitacao_documentacao: "border-t-amber-500",
-  procuracao: "border-t-cyan-500",
   aguardando_cliente: "border-t-warning",
   documentos_parciais: "border-t-orange-500",
   documentos_em_analise: "border-t-info",
   em_andamento: "border-t-primary",
-  previa_enviada: "border-t-violet-500",
-  pendencia: "border-t-destructive",
   impedida: "border-t-rose-500",
+  pendencia: "border-t-destructive",
   finalizado: "border-t-success",
 };
 
 const dotColors: Record<KanbanColumn, string> = {
-  solicitacao_documentacao: "bg-amber-500",
-  procuracao: "bg-cyan-500",
   aguardando_cliente: "bg-warning",
   documentos_parciais: "bg-orange-500",
   documentos_em_analise: "bg-info",
   em_andamento: "bg-primary",
-  previa_enviada: "bg-violet-500",
-  pendencia: "bg-destructive",
   impedida: "bg-rose-500",
+  pendencia: "bg-destructive",
   finalizado: "bg-success",
 };
-
-function getChecklistColumn(c: CaseWithClient): KanbanColumn | null {
-  if (c.status !== "aguardando_cliente") return null;
-
-  const checklist = (c.internal_checklist ?? []).sort((a, b) => a.sort_order - b.sort_order);
-  if (checklist.length === 0) return null;
-
-  const solicitarDoc = checklist[0];
-  const procuracao = checklist[1];
-
-  if (!solicitarDoc?.checked) {
-    return "solicitacao_documentacao";
-  }
-
-  if (procuracao && !procuracao.checked) {
-    return "procuracao";
-  }
-
-  return null;
-}
 
 export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: CaseWithClient[]; columnOrder?: string[]; hiddenColumns?: string[] }) {
   const grouped = useMemo(() => {
     const map: Record<KanbanColumn, CaseWithClient[]> = {
-      solicitacao_documentacao: [],
-      procuracao: [],
       aguardando_cliente: [],
       documentos_parciais: [],
       documentos_em_analise: [],
       em_andamento: [],
-      previa_enviada: [],
-      pendencia: [],
       impedida: [],
+      pendencia: [],
       finalizado: [],
     };
     cases.forEach((c) => {
-      const caseStatus = c.status as string;
+      const status = c.status as string;
 
       // Skip dispensadas from Kanban
-      if (caseStatus === "dispensada") return;
+      if (status === "dispensada") return;
 
-      // Direct mapping for statuses that map 1:1 to kanban columns
-      if (caseStatus === "impedida") { map.impedida.push(c); return; }
-      if (caseStatus === "reaberta") { map.em_andamento.push(c); return; }
-      if (caseStatus === "documentos_parciais") { map.documentos_parciais.push(c); return; }
-      if (caseStatus === "em_andamento") { map.em_andamento.push(c); return; }
-      if (caseStatus === "finalizado") { map.finalizado.push(c); return; }
-      if (caseStatus === "documentos_em_analise") { map.documentos_em_analise.push(c); return; }
-
-      // Pendencia: if has preview, show in previa_enviada; otherwise pendencia
-      if (caseStatus === "pendencia") {
-        const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
-        if (fd?.preview_file_url && fd?.preview_status !== 'aprovado') {
-          map.previa_enviada.push(c);
-        } else {
-          map.pendencia.push(c);
-        }
+      // Reaberta maps to em_andamento
+      if (status === "reaberta") {
+        map.em_andamento.push(c);
         return;
       }
 
-      // Aguardando cliente: check checklist sub-columns, then preview
-      if (caseStatus === "aguardando_cliente") {
-        const checklistCol = getChecklistColumn(c);
-        if (checklistCol) { map[checklistCol].push(c); return; }
-
-        const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
-        if (fd?.preview_file_url) { map.previa_enviada.push(c); return; }
-
-        map.aguardando_cliente.push(c);
-        return;
-      }
-
-      // Fallback
-      if (map[caseStatus as KanbanColumn]) {
-        map[caseStatus as KanbanColumn].push(c);
+      // Direct mapping for all real statuses
+      if (map[status as KanbanColumn]) {
+        map[status as KanbanColumn].push(c);
       }
     });
-    // Sort documentos_em_analise by docs_received_at (earliest first for prioritization)
+
+    // Sort documentos_em_analise by docs_received_at (earliest first)
     map.documentos_em_analise.sort((a, b) => {
-      const dateA = (a as any).docs_received_at ?? a.updated_at;
-      const dateB = (b as any).docs_received_at ?? b.updated_at;
+      const dateA = a.docs_received_at ?? a.updated_at;
+      const dateB = b.docs_received_at ?? b.updated_at;
       return new Date(dateA).getTime() - new Date(dateB).getTime();
     });
+
     return map;
   }, [cases]);
 
   const visibleColumns = (columnOrder ?? COLUMNS).filter(
-    (col) => !(hiddenColumns ?? []).includes(col)
+    (col) => COLUMNS.includes(col as KanbanColumn) && !(hiddenColumns ?? []).includes(col)
   ) as KanbanColumn[];
 
   const fmt = (v: number) =>
@@ -167,11 +114,11 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
               <span className="text-sm font-semibold">{COLUMN_LABELS[status]}</span>
             </div>
             <span className="text-xs font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-              {grouped[status].length}
+              {grouped[status]?.length ?? 0}
             </span>
           </div>
           <div className="p-2 space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto">
-            {grouped[status].map((c, i) => {
+            {(grouped[status] ?? []).map((c, i) => {
               const billing = c.billing?.[0];
               return (
                 <motion.div
@@ -210,10 +157,10 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                         );
                       })()}
                     </div>
-                    {(c as any).docs_received_at && status === "documentos_em_analise" && (
+                    {c.docs_received_at && status === "documentos_em_analise" && (
                       <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Recebido: {new Date((c as any).docs_received_at).toLocaleDateString("pt-BR")}
+                        Recebido: {new Date(c.docs_received_at).toLocaleDateString("pt-BR")}
                       </p>
                     )}
                     {billing && (
@@ -225,7 +172,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                 </motion.div>
               );
             })}
-            {grouped[status].length === 0 && (
+            {(grouped[status]?.length ?? 0) === 0 && (
               <p className="text-xs text-muted-foreground text-center py-8">
                 Nenhuma demanda
               </p>

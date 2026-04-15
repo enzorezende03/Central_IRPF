@@ -9,19 +9,15 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 import { useKanbanPreferences, KanbanPreferences } from "@/hooks/use-kanban-preferences";
 import { toast } from "sonner";
 
 const ALL_COLUMNS = [
-  { key: "solicitacao_documentacao", label: "Solicitação de Documentação" },
-  { key: "procuracao", label: "Procuração" },
   { key: "aguardando_cliente", label: "Aguardando Cliente" },
   { key: "documentos_parciais", label: "Documentos Parciais" },
   { key: "documentos_em_analise", label: "Documentos em Análise" },
   { key: "em_andamento", label: "Em Andamento" },
   { key: "impedida", label: "Impedida" },
-  { key: "previa_enviada", label: "Envio de Prévia" },
   { key: "pendencia", label: "Pendência" },
   { key: "finalizado", label: "Finalizado" },
 ];
@@ -37,14 +33,11 @@ export function KanbanSettingsDialog() {
 
   useEffect(() => {
     if (open) {
-      // Ensure all columns are present in order (in case new ones were added)
-      const existing = new Set(preferences.column_order);
-      const full = [
-        ...preferences.column_order,
-        ...DEFAULT_ORDER.filter((k) => !existing.has(k)),
-      ];
-      setOrder(full);
-      setHidden([...preferences.hidden_columns]);
+      const validKeys = new Set(DEFAULT_ORDER);
+      const filtered = preferences.column_order.filter((k) => validKeys.has(k));
+      const missing = DEFAULT_ORDER.filter((k) => !filtered.includes(k));
+      setOrder([...filtered, ...missing]);
+      setHidden([...preferences.hidden_columns.filter((k) => validKeys.has(k))]);
     }
   }, [open, preferences]);
 
