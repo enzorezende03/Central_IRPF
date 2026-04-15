@@ -38,8 +38,6 @@ function formatTimeAgo(dateStr: string) {
 
 export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
-  const { role } = useAuth();
-  const canSeeFinancial = role === "admin" || role === "financeiro";
   const [ownerFilter, setOwnerFilter] = useState("todos");
   const [statFilter, setStatFilter] = useState<string | null>(null);
 
