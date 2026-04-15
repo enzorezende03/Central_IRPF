@@ -4,7 +4,7 @@ import { formatCPF } from "@/lib/format-utils";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   ArrowRight, Filter,
-  FileText, Bell, Send, MessageCircleWarning,
+  FileText, Bell, Send,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -77,10 +77,6 @@ export default function Dashboard() {
       case "pendencia": return filtered.filter((c) => c.status === "pendencia");
       case "previa_enviada": return filtered.filter((c) => { if (c.status === "finalizado") return false; const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables; return fd?.preview_file_url && fd?.preview_status !== "aprovado"; });
       case "finalizado": return filtered.filter((c) => c.status === "finalizado");
-      case "mensagens_pendentes": {
-        const ids = new Set(unreadMessages.map((m) => m.case_id));
-        return filtered.filter((c) => ids.has(c.id));
-      }
       default: return null;
     }
   }, [statFilter, filtered, unreadMessages]);
@@ -92,7 +88,6 @@ export default function Dashboard() {
     pendencia: "Pendências",
     previa_enviada: "Prévias Enviadas",
     finalizado: "Finalizados",
-    mensagens_pendentes: "Mensagens Pendentes",
   };
 
   const toggleStatFilter = (key: string) => {
