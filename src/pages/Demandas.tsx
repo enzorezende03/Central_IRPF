@@ -99,6 +99,13 @@ export default function Demandas() {
     return list;
   }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir]);
 
+  const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
+  const paginatedData = useMemo(() => {
+    if (pageSize === 0) return filtered;
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
+
   return (
     <InternalLayout>
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
