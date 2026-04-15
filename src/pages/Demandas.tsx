@@ -35,6 +35,8 @@ export default function Demandas() {
   const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
   const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
+  const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
