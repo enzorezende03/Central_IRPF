@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { formatCPF } from "@/lib/format-utils";
 import { Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
