@@ -110,9 +110,14 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       if (caseStatus === "finalizado") { map.finalizado.push(c); return; }
       if (caseStatus === "documentos_em_analise") { map.documentos_em_analise.push(c); return; }
 
-      // Pendencia must always stay in the pendencia column to match Demandas
+      // Pendencia: if has preview, show in previa_enviada; otherwise pendencia
       if (caseStatus === "pendencia") {
-        map.pendencia.push(c);
+        const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
+        if (fd?.preview_file_url && fd?.preview_status !== 'aprovado') {
+          map.previa_enviada.push(c);
+        } else {
+          map.pendencia.push(c);
+        }
         return;
       }
 
