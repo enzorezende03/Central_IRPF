@@ -750,6 +750,10 @@ export type Database = {
         | "em_andamento"
         | "pendencia"
         | "finalizado"
+        | "dispensada"
+        | "impedida"
+        | "documentos_parciais"
+        | "reaberta"
       document_status: "pendente" | "enviado" | "aprovado" | "rejeitado"
       preview_status: "aguardando_revisao" | "aprovado" | "ajustes_solicitados"
       uploaded_by_type: "client" | "office"
@@ -891,6 +895,10 @@ export const Constants = {
         "em_andamento",
         "pendencia",
         "finalizado",
+        "dispensada",
+        "impedida",
+        "documentos_parciais",
+        "reaberta",
       ],
       document_status: ["pendente", "enviado", "aprovado", "rejeitado"],
       preview_status: ["aguardando_revisao", "aprovado", "ajustes_solicitados"],
