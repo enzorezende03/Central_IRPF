@@ -105,18 +105,18 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       const caseStatus = c.status as string;
 
       // Skip dispensadas from Kanban
-      if (internalStatus === "dispensada") return;
+      if (caseStatus === "dispensada") return;
 
       // Direct mapping for statuses that map 1:1 to kanban columns
-      if (internalStatus === "impedida") { map.impedida.push(c); return; }
-      if (internalStatus === "reaberta") { map.reaberta.push(c); return; }
-      if (internalStatus === "documentos_parciais") { map.documentos_parciais.push(c); return; }
-      if (internalStatus === "em_andamento") { map.em_andamento.push(c); return; }
-      if (internalStatus === "finalizado") { map.finalizado.push(c); return; }
-      if (internalStatus === "documentos_em_analise") { map.documentos_em_analise.push(c); return; }
+      if (caseStatus === "impedida") { map.impedida.push(c); return; }
+      if (caseStatus === "reaberta") { map.reaberta.push(c); return; }
+      if (caseStatus === "documentos_parciais") { map.documentos_parciais.push(c); return; }
+      if (caseStatus === "em_andamento") { map.em_andamento.push(c); return; }
+      if (caseStatus === "finalizado") { map.finalizado.push(c); return; }
+      if (caseStatus === "documentos_em_analise") { map.documentos_em_analise.push(c); return; }
 
       // Pendencia: check if it's actually a preview pending review
-      if (internalStatus === "pendencia") {
+      if (caseStatus === "pendencia") {
         const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
         const previewPending = fd?.preview_file_url && (!fd?.preview_status || fd?.preview_status === "aguardando_revisao");
         if (previewPending) {
@@ -128,7 +128,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       }
 
       // Aguardando cliente: check checklist sub-columns, then preview
-      if (internalStatus === "aguardando_cliente") {
+      if (caseStatus === "aguardando_cliente") {
         const checklistCol = getChecklistColumn(c);
         if (checklistCol) { map[checklistCol].push(c); return; }
 
@@ -140,8 +140,8 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       }
 
       // Fallback
-      if (map[internalStatus as KanbanColumn]) {
-        map[internalStatus as KanbanColumn].push(c);
+      if (map[caseStatus as KanbanColumn]) {
+        map[caseStatus as KanbanColumn].push(c);
       }
     });
     // Sort documentos_em_analise by docs_received_at (earliest first for prioritization)

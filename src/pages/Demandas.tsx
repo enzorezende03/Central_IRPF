@@ -212,7 +212,7 @@ export default function Demandas() {
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell>
-                        <StatusBadge status={internalStatus} />
+                        <StatusBadge status={caseStatus} />
                       </TableCell>
                       <TableCell className="hidden xl:table-cell">
                         <StatusBadge status={c.status} />
