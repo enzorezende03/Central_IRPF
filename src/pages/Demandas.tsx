@@ -132,21 +132,10 @@ export default function Demandas() {
             </Select>
             <Select value={internalStatusFilter} onValueChange={setInternalStatusFilter}>
               <SelectTrigger className="w-44">
-                <SelectValue placeholder="Status Interno" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Status Interno</SelectItem>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={clientStatusFilter} onValueChange={setClientStatusFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Status Cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Status Cliente</SelectItem>
+                <SelectItem value="all">Todos os Status</SelectItem>
                 {Object.entries(STATUS_LABELS).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
@@ -178,8 +167,7 @@ export default function Demandas() {
                     </span>
                   </TableHead>
                   <TableHead className="hidden sm:table-cell">Responsável</TableHead>
-                  <TableHead className="min-w-[100px]">Status Interno</TableHead>
-                  <TableHead className="hidden xl:table-cell">Status Cliente</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
                   <TableHead className="hidden md:table-cell">Prioridade</TableHead>
                   <TableHead className="hidden lg:table-cell">Tipo</TableHead>
                   
@@ -212,9 +200,6 @@ export default function Demandas() {
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell>
-                        <StatusBadge status={caseStatus} />
-                      </TableCell>
-                      <TableCell className="hidden xl:table-cell">
                         <StatusBadge status={c.status} />
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
