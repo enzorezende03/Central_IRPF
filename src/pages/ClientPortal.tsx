@@ -4,7 +4,7 @@ import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import {
   FileText, Upload, CheckCircle, Circle, AlertTriangle, Download,
   MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
-  Home, ClipboardList, HelpCircle, RefreshCw,
+  Home, ClipboardList, HelpCircle, RefreshCw, Bell,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
@@ -348,7 +348,45 @@ export default function ClientPortal() {
             transition={{ duration: 0.2 }}
           >
             {activeTab === "inicio" && (
-              <div className="space-y-4">
+            <div className="space-y-4">
+                {/* Preview Pending Approval Banner */}
+                {deliverable && (deliverable as any).preview_file_url && (deliverable as any).preview_status === "aguardando_revisao" && !isFinished && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Card className="border-2 border-violet-400 dark:border-violet-500 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/40 shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="rounded-full bg-violet-100 dark:bg-violet-900/50 p-2 shrink-0 mt-0.5">
+                            <Bell className="h-5 w-5 text-violet-600 dark:text-violet-400 animate-pulse" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-violet-800 dark:text-violet-300">
+                              ⚡ Sua prévia está pronta para aprovação!
+                            </p>
+                            <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5">
+                              Revise a prévia da sua declaração e aprove para que possamos transmitir ao mais rápido possível.
+                            </p>
+                            <Button
+                              size="sm"
+                              className="mt-2.5 bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-md"
+                              onClick={() => {
+                                const el = document.getElementById("preview-approval-card");
+                                el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                              }}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1.5" />
+                              Revisar e Aprovar Agora
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+
                 {/* Status Progress */}
                 <Card>
                   <CardHeader className="pb-2">
@@ -828,10 +866,10 @@ function PreviewApprovalCard({
   };
 
   return (
-    <Card className={`border-primary/30 ${isApproved ? "border-success/40" : isAdjustments ? "border-warning/40" : ""}`}>
+    <Card id="preview-approval-card" className={`${isApproved ? "border-success/40" : isAdjustments ? "border-warning/40" : "border-2 border-violet-400 dark:border-violet-500 shadow-lg shadow-violet-200/40 dark:shadow-violet-900/30"}`}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          <Eye className="h-4 w-4 text-primary" />
+          <Eye className={`h-4 w-4 ${isApproved ? "text-success" : isAdjustments ? "text-warning" : "text-violet-600"}`} />
           Prévia da Declaração
         </CardTitle>
         <CardDescription>
@@ -865,14 +903,17 @@ function PreviewApprovalCard({
 
         {!isApproved && (
           <div className="flex flex-col gap-2">
-            <Button
-              onClick={handleApprove}
-              disabled={submitting}
-              className="w-full"
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-              Aprovar Prévia
-            </Button>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                onClick={handleApprove}
+                disabled={submitting}
+                size="lg"
+                className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold text-base shadow-lg shadow-violet-300/50 dark:shadow-violet-900/40 py-6"
+              >
+                {submitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <CheckCircle className="h-5 w-5 mr-2" />}
+                ✅ Aprovar Prévia da Declaração
+              </Button>
+            </motion.div>
 
             {!showFeedback ? (
               <Button
