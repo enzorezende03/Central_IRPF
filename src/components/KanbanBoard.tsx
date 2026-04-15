@@ -115,15 +115,9 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       if (caseStatus === "finalizado") { map.finalizado.push(c); return; }
       if (caseStatus === "documentos_em_analise") { map.documentos_em_analise.push(c); return; }
 
-      // Pendencia: check if it's actually a preview pending review
+      // Pendencia must always stay in the pendencia column to match Demandas
       if (caseStatus === "pendencia") {
-        const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
-        const previewPending = fd?.preview_file_url && (!fd?.preview_status || fd?.preview_status === "aguardando_revisao");
-        if (previewPending) {
-          map.previa_enviada.push(c);
-        } else {
-          map.pendencia.push(c);
-        }
+        map.pendencia.push(c);
         return;
       }
 
