@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   DollarSign, TrendingUp, Ban, ArrowRight, Filter,
-  FileText, Bell,
+  FileText, Bell, Send,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -61,6 +61,10 @@ export default function Dashboard() {
 
   const total = filtered.length;
   const byStatus = (s: CaseStatus) => filtered.filter((c) => c.status === s).length;
+  const previaEnviada = filtered.filter((c) => {
+    const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
+    return fd?.preview_file_url && fd?.preview_status !== "aprovado";
+  }).length;
   const billingPending = filtered.filter((c) => {
     const b = c.billing?.[0];
     return b && b.billing_status !== "pago";
@@ -80,6 +84,7 @@ export default function Dashboard() {
       case "aguardando_cliente": return filtered.filter((c) => c.status === "aguardando_cliente");
       case "em_andamento": return filtered.filter((c) => c.status === "em_andamento" || c.status === "documentos_em_analise");
       case "pendencia": return filtered.filter((c) => c.status === "pendencia");
+      case "previa_enviada": return filtered.filter((c) => { const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables; return fd?.preview_file_url && fd?.preview_status !== "aprovado"; });
       case "finalizado": return filtered.filter((c) => c.status === "finalizado");
       case "cobranca_pendente": return filtered.filter((c) => { const b = c.billing?.[0]; return b && b.billing_status !== "pago"; });
       case "honorarios": return filtered.filter((c) => c.billing?.[0]?.amount);
@@ -93,6 +98,7 @@ export default function Dashboard() {
     aguardando_cliente: "Aguardando Cliente",
     em_andamento: "Em Andamento",
     pendencia: "Pendências",
+    previa_enviada: "Prévias Enviadas",
     finalizado: "Finalizados",
     cobranca_pendente: "Cobrança Pendente",
     honorarios: "Honorários Previstos",
@@ -155,6 +161,7 @@ export default function Dashboard() {
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => toggleStatFilter("pendencia")} active={statFilter === "pendencia"} />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+              <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => toggleStatFilter("previa_enviada")} active={statFilter === "previa_enviada"} />
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => toggleStatFilter("finalizado")} active={statFilter === "finalizado"} />
               <StatCard label="Cobrança Pendente" value={billingPending} icon={Ban} color="text-warning" onClick={() => toggleStatFilter("cobranca_pendente")} active={statFilter === "cobranca_pendente"} />
               <StatCard label="Honorários Previstos" value={fmt(totalFees)} icon={TrendingUp} color="text-primary" subtitle="Total previsto" onClick={() => toggleStatFilter("honorarios")} active={statFilter === "honorarios"} />
