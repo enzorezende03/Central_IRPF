@@ -4,7 +4,7 @@ import { formatCPF } from "@/lib/format-utils";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   ArrowRight, Filter,
-  FileText, Bell, Send,
+  FileText, Bell, Send, Ban,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -78,6 +78,7 @@ export default function Dashboard() {
       case "pendencia": return filtered.filter((c) => c.status === "pendencia");
       case "previa_enviada": return filtered.filter((c) => { if (c.status === "finalizado") return false; const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables; return fd?.preview_file_url && fd?.preview_status !== "aprovado"; });
       case "finalizado": return filtered.filter((c) => c.status === "finalizado");
+      case "dispensada": return filtered.filter((c) => c.status === "dispensada");
       default: return null;
     }
   }, [statFilter, filtered, unreadMessages]);
@@ -90,6 +91,7 @@ export default function Dashboard() {
     pendencia: "Pendências",
     previa_enviada: "Prévias Enviadas",
     finalizado: "Finalizados",
+    dispensada: "Dispensadas",
   };
 
   const toggleStatFilter = (key: string) => {
@@ -149,6 +151,7 @@ export default function Dashboard() {
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => toggleStatFilter("pendencia")} active={statFilter === "pendencia"} />
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => toggleStatFilter("previa_enviada")} active={statFilter === "previa_enviada"} />
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => toggleStatFilter("finalizado")} active={statFilter === "finalizado"} />
+              <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => toggleStatFilter("dispensada")} active={statFilter === "dispensada"} />
             </div>
 
             {/* Filtered cases list from stat card click */}
