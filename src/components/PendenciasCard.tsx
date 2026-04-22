@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { AlertCircle, CheckCircle2, Plus, Trash2, MessageCircle, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Plus, Trash2, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -115,12 +115,11 @@ export function PendenciasCard({
     refresh();
   };
 
-  const sendWhatsApp = (p: Pendencia) => {
-    if (!clientPhone || !portalSlugOrToken) {
-      toast.error("Cliente sem telefone ou link de portal configurado.");
+  const copyMessage = async (p: Pendencia) => {
+    if (!portalSlugOrToken) {
+      toast.error("Cliente sem link de portal configurado.");
       return;
     }
-    const phone = clientPhone.replace(/\D/g, "");
     const firstName = (clientName ?? "").split(" ")[0] || "Olá";
     const link = getPortalUrl(portalSlugOrToken);
     const msg =
@@ -128,8 +127,12 @@ export function PendenciasCard({
       `Registramos uma *pendência* na sua declaração de IR que precisa da sua atenção:\n\n` +
       `📌 *${p.title}*\n${p.description}\n\n` +
       `Por favor, acesse seu portal e nos retorne assim que possível para não atrasarmos sua declaração:\n${link}`;
-    const url = `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
+    try {
+      await navigator.clipboard.writeText(msg);
+      toast.success("Mensagem copiada! Cole no seu sistema de mensagens.");
+    } catch {
+      toast.error("Não foi possível copiar. Selecione manualmente.");
+    }
   };
 
   return (
@@ -177,10 +180,9 @@ export function PendenciasCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="bg-success text-success-foreground hover:bg-success/90 border-success"
-                  onClick={() => sendWhatsApp(p)}
+                  onClick={() => copyMessage(p)}
                 >
-                  <MessageCircle className="h-3.5 w-3.5 mr-1" /> Avisar via WhatsApp
+                  <Copy className="h-3.5 w-3.5 mr-1" /> Copiar mensagem
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => handleResolveByOffice(p.id)}>
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Marcar como resolvida
