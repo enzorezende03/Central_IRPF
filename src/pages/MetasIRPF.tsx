@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Target, TrendingUp, TrendingDown, CalendarDays, Trophy, AlertTriangle,
-  Plus, Save, Wand2, Pencil, Trash2, Activity, Calendar,
+  Plus, Save, Wand2, Pencil, Trash2, Activity, Calendar, Lock,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   useSeasons, useWeeklyGoals, useUpsertSeason, useDeleteSeason,
   useReplaceWeeklyGoals, useUpdateWeeklyGoal, useFinalizedCasesInRange,
@@ -34,6 +35,10 @@ const RTooltip = RTip as any;
 import { toast } from "@/hooks/use-toast";
 
 export default function MetasIRPF() {
+  const { hasPermission, loading: authLoading } = useAuth();
+  const canView = hasPermission("acesso_metas");
+  const canManage = hasPermission("gerenciar_metas");
+
   const { data: seasons = [], isLoading: loadingSeasons } = useSeasons();
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
@@ -50,6 +55,29 @@ export default function MetasIRPF() {
     [seasons, selectedYear]
   );
 
+  if (!authLoading && !canView) {
+    return (
+      <InternalLayout>
+        <div className="container mx-auto py-12 px-4 max-w-2xl">
+          <Card className="border-dashed">
+            <CardContent className="py-16 flex flex-col items-center justify-center text-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-muted grid place-items-center">
+                <Lock className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Acesso restrito</h3>
+                <p className="text-sm text-muted-foreground max-w-md mt-1">
+                  Você não tem permissão para visualizar as Metas IRPF. Solicite ao
+                  administrador a liberação da permissão <strong>Visualizar Metas IRPF</strong>.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </InternalLayout>
+    );
+  }
+
   return (
     <InternalLayout>
       <div className="container mx-auto py-6 px-4 space-y-6 max-w-[1400px]">
@@ -58,10 +86,19 @@ export default function MetasIRPF() {
           selectedYear={selectedYear}
           onSelectYear={setSelectedYear}
           loadingSeasons={loadingSeasons}
+          canManage={canManage}
         />
 
         {!season && !loadingSeasons && (
-          <EmptyState onCreate={(year) => setSelectedYear(year)} />
+          canManage ? (
+            <EmptyState onCreate={(year) => setSelectedYear(year)} />
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="py-16 text-center text-sm text-muted-foreground">
+                Nenhuma temporada configurada. Solicite ao administrador a criação de uma temporada.
+              </CardContent>
+            </Card>
+          )
         )}
 
         {season && (
@@ -69,7 +106,9 @@ export default function MetasIRPF() {
             <TabsList className="bg-muted/50">
               <TabsTrigger value="overview" className="gap-2"><Activity className="h-4 w-4" /> Visão Geral</TabsTrigger>
               <TabsTrigger value="weekly" className="gap-2"><Calendar className="h-4 w-4" /> Metas Semanais</TabsTrigger>
-              <TabsTrigger value="config" className="gap-2"><Target className="h-4 w-4" /> Configuração</TabsTrigger>
+              {canManage && (
+                <TabsTrigger value="config" className="gap-2"><Target className="h-4 w-4" /> Configuração</TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -77,12 +116,14 @@ export default function MetasIRPF() {
             </TabsContent>
 
             <TabsContent value="weekly" className="space-y-6">
-              <WeeklyBlock season={season} />
+              <WeeklyBlock season={season} canManage={canManage} />
             </TabsContent>
 
-            <TabsContent value="config" className="space-y-6">
-              <ConfigBlock season={season} onYearChange={setSelectedYear} />
-            </TabsContent>
+            {canManage && (
+              <TabsContent value="config" className="space-y-6">
+                <ConfigBlock season={season} onYearChange={setSelectedYear} />
+              </TabsContent>
+            )}
           </Tabs>
         )}
       </div>
@@ -93,12 +134,13 @@ export default function MetasIRPF() {
 /* ─────────────────────────────  HEADER  ───────────────────────────── */
 
 function Header({
-  seasons, selectedYear, onSelectYear, loadingSeasons,
+  seasons, selectedYear, onSelectYear, loadingSeasons, canManage,
 }: {
   seasons: any[];
   selectedYear: number | null;
   onSelectYear: (y: number) => void;
   loadingSeasons: boolean;
+  canManage: boolean;
 }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -127,7 +169,7 @@ function Header({
             </SelectContent>
           </Select>
         )}
-        <NewSeasonDialog onCreated={(y) => onSelectYear(y)} />
+        {canManage && <NewSeasonDialog onCreated={(y) => onSelectYear(y)} />}
       </div>
     </div>
   );
@@ -442,7 +484,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "su
 
 /* ─────────────────────────────  WEEKLY  ───────────────────────────── */
 
-function WeeklyBlock({ season }: { season: any }) {
+function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean }) {
   const { data: weeks = [], isLoading } = useWeeklyGoals(season.id);
   const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
   const replace = useReplaceWeeklyGoals();
@@ -500,19 +542,21 @@ function WeeklyBlock({ season }: { season: any }) {
                 : "Nenhuma semana gerada para esta temporada"}
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => handleGenerate(false)} disabled={replace.isPending}>
-              <Plus className="h-4 w-4 mr-1.5" /> Gerar semanas (vazias)
-            </Button>
-            <Button size="sm" onClick={() => handleGenerate(true)} disabled={replace.isPending}>
-              <Wand2 className="h-4 w-4 mr-1.5" /> Distribuir automaticamente
-            </Button>
-            {Object.keys(edits).length > 0 && (
-              <Button size="sm" variant="default" onClick={handleSaveAll}>
-                <Save className="h-4 w-4 mr-1.5" /> Salvar alterações ({Object.keys(edits).length})
+          {canManage && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => handleGenerate(false)} disabled={replace.isPending}>
+                <Plus className="h-4 w-4 mr-1.5" /> Gerar semanas (vazias)
               </Button>
-            )}
-          </div>
+              <Button size="sm" onClick={() => handleGenerate(true)} disabled={replace.isPending}>
+                <Wand2 className="h-4 w-4 mr-1.5" /> Distribuir automaticamente
+              </Button>
+              {Object.keys(edits).length > 0 && (
+                <Button size="sm" variant="default" onClick={handleSaveAll}>
+                  <Save className="h-4 w-4 mr-1.5" /> Salvar alterações ({Object.keys(edits).length})
+                </Button>
+              )}
+            </div>
+          )}
         </CardHeader>
 
         <CardContent>
@@ -580,13 +624,17 @@ function WeeklyBlock({ season }: { season: any }) {
                           {formatBR(ws)} a {formatBR(we)}
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={currentGoal}
-                            onChange={(e) => setEdits((p) => ({ ...p, [w.id]: Math.max(0, Number(e.target.value) || 0) }))}
-                            className="h-8 w-24"
-                          />
+                          {canManage ? (
+                            <Input
+                              type="number"
+                              min={0}
+                              value={currentGoal}
+                              onChange={(e) => setEdits((p) => ({ ...p, [w.id]: Math.max(0, Number(e.target.value) || 0) }))}
+                              className="h-8 w-24"
+                            />
+                          ) : (
+                            <span className="font-semibold">{currentGoal}</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-center font-semibold">{realized}</TableCell>
                         <TableCell className={`text-center font-medium ${diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : ""}`}>
