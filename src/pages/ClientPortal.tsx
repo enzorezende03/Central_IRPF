@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { STATUS_LABELS } from "@/lib/types";
+import { PortalPendenciasBanner } from "@/components/PortalPendenciasBanner";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -306,6 +307,9 @@ export default function ClientPortal() {
             </p>
           </div>
         </motion.div>
+
+        {/* ── Pendências em destaque ── */}
+        <PortalPendenciasBanner caseId={caseId!} />
 
         {/* ── Tab Navigation (sticky) ── */}
         <div className="sticky top-[88px] z-20 bg-background/95 backdrop-blur-sm pb-2 pt-1 -mx-4 px-4 border-b">

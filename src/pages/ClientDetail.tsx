@@ -46,6 +46,7 @@ function fmtDate(d: string) {
 }
 
 import { getPortalUrl, getWhatsAppMessage, logTimelineEvent } from "@/lib/portal-utils";
+import { PendenciasCard } from "@/components/PendenciasCard";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 
 export default function ClientDetail() {
@@ -566,6 +567,14 @@ export default function ClientDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column (2/3) */}
           <div className="lg:col-span-2 space-y-6">
+            {/* ── Pendências ao Cliente ── */}
+            <PendenciasCard
+              caseId={id!}
+              clientName={caseData?.clients?.full_name}
+              clientPhone={caseData?.clients?.phone}
+              portalSlugOrToken={caseData?.portal_slug ?? caseData?.portal_token}
+            />
+
             {/* ── Internal Checklist ── */}
             <InternalChecklistCard caseId={id!} />
 
