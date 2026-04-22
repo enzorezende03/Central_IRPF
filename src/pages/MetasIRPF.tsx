@@ -542,19 +542,21 @@ function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean })
                 : "Nenhuma semana gerada para esta temporada"}
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => handleGenerate(false)} disabled={replace.isPending}>
-              <Plus className="h-4 w-4 mr-1.5" /> Gerar semanas (vazias)
-            </Button>
-            <Button size="sm" onClick={() => handleGenerate(true)} disabled={replace.isPending}>
-              <Wand2 className="h-4 w-4 mr-1.5" /> Distribuir automaticamente
-            </Button>
-            {Object.keys(edits).length > 0 && (
-              <Button size="sm" variant="default" onClick={handleSaveAll}>
-                <Save className="h-4 w-4 mr-1.5" /> Salvar alterações ({Object.keys(edits).length})
+          {canManage && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => handleGenerate(false)} disabled={replace.isPending}>
+                <Plus className="h-4 w-4 mr-1.5" /> Gerar semanas (vazias)
               </Button>
-            )}
-          </div>
+              <Button size="sm" onClick={() => handleGenerate(true)} disabled={replace.isPending}>
+                <Wand2 className="h-4 w-4 mr-1.5" /> Distribuir automaticamente
+              </Button>
+              {Object.keys(edits).length > 0 && (
+                <Button size="sm" variant="default" onClick={handleSaveAll}>
+                  <Save className="h-4 w-4 mr-1.5" /> Salvar alterações ({Object.keys(edits).length})
+                </Button>
+              )}
+            </div>
+          )}
         </CardHeader>
 
         <CardContent>
