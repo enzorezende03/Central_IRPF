@@ -39,7 +39,7 @@ function formatTimeAgo(dateStr: string) {
 export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
   const [ownerFilter, setOwnerFilter] = useState("todos");
-  const [statFilter, setStatFilter] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const { data: unreadMessages = [] } = useUnreadMessages();
 
@@ -65,37 +65,18 @@ export default function Dashboard() {
     return fd?.preview_file_url && fd?.preview_status !== "aprovado";
   }).length;
 
-
-
-  // Cases filtered by stat card click
-  const statFilteredCases = useMemo(() => {
-    if (!statFilter) return null;
-    switch (statFilter) {
-      case "total": return filtered;
-      case "aguardando_cliente": return filtered.filter((c) => c.status === "aguardando_cliente");
-      case "documentos_em_analise": return filtered.filter((c) => c.status === "documentos_em_analise");
-      case "em_andamento": return filtered.filter((c) => c.status === "em_andamento");
-      case "pendencia": return filtered.filter((c) => c.status === "pendencia");
-      case "previa_enviada": return filtered.filter((c) => { if (c.status === "finalizado") return false; const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables; return fd?.preview_file_url && fd?.preview_status !== "aprovado"; });
-      case "finalizado": return filtered.filter((c) => c.status === "finalizado");
-      case "dispensada": return filtered.filter((c) => c.status === "dispensada");
-      default: return null;
+  // Navegar para Demandas com o filtro do card
+  const goToDemandasWithFilter = (key: string) => {
+    const params = new URLSearchParams();
+    // Passa filtro de responsável se estiver ativo no Dashboard
+    if (ownerFilter !== "todos") {
+      params.set("owner", ownerFilter);
     }
-  }, [statFilter, filtered, unreadMessages]);
-
-  const statFilterLabels: Record<string, string> = {
-    total: "Total de Demandas",
-    aguardando_cliente: "Aguardando Cliente",
-    documentos_em_analise: "Documentos em Análise",
-    em_andamento: "Em Andamento",
-    pendencia: "Pendências",
-    previa_enviada: "Prévias Enviadas",
-    finalizado: "Finalizados",
-    dispensada: "Dispensadas",
-  };
-
-  const toggleStatFilter = (key: string) => {
-    setStatFilter((prev) => (prev === key ? null : key));
+    if (key !== "total") {
+      params.set("status", key);
+    }
+    const qs = params.toString();
+    navigate(qs ? `/demandas?${qs}` : "/demandas");
   };
 
   const recentCases = useMemo(() => filtered.slice(0, 5), [filtered]);
