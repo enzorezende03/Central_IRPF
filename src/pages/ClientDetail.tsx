@@ -607,10 +607,17 @@ export default function ClientDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                <PreviewCard caseId={id!} deliverable={deliverable} onRefresh={() => {
-                  queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
-                  queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
-                }} />
+                <PreviewCard
+                  caseId={id!}
+                  deliverable={deliverable}
+                  timeline={timeline}
+                  clientName={clientName}
+                  portalUrl={portalUrl}
+                  onRefresh={() => {
+                    queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                  }}
+                />
               </CardContent>
             </Card>
 
@@ -1241,7 +1248,21 @@ function InternalDocRow({
 }
 
 // ── Preview Card ──
-function PreviewCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
+function PreviewCard({
+  caseId,
+  deliverable,
+  timeline = [],
+  clientName = "",
+  portalUrl = "",
+  onRefresh,
+}: {
+  caseId: string;
+  deliverable: Tables<"final_deliverables"> | null | undefined;
+  timeline?: any[];
+  clientName?: string;
+  portalUrl?: string;
+  onRefresh: () => void;
+}) {
   const previewRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const del = deliverable as any;
@@ -1271,6 +1292,40 @@ function PreviewCard({ caseId, deliverable, onRefresh }: { caseId: string; deliv
   };
   const pStatus = del?.preview_status as string | null;
 
+  // Data do envio mais recente da prévia (a partir do timeline) — fallback para uploaded_at
+  const sentAtIso: string | null = (() => {
+    const sentEvents = (timeline ?? [])
+      .filter((t: any) => t.event_type === "Prévia da Declaração enviada")
+      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return sentEvents[0]?.created_at ?? del?.uploaded_at ?? null;
+  })();
+
+  const daysSince = sentAtIso
+    ? Math.max(0, Math.floor((Date.now() - new Date(sentAtIso).getTime()) / (1000 * 60 * 60 * 24)))
+    : null;
+
+  const isWaiting = pStatus === "aguardando_revisao";
+
+  const handleCopyChase = async () => {
+    const firstName = (clientName || "").split(" ")[0] || "Olá";
+    const dias = daysSince ?? 0;
+    const tempo =
+      dias === 0 ? "hoje" :
+      dias === 1 ? "ontem" :
+      `há ${dias} dias`;
+    const msg =
+      `Olá ${firstName}, tudo bem?\n\n` +
+      `Enviamos a *prévia da sua declaração de Imposto de Renda* ${tempo} e ainda não recebemos seu retorno.\n\n` +
+      `Para que possamos transmitir sua declaração o quanto antes, pedimos que acesse o portal, revise e *aprove a prévia*:\n${portalUrl}\n\n` +
+      `Se identificar algum ajuste, é só sinalizar pelo próprio portal.\n\nFicamos no aguardo. Obrigado!`;
+    try {
+      await navigator.clipboard.writeText(msg);
+      toast.success("Mensagem de cobrança copiada!");
+    } catch {
+      toast.error("Não foi possível copiar.");
+    }
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
@@ -1286,6 +1341,62 @@ function PreviewCard({ caseId, deliverable, onRefresh }: { caseId: string; deliv
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {del?.preview_file_url ? "Substituir" : "Upload"}</>}
         </Button>
       </div>
+
+      {del?.preview_file_url && sentAtIso && (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Calendar className="h-3.5 w-3.5" />
+          <span>
+            Enviada em{" "}
+            <span className="font-medium text-foreground">
+              {format(new Date(sentAtIso), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+            </span>
+          </span>
+        </div>
+      )}
+
+      {isWaiting && daysSince !== null && (
+        <div
+          className={`rounded-md border p-2.5 flex items-center justify-between gap-2 ${
+            daysSince >= 7
+              ? "bg-destructive/10 border-destructive/30"
+              : daysSince >= 3
+                ? "bg-warning/10 border-warning/30"
+                : "bg-muted/50 border-border"
+          }`}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <Clock
+              className={`h-4 w-4 shrink-0 ${
+                daysSince >= 7 ? "text-destructive" : daysSince >= 3 ? "text-warning" : "text-muted-foreground"
+              }`}
+            />
+            <p className="text-xs">
+              <span
+                className={`font-bold ${
+                  daysSince >= 7 ? "text-destructive" : daysSince >= 3 ? "text-warning" : "text-foreground"
+                }`}
+              >
+                {daysSince === 0
+                  ? "Enviada hoje"
+                  : daysSince === 1
+                    ? "1 dia sem retorno"
+                    : `${daysSince} dias sem retorno`}
+              </span>
+              <span className="text-muted-foreground"> do cliente</span>
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs shrink-0"
+            onClick={handleCopyChase}
+            disabled={!portalUrl}
+          >
+            <Copy className="h-3 w-3 mr-1" /> Copiar cobrança
+          </Button>
+        </div>
+      )}
+
       {pStatus && del?.preview_file_url && (
         <div className="space-y-1">
           <p className={`text-xs font-medium ${previewStatusLabel[pStatus]?.color ?? "text-muted-foreground"}`}>

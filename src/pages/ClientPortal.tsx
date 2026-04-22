@@ -353,42 +353,21 @@ export default function ClientPortal() {
           >
             {activeTab === "inicio" && (
             <div className="space-y-4">
-                {/* Preview Pending Approval Banner */}
-                {deliverable && (deliverable as any).preview_file_url && (deliverable as any).preview_status === "aguardando_revisao" && !isFinished && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Card className="border-2 border-violet-400 dark:border-violet-500 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/40 shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="rounded-full bg-violet-100 dark:bg-violet-900/50 p-2 shrink-0 mt-0.5">
-                            <Bell className="h-5 w-5 text-violet-600 dark:text-violet-400 animate-pulse" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-bold text-violet-800 dark:text-violet-300">
-                              ⚡ Sua prévia está pronta para aprovação!
-                            </p>
-                            <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5">
-                              Revise a prévia da sua declaração e aprove para que possamos transmitir ao mais rápido possível.
-                            </p>
-                            <Button
-                              size="sm"
-                              className="mt-2.5 bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-md"
-                              onClick={() => {
-                                const el = document.getElementById("preview-approval-card");
-                                el?.scrollIntoView({ behavior: "smooth", block: "center" });
-                              }}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1.5" />
-                              Revisar e Aprovar Agora
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                {/* Preview Pending Approval — Banner + Card unificados no topo */}
+                {deliverable && (deliverable as any).preview_file_url && !isFinished && (
+                  <PreviewApprovalCard
+                    deliverable={deliverable}
+                    caseId={caseId!}
+                    sentAt={
+                      timeline.find((t: any) => t.event_type === "Prévia da Declaração enviada")?.created_at
+                        ?? (deliverable as any).uploaded_at
+                    }
+                    onSuccess={() => {
+                      queryClient.invalidateQueries({ queryKey: ["portal-deliverable", caseId] });
+                      queryClient.invalidateQueries({ queryKey: ["portal-timeline", caseId] });
+                      queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
+                    }}
+                  />
                 )}
 
                 {/* Status Progress */}
@@ -485,11 +464,15 @@ export default function ClientPortal() {
                   />
                 )}
 
-                {/* Preview Approval */}
-                {deliverable && (deliverable as any).preview_file_url && (
+                {/* Preview já aprovada — mostra confirmação no fluxo natural */}
+                {deliverable && (deliverable as any).preview_file_url && isFinished && (
                   <PreviewApprovalCard
                     deliverable={deliverable}
                     caseId={caseId!}
+                    sentAt={
+                      timeline.find((t: any) => t.event_type === "Prévia da Declaração enviada")?.created_at
+                        ?? (deliverable as any).uploaded_at
+                    }
                     onSuccess={() => {
                       queryClient.invalidateQueries({ queryKey: ["portal-deliverable", caseId] });
                       queryClient.invalidateQueries({ queryKey: ["portal-timeline", caseId] });
@@ -802,10 +785,12 @@ function PortalShell({ children }: { children: React.ReactNode }) {
 function PreviewApprovalCard({
   deliverable,
   caseId,
+  sentAt,
   onSuccess,
 }: {
   deliverable: Tables<"final_deliverables">;
   caseId: string;
+  sentAt?: string | null;
   onSuccess: () => void;
 }) {
   const [feedback, setFeedback] = useState("");
@@ -885,6 +870,37 @@ function PreviewApprovalCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {!isApproved && !isAdjustments && (
+          <div className="rounded-lg bg-violet-100/70 dark:bg-violet-900/30 border border-violet-300/60 dark:border-violet-700/50 p-3">
+            <div className="flex items-start gap-2.5">
+              <div className="rounded-full bg-violet-200/80 dark:bg-violet-800/60 p-1.5 shrink-0 mt-0.5">
+                <Bell className="h-4 w-4 text-violet-700 dark:text-violet-300 animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-violet-800 dark:text-violet-200">
+                  ⚡ Sua prévia está pronta para aprovação!
+                </p>
+                <p className="text-xs text-violet-700 dark:text-violet-300 mt-0.5">
+                  Revise a prévia da sua declaração e aprove para que possamos transmitir o mais rápido possível.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {sentAt && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" />
+            <span>
+              Prévia enviada em{" "}
+              <span className="font-medium text-foreground">
+                {new Date(sentAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+              </span>{" "}
+              às {new Date(sentAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+        )}
+
         <Button variant="outline" className="w-full justify-start" asChild>
           <a href={del.preview_file_url} target="_blank" rel="noopener noreferrer">
             <Download className="h-4 w-4 mr-2" /> Visualizar Prévia da Declaração
