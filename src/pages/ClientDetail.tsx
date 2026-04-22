@@ -607,10 +607,17 @@ export default function ClientDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                <PreviewCard caseId={id!} deliverable={deliverable} onRefresh={() => {
-                  queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
-                  queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
-                }} />
+                <PreviewCard
+                  caseId={id!}
+                  deliverable={deliverable}
+                  timeline={timeline}
+                  clientName={clientName}
+                  portalUrl={portalUrl}
+                  onRefresh={() => {
+                    queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                  }}
+                />
               </CardContent>
             </Card>
 
