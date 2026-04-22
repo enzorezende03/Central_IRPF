@@ -327,35 +327,66 @@ function OverviewBlock({ season }: { season: any }) {
       </Card>
 
       {/* Projection */}
-      <Card className={willMissGoal ? "border-red-500/40" : "border-emerald-500/40"}>
+      <Card className={willMissGoal ? "border-red-500/40" : projectionAvailable ? "border-emerald-500/40" : ""}>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <TrendingUp className="h-4 w-4" /> Projeção
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Stat label="Média / dia" value={avgPerDay.toFixed(1)} />
-          <Stat label="Média / semana" value={avgPerWeek.toFixed(1)} />
-          <Stat
-            label="Projeção até o prazo"
-            value={projection.toString()}
-            tone={willMissGoal ? "danger" : "success"}
-          />
-          <Stat
-            label="Diferença vs. previsto"
-            value={`${projection - totalPlanned >= 0 ? "+" : ""}${projection - totalPlanned}`}
-            tone={willMissGoal ? "danger" : "success"}
-          />
-        </CardContent>
-        {willMissGoal && (
-          <div className="mx-6 mb-6 p-3 rounded-md bg-red-500/10 border border-red-500/30 flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-            <div className="text-xs">
-              <strong className="text-red-600 dark:text-red-400">Alerta de meta:</strong>{" "}
-              No ritmo atual, faltarão <strong>{totalPlanned - projection}</strong> declarações até o prazo final.
-              Considere aumentar a produção semanal para atingir a meta total.
+
+        {!seasonStarted ? (
+          <CardContent className="py-6">
+            <div className="flex items-start gap-3 p-4 rounded-md bg-blue-500/10 border border-blue-500/30">
+              <CalendarDays className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <strong className="text-blue-700 dark:text-blue-400">Temporada ainda não iniciou.</strong>{" "}
+                A projeção fica disponível a partir de <strong>{formatBRFull(start)}</strong>
+                {daysUntilStart > 0 && <> — faltam <strong>{daysUntilStart}</strong> {daysUntilStart === 1 ? "dia" : "dias"}.</>}
+                <div className="text-xs text-muted-foreground mt-1">
+                  Já realizados antes do início da temporada: <strong>{totalFinalized}</strong> (serão absorvidos pela S1).
+                </div>
+              </div>
             </div>
-          </div>
+          </CardContent>
+        ) : seasonEnded ? (
+          <CardContent className="py-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <Stat label="Total realizado" value={totalFinalized.toString()} tone={totalFinalized >= totalPlanned ? "success" : "danger"} />
+              <Stat label="Meta total" value={totalPlanned.toString()} />
+              <Stat
+                label="Diferença vs. meta"
+                value={`${totalFinalized - totalPlanned >= 0 ? "+" : ""}${totalFinalized - totalPlanned}`}
+                tone={totalFinalized >= totalPlanned ? "success" : "danger"}
+              />
+            </div>
+          </CardContent>
+        ) : (
+          <>
+            <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Stat label="Média / dia" value={avgPerDay.toFixed(1)} />
+              <Stat label="Média / semana" value={avgPerWeek.toFixed(1)} />
+              <Stat
+                label="Projeção até o prazo"
+                value={projection.toString()}
+                tone={willMissGoal ? "danger" : "success"}
+              />
+              <Stat
+                label="Diferença vs. previsto"
+                value={`${projection - totalPlanned >= 0 ? "+" : ""}${projection - totalPlanned}`}
+                tone={willMissGoal ? "danger" : "success"}
+              />
+            </CardContent>
+            {willMissGoal && (
+              <div className="mx-6 mb-6 p-3 rounded-md bg-red-500/10 border border-red-500/30 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                <div className="text-xs">
+                  <strong className="text-red-600 dark:text-red-400">Alerta de meta:</strong>{" "}
+                  No ritmo atual, faltarão <strong>{totalPlanned - projection}</strong> declarações até o prazo final.
+                  Considere aumentar a produção semanal para atingir a meta total.
+                </div>
+              </div>
+            )}
+          </>
         )}
       </Card>
     </>
