@@ -165,12 +165,22 @@ function OverviewBlock({ season }: { season: any }) {
   const totalFinalized = finalized.length;
   const percentDone = totalPlanned > 0 ? (totalFinalized / totalPlanned) * 100 : 0;
 
-  const today = new Date();
+  // Normalize "today" to local midnight so day math is consistent with
+  // start_date / deadline_date (which are date-only ISO strings).
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const deadline = parseISODate(season.deadline_date);
   const start = parseISODate(season.start_date);
+
   const daysRemaining = Math.max(0, daysBetween(today, deadline));
-  const totalSeasonDays = Math.max(1, daysBetween(start, deadline));
-  const elapsedDays = Math.max(1, Math.min(totalSeasonDays, daysBetween(start, today)));
+  const totalSeasonDays = Math.max(1, daysBetween(start, deadline) + 1); // inclusive
+  const seasonStarted = today >= start;
+  const seasonEnded = today > deadline;
+  // Days actually elapsed within the season window (1..totalSeasonDays)
+  const elapsedDays = !seasonStarted
+    ? 0
+    : Math.min(totalSeasonDays, daysBetween(start, today) + 1);
+  const daysUntilStart = !seasonStarted ? Math.max(0, daysBetween(today, start)) : 0;
 
   const totalGoal = weeks.reduce((s, w) => s + (w.goal_count || 0), 0);
 
@@ -204,11 +214,18 @@ function OverviewBlock({ season }: { season: any }) {
     };
   });
 
-  // Projection
-  const avgPerDay = elapsedDays > 0 ? totalFinalized / elapsedDays : 0;
+  // Projection — only meaningful while the season is in progress.
+  // Pre-season: averages would divide by 0 (or be inflated by pre-season work).
+  // Post-season: just show what was achieved.
+  const projectionAvailable = seasonStarted && !seasonEnded && elapsedDays > 0;
+  const avgPerDay = projectionAvailable ? totalFinalized / elapsedDays : 0;
   const avgPerWeek = avgPerDay * 7;
-  const projection = Math.round(avgPerDay * totalSeasonDays);
-  const willMissGoal = totalPlanned > 0 && projection < totalPlanned;
+  const projection = projectionAvailable
+    ? Math.round(avgPerDay * totalSeasonDays)
+    : seasonEnded
+    ? totalFinalized
+    : 0;
+  const willMissGoal = projectionAvailable && totalPlanned > 0 && projection < totalPlanned;
 
   const statusVsGoal = realAcc - goalAcc;
 
