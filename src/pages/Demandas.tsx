@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { formatCPF } from "@/lib/format-utils";
 import { Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBadge";
 import { CaseActions } from "@/components/CaseActions";
@@ -27,16 +27,35 @@ function loadSavedFilters() {
 
 export default function Demandas() {
   const { data: cases = [], isLoading } = useCases();
+  const [searchParams, setSearchParams] = useSearchParams();
   const saved = useMemo(() => loadSavedFilters(), []);
+
+  // Query params override saved filters when presentes (vindo do Dashboard)
+  const initialStatus = searchParams.get("status") ?? saved.internalStatusFilter ?? "all";
+  const initialOwner = searchParams.get("owner") ?? saved.ownerFilter ?? "all";
+
   const [search, setSearch] = useState(saved.search ?? "");
   const [tagFilter, setTagFilter] = useState(saved.tagFilter ?? "all");
-  const [ownerFilter, setOwnerFilter] = useState(saved.ownerFilter ?? "all");
-  const [internalStatusFilter, setInternalStatusFilter] = useState(saved.internalStatusFilter ?? "all");
+  const [ownerFilter, setOwnerFilter] = useState(initialOwner);
+  const [internalStatusFilter, setInternalStatusFilter] = useState(initialStatus);
   const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
   const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Reagir a mudanças nos query params (ex.: clicar em outro card vindo do Dashboard)
+  useEffect(() => {
+    const qStatus = searchParams.get("status");
+    const qOwner = searchParams.get("owner");
+    if (qStatus !== null) setInternalStatusFilter(qStatus);
+    if (qOwner !== null) setOwnerFilter(qOwner);
+    // Limpa os params da URL após aplicar para não persistir indefinidamente
+    if (qStatus !== null || qOwner !== null) {
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({

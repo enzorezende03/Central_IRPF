@@ -6,7 +6,7 @@ import {
   ArrowRight, Filter,
   FileText, Bell, Send, Ban,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { StatCard } from "@/components/StatCard";
 import { InternalLayout } from "@/components/InternalLayout";
@@ -39,7 +39,7 @@ function formatTimeAgo(dateStr: string) {
 export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
   const [ownerFilter, setOwnerFilter] = useState("todos");
-  const [statFilter, setStatFilter] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const { data: unreadMessages = [] } = useUnreadMessages();
 
@@ -65,37 +65,18 @@ export default function Dashboard() {
     return fd?.preview_file_url && fd?.preview_status !== "aprovado";
   }).length;
 
-
-
-  // Cases filtered by stat card click
-  const statFilteredCases = useMemo(() => {
-    if (!statFilter) return null;
-    switch (statFilter) {
-      case "total": return filtered;
-      case "aguardando_cliente": return filtered.filter((c) => c.status === "aguardando_cliente");
-      case "documentos_em_analise": return filtered.filter((c) => c.status === "documentos_em_analise");
-      case "em_andamento": return filtered.filter((c) => c.status === "em_andamento");
-      case "pendencia": return filtered.filter((c) => c.status === "pendencia");
-      case "previa_enviada": return filtered.filter((c) => { if (c.status === "finalizado") return false; const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables; return fd?.preview_file_url && fd?.preview_status !== "aprovado"; });
-      case "finalizado": return filtered.filter((c) => c.status === "finalizado");
-      case "dispensada": return filtered.filter((c) => c.status === "dispensada");
-      default: return null;
+  // Navegar para Demandas com o filtro do card
+  const goToDemandasWithFilter = (key: string) => {
+    const params = new URLSearchParams();
+    // Passa filtro de responsável se estiver ativo no Dashboard
+    if (ownerFilter !== "todos") {
+      params.set("owner", ownerFilter);
     }
-  }, [statFilter, filtered, unreadMessages]);
-
-  const statFilterLabels: Record<string, string> = {
-    total: "Total de Demandas",
-    aguardando_cliente: "Aguardando Cliente",
-    documentos_em_analise: "Documentos em Análise",
-    em_andamento: "Em Andamento",
-    pendencia: "Pendências",
-    previa_enviada: "Prévias Enviadas",
-    finalizado: "Finalizados",
-    dispensada: "Dispensadas",
-  };
-
-  const toggleStatFilter = (key: string) => {
-    setStatFilter((prev) => (prev === key ? null : key));
+    if (key !== "total") {
+      params.set("status", key);
+    }
+    const qs = params.toString();
+    navigate(qs ? `/demandas?${qs}` : "/demandas");
   };
 
   const recentCases = useMemo(() => filtered.slice(0, 5), [filtered]);
@@ -144,57 +125,15 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-              <StatCard label="Total de Demandas" value={total} icon={Users} color="text-primary" onClick={() => toggleStatFilter("total")} active={statFilter === "total"} />
-              <StatCard label="Aguardando Cliente" value={byStatus("aguardando_cliente")} icon={Clock} color="text-warning" onClick={() => toggleStatFilter("aguardando_cliente")} active={statFilter === "aguardando_cliente"} />
-              <StatCard label="Docs em Análise" value={byStatus("documentos_em_analise")} icon={FileText} color="text-blue-500" onClick={() => toggleStatFilter("documentos_em_analise")} active={statFilter === "documentos_em_analise"} />
-              <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => toggleStatFilter("em_andamento")} active={statFilter === "em_andamento"} />
-              <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => toggleStatFilter("pendencia")} active={statFilter === "pendencia"} />
-              <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => toggleStatFilter("previa_enviada")} active={statFilter === "previa_enviada"} />
-              <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => toggleStatFilter("finalizado")} active={statFilter === "finalizado"} />
-              <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => toggleStatFilter("dispensada")} active={statFilter === "dispensada"} />
+              <StatCard label="Total de Demandas" value={total} icon={Users} color="text-primary" onClick={() => goToDemandasWithFilter("total")} />
+              <StatCard label="Aguardando Cliente" value={byStatus("aguardando_cliente")} icon={Clock} color="text-warning" onClick={() => goToDemandasWithFilter("aguardando_cliente")} />
+              <StatCard label="Docs em Análise" value={byStatus("documentos_em_analise")} icon={FileText} color="text-blue-500" onClick={() => goToDemandasWithFilter("documentos_em_analise")} />
+              <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => goToDemandasWithFilter("em_andamento")} />
+              <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => goToDemandasWithFilter("pendencia")} />
+              <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => goToDemandasWithFilter("previa_enviada")} />
+              <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => goToDemandasWithFilter("finalizado")} />
+              <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} />
             </div>
-
-            {/* Filtered cases list from stat card click */}
-            {statFilter && statFilteredCases && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{statFilterLabels[statFilter]}</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">{statFilteredCases.length} demandas</Badge>
-                      <Button variant="ghost" size="sm" onClick={() => setStatFilter(null)} className="text-xs h-7">
-                        Fechar
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {statFilteredCases.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-6">Nenhuma demanda nesta categoria.</p>
-                  ) : (
-                    <div className="space-y-1.5 max-h-80 overflow-y-auto">
-                      {statFilteredCases.map((c) => (
-                        <Link
-                          key={c.id}
-                          to={`/demandas/${c.id}`}
-                          className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{c.clients?.full_name}</p>
-                            <p className="text-xs text-muted-foreground">{formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}</p>
-                          </div>
-                          <StatusBadge status={c.status} />
-                          <PriorityBadge priority={c.priority} />
-                          <div className="w-16 hidden sm:block">
-                            <Progress value={c.progress_percent} className="h-1.5" />
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
           </>
         )}
 
