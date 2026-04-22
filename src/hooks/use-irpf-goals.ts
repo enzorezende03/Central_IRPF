@@ -122,19 +122,17 @@ export function useUpdateWeeklyGoal() {
 
 /**
  * Fetches cases that count toward the season goal: finalized OR with preview sent.
- * Uses updated_at as the proxy for "completion date" since irpf_cases
- * has no explicit finalized_at / preview_sent_at column.
+ * Uses updated_at as the proxy for "completion date".
  *
- * Both 'finalizado' and 'previa_enviada' statuses count as "realized" — the
- * preview being sent already represents work delivered to the client and
- * should abate the weekly goal.
+ * IMPORTANT: We intentionally fetch everything up to the deadline (no lower
+ * bound) so that work already delivered BEFORE the season officially starts
+ * is absorbed by week 1. The page-level logic decides how to bucket it.
  */
 export function useFinalizedCasesInRange(start: string | undefined, end: string | undefined) {
   return useQuery({
-    queryKey: ["irpf_realized_in_range", start, end],
+    queryKey: ["irpf_realized_in_range", end],
     enabled: !!start && !!end,
     queryFn: async () => {
-      const startDt = `${start}T00:00:00`;
       // include the end day fully
       const endDate = new Date(`${end}T00:00:00`);
       endDate.setDate(endDate.getDate() + 1);
@@ -144,7 +142,6 @@ export function useFinalizedCasesInRange(start: string | undefined, end: string 
         .from("irpf_cases")
         .select("id, status, updated_at, created_at")
         .in("status", ["finalizado", "previa_enviada"])
-        .gte("updated_at", startDt)
         .lt("updated_at", endIso);
       if (error) throw error;
       return data || [];
