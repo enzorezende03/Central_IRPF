@@ -870,6 +870,37 @@ function PreviewApprovalCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {!isApproved && !isAdjustments && (
+          <div className="rounded-lg bg-violet-100/70 dark:bg-violet-900/30 border border-violet-300/60 dark:border-violet-700/50 p-3">
+            <div className="flex items-start gap-2.5">
+              <div className="rounded-full bg-violet-200/80 dark:bg-violet-800/60 p-1.5 shrink-0 mt-0.5">
+                <Bell className="h-4 w-4 text-violet-700 dark:text-violet-300 animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-violet-800 dark:text-violet-200">
+                  ⚡ Sua prévia está pronta para aprovação!
+                </p>
+                <p className="text-xs text-violet-700 dark:text-violet-300 mt-0.5">
+                  Revise a prévia da sua declaração e aprove para que possamos transmitir o mais rápido possível.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {sentAt && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" />
+            <span>
+              Prévia enviada em{" "}
+              <span className="font-medium text-foreground">
+                {new Date(sentAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+              </span>{" "}
+              às {new Date(sentAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+        )}
+
         <Button variant="outline" className="w-full justify-start" asChild>
           <a href={del.preview_file_url} target="_blank" rel="noopener noreferrer">
             <Download className="h-4 w-4 mr-2" /> Visualizar Prévia da Declaração
