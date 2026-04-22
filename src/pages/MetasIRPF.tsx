@@ -484,7 +484,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "su
 
 /* ─────────────────────────────  WEEKLY  ───────────────────────────── */
 
-function WeeklyBlock({ season }: { season: any }) {
+function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean }) {
   const { data: weeks = [], isLoading } = useWeeklyGoals(season.id);
   const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
   const replace = useReplaceWeeklyGoals();
