@@ -7,6 +7,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/demandas": "Demandas IRPF",
   "/kanban": "Kanban Operacional",
   "/cobranca": "Cobrança",
+  "/metas": "Metas IRPF",
   "/clientes": "Clientes",
   "/configuracoes": "Configurações",
 };

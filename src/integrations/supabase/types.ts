@@ -555,6 +555,80 @@ export type Database = {
           },
         ]
       }
+      irpf_season_config: {
+        Row: {
+          created_at: string
+          deadline_date: string
+          id: string
+          notes: string | null
+          season_year: number
+          start_date: string
+          total_planned: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deadline_date: string
+          id?: string
+          notes?: string | null
+          season_year: number
+          start_date: string
+          total_planned?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deadline_date?: string
+          id?: string
+          notes?: string | null
+          season_year?: number
+          start_date?: string
+          total_planned?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      irpf_weekly_goals: {
+        Row: {
+          created_at: string
+          goal_count: number
+          id: string
+          season_id: string
+          updated_at: string
+          week_end: string
+          week_number: number
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          goal_count?: number
+          id?: string
+          season_id: string
+          updated_at?: string
+          week_end: string
+          week_number: number
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          goal_count?: number
+          id?: string
+          season_id?: string
+          updated_at?: string
+          week_end?: string
+          week_number?: number
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "irpf_weekly_goals_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "irpf_season_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kanban_preferences: {
         Row: {
           column_order: string[]
