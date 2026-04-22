@@ -219,8 +219,9 @@ function OverviewBlock({ season }: { season: any }) {
         />
         <KpiCard
           icon={<Trophy className="h-4 w-4" />}
-          label="Finalizados"
+          label="Realizados"
           value={totalFinalized.toString()}
+          subtitle="Finalizados + Prévia enviada"
           accent="from-emerald-500/20 to-emerald-500/5 text-emerald-600 dark:text-emerald-400"
         />
         <KpiCard

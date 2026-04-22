@@ -121,13 +121,17 @@ export function useUpdateWeeklyGoal() {
 }
 
 /**
- * Fetches finalized cases within season window.
- * Uses updated_at as the proxy for "finalization date" since irpf_cases
- * has no explicit finalized_at column.
+ * Fetches cases that count toward the season goal: finalized OR with preview sent.
+ * Uses updated_at as the proxy for "completion date" since irpf_cases
+ * has no explicit finalized_at / preview_sent_at column.
+ *
+ * Both 'finalizado' and 'previa_enviada' statuses count as "realized" — the
+ * preview being sent already represents work delivered to the client and
+ * should abate the weekly goal.
  */
 export function useFinalizedCasesInRange(start: string | undefined, end: string | undefined) {
   return useQuery({
-    queryKey: ["irpf_finalized_in_range", start, end],
+    queryKey: ["irpf_realized_in_range", start, end],
     enabled: !!start && !!end,
     queryFn: async () => {
       const startDt = `${start}T00:00:00`;
@@ -139,7 +143,7 @@ export function useFinalizedCasesInRange(start: string | undefined, end: string 
       const { data, error } = await supabase
         .from("irpf_cases")
         .select("id, status, updated_at, created_at")
-        .eq("status", "finalizado")
+        .in("status", ["finalizado", "previa_enviada"])
         .gte("updated_at", startDt)
         .lt("updated_at", endIso);
       if (error) throw error;
