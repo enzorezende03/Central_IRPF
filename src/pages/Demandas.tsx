@@ -234,7 +234,20 @@ export default function Demandas() {
                         </TableCell>
                         <TableCell className="hidden sm:table-cell text-sm">{c.internal_owner ?? "—"}</TableCell>
                         <TableCell>
-                          <StatusBadge status={c.status} />
+                          <div className="flex flex-col gap-1">
+                            <StatusBadge status={c.status} />
+                            {c.status === "previa_enviada" && (() => {
+                              const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
+                              const sentAt = fd?.uploaded_at;
+                              if (!sentAt) return null;
+                              const days = Math.max(0, Math.floor((Date.now() - new Date(sentAt).getTime()) / (1000 * 60 * 60 * 24)));
+                              const colorClass = days >= 7 ? "text-destructive" : days >= 3 ? "text-warning" : "text-muted-foreground";
+                              const label = days === 0 ? "Enviada hoje" : days === 1 ? "Há 1 dia sem retorno" : `Há ${days} dias sem retorno`;
+                              return (
+                                <span className={`text-[10px] font-medium ${colorClass}`}>{label}</span>
+                              );
+                            })()}
+                          </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <PriorityBadge priority={c.priority} />
