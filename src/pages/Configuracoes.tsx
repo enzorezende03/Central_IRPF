@@ -20,10 +20,14 @@ const PERMISSIONS_BY_ROLE: Record<string, { key: string; label: string }[]> = {
   operacional: [
     { key: "acesso_demandas", label: "Acesso a Demandas" },
     { key: "acesso_configuracao", label: "Acesso a Configuração" },
+    { key: "acesso_metas", label: "Visualizar Metas IRPF" },
+    { key: "gerenciar_metas", label: "Configurar Metas IRPF" },
   ],
   financeiro: [
     { key: "acesso_cobranca", label: "Acesso a Cobrança" },
     { key: "acesso_configuracao", label: "Acesso a Configuração" },
+    { key: "acesso_metas", label: "Visualizar Metas IRPF" },
+    { key: "gerenciar_metas", label: "Configurar Metas IRPF" },
   ],
 };
 
@@ -31,6 +35,8 @@ const ALL_PERMISSIONS = [
   { key: "acesso_demandas", label: "Acesso a Demandas" },
   { key: "acesso_cobranca", label: "Acesso a Cobrança" },
   { key: "acesso_configuracao", label: "Acesso a Configuração" },
+  { key: "acesso_metas", label: "Visualizar Metas IRPF" },
+  { key: "gerenciar_metas", label: "Configurar Metas IRPF" },
 ] as const;
 
 interface UserRow {
