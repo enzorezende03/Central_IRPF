@@ -785,10 +785,12 @@ function PortalShell({ children }: { children: React.ReactNode }) {
 function PreviewApprovalCard({
   deliverable,
   caseId,
+  sentAt,
   onSuccess,
 }: {
   deliverable: Tables<"final_deliverables">;
   caseId: string;
+  sentAt?: string | null;
   onSuccess: () => void;
 }) {
   const [feedback, setFeedback] = useState("");
