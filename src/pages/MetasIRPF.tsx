@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Target, TrendingUp, TrendingDown, CalendarDays, Trophy, AlertTriangle,
-  Plus, Save, Wand2, Pencil, Trash2, Activity, Calendar,
+  Plus, Save, Wand2, Pencil, Trash2, Activity, Calendar, Lock,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   useSeasons, useWeeklyGoals, useUpsertSeason, useDeleteSeason,
   useReplaceWeeklyGoals, useUpdateWeeklyGoal, useFinalizedCasesInRange,
