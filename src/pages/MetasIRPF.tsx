@@ -169,7 +169,7 @@ function Header({
             </SelectContent>
           </Select>
         )}
-        <NewSeasonDialog onCreated={(y) => onSelectYear(y)} />
+        {canManage && <NewSeasonDialog onCreated={(y) => onSelectYear(y)} />}
       </div>
     </div>
   );
