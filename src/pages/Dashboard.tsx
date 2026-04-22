@@ -125,57 +125,15 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-              <StatCard label="Total de Demandas" value={total} icon={Users} color="text-primary" onClick={() => toggleStatFilter("total")} active={statFilter === "total"} />
-              <StatCard label="Aguardando Cliente" value={byStatus("aguardando_cliente")} icon={Clock} color="text-warning" onClick={() => toggleStatFilter("aguardando_cliente")} active={statFilter === "aguardando_cliente"} />
-              <StatCard label="Docs em Análise" value={byStatus("documentos_em_analise")} icon={FileText} color="text-blue-500" onClick={() => toggleStatFilter("documentos_em_analise")} active={statFilter === "documentos_em_analise"} />
-              <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => toggleStatFilter("em_andamento")} active={statFilter === "em_andamento"} />
-              <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => toggleStatFilter("pendencia")} active={statFilter === "pendencia"} />
-              <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => toggleStatFilter("previa_enviada")} active={statFilter === "previa_enviada"} />
-              <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => toggleStatFilter("finalizado")} active={statFilter === "finalizado"} />
-              <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => toggleStatFilter("dispensada")} active={statFilter === "dispensada"} />
+              <StatCard label="Total de Demandas" value={total} icon={Users} color="text-primary" onClick={() => goToDemandasWithFilter("total")} />
+              <StatCard label="Aguardando Cliente" value={byStatus("aguardando_cliente")} icon={Clock} color="text-warning" onClick={() => goToDemandasWithFilter("aguardando_cliente")} />
+              <StatCard label="Docs em Análise" value={byStatus("documentos_em_analise")} icon={FileText} color="text-blue-500" onClick={() => goToDemandasWithFilter("documentos_em_analise")} />
+              <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => goToDemandasWithFilter("em_andamento")} />
+              <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => goToDemandasWithFilter("pendencia")} />
+              <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => goToDemandasWithFilter("previa_enviada")} />
+              <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => goToDemandasWithFilter("finalizado")} />
+              <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} />
             </div>
-
-            {/* Filtered cases list from stat card click */}
-            {statFilter && statFilteredCases && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{statFilterLabels[statFilter]}</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">{statFilteredCases.length} demandas</Badge>
-                      <Button variant="ghost" size="sm" onClick={() => setStatFilter(null)} className="text-xs h-7">
-                        Fechar
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {statFilteredCases.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-6">Nenhuma demanda nesta categoria.</p>
-                  ) : (
-                    <div className="space-y-1.5 max-h-80 overflow-y-auto">
-                      {statFilteredCases.map((c) => (
-                        <Link
-                          key={c.id}
-                          to={`/demandas/${c.id}`}
-                          className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{c.clients?.full_name}</p>
-                            <p className="text-xs text-muted-foreground">{formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}</p>
-                          </div>
-                          <StatusBadge status={c.status} />
-                          <PriorityBadge priority={c.priority} />
-                          <div className="w-16 hidden sm:block">
-                            <Progress value={c.progress_percent} className="h-1.5" />
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
           </>
         )}
 
