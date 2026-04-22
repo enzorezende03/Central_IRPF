@@ -29,7 +29,7 @@ const menuItems = [
   { title: "Kanban Operacional", url: "/kanban", icon: Kanban, permission: "acesso_demandas" },
   { title: "Mensagens", url: "/mensagens", icon: MessageCircle, permission: "acesso_demandas" },
   { title: "Cobrança", url: "/cobranca", icon: DollarSign, permission: "acesso_cobranca" },
-  { title: "Metas IRPF", url: "/metas", icon: Target, permission: "acesso_demandas" },
+  { title: "Metas IRPF", url: "/metas", icon: Target, permission: "acesso_metas" },
   { title: "Clientes", url: "/clientes", icon: Users, permission: "acesso_demandas" },
   { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "acesso_configuracao" },
 ];
