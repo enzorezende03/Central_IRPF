@@ -134,12 +134,13 @@ export default function MetasIRPF() {
 /* ─────────────────────────────  HEADER  ───────────────────────────── */
 
 function Header({
-  seasons, selectedYear, onSelectYear, loadingSeasons,
+  seasons, selectedYear, onSelectYear, loadingSeasons, canManage,
 }: {
   seasons: any[];
   selectedYear: number | null;
   onSelectYear: (y: number) => void;
   loadingSeasons: boolean;
+  canManage: boolean;
 }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
