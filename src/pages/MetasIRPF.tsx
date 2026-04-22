@@ -23,9 +23,14 @@ import {
   daysBetween, toISODate, addDays,
 } from "@/lib/goals-utils";
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Legend, Tooltip as RTooltip,
+  ResponsiveContainer, LineChart, Line as RLine, XAxis as RXAxis, YAxis as RYAxis, CartesianGrid,
+  Legend as RLegend, Tooltip as RTip,
 } from "recharts";
+const Line = RLine as any;
+const XAxis = RXAxis as any;
+const YAxis = RYAxis as any;
+const Legend = RLegend as any;
+const RTooltip = RTip as any;
 import { toast } from "@/hooks/use-toast";
 
 export default function MetasIRPF() {
