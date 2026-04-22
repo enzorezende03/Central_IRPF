@@ -35,6 +35,10 @@ const RTooltip = RTip as any;
 import { toast } from "@/hooks/use-toast";
 
 export default function MetasIRPF() {
+  const { hasPermission, loading: authLoading } = useAuth();
+  const canView = hasPermission("acesso_metas");
+  const canManage = hasPermission("gerenciar_metas");
+
   const { data: seasons = [], isLoading: loadingSeasons } = useSeasons();
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
@@ -51,6 +55,29 @@ export default function MetasIRPF() {
     [seasons, selectedYear]
   );
 
+  if (!authLoading && !canView) {
+    return (
+      <InternalLayout>
+        <div className="container mx-auto py-12 px-4 max-w-2xl">
+          <Card className="border-dashed">
+            <CardContent className="py-16 flex flex-col items-center justify-center text-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-muted grid place-items-center">
+                <Lock className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Acesso restrito</h3>
+                <p className="text-sm text-muted-foreground max-w-md mt-1">
+                  Você não tem permissão para visualizar as Metas IRPF. Solicite ao
+                  administrador a liberação da permissão <strong>Visualizar Metas IRPF</strong>.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </InternalLayout>
+    );
+  }
+
   return (
     <InternalLayout>
       <div className="container mx-auto py-6 px-4 space-y-6 max-w-[1400px]">
@@ -59,10 +86,19 @@ export default function MetasIRPF() {
           selectedYear={selectedYear}
           onSelectYear={setSelectedYear}
           loadingSeasons={loadingSeasons}
+          canManage={canManage}
         />
 
         {!season && !loadingSeasons && (
-          <EmptyState onCreate={(year) => setSelectedYear(year)} />
+          canManage ? (
+            <EmptyState onCreate={(year) => setSelectedYear(year)} />
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="py-16 text-center text-sm text-muted-foreground">
+                Nenhuma temporada configurada. Solicite ao administrador a criação de uma temporada.
+              </CardContent>
+            </Card>
+          )
         )}
 
         {season && (
@@ -70,7 +106,9 @@ export default function MetasIRPF() {
             <TabsList className="bg-muted/50">
               <TabsTrigger value="overview" className="gap-2"><Activity className="h-4 w-4" /> Visão Geral</TabsTrigger>
               <TabsTrigger value="weekly" className="gap-2"><Calendar className="h-4 w-4" /> Metas Semanais</TabsTrigger>
-              <TabsTrigger value="config" className="gap-2"><Target className="h-4 w-4" /> Configuração</TabsTrigger>
+              {canManage && (
+                <TabsTrigger value="config" className="gap-2"><Target className="h-4 w-4" /> Configuração</TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -78,12 +116,14 @@ export default function MetasIRPF() {
             </TabsContent>
 
             <TabsContent value="weekly" className="space-y-6">
-              <WeeklyBlock season={season} />
+              <WeeklyBlock season={season} canManage={canManage} />
             </TabsContent>
 
-            <TabsContent value="config" className="space-y-6">
-              <ConfigBlock season={season} onYearChange={setSelectedYear} />
-            </TabsContent>
+            {canManage && (
+              <TabsContent value="config" className="space-y-6">
+                <ConfigBlock season={season} onYearChange={setSelectedYear} />
+              </TabsContent>
+            )}
           </Tabs>
         )}
       </div>
