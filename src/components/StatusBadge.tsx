@@ -7,6 +7,7 @@ const statusColors: Record<DemandStatus, string> = {
   documentos_em_analise: "bg-info/15 text-info border-info/30",
   em_andamento: "bg-primary/15 text-primary border-primary/30",
   pendencia: "bg-destructive/15 text-destructive border-destructive/30",
+  previa_enviada: "bg-purple-500/15 text-purple-600 border-purple-500/30",
   finalizado: "bg-success/15 text-success border-success/30",
   impedida: "bg-rose-500/15 text-rose-600 border-rose-500/30",
   reaberta: "bg-teal-500/15 text-teal-600 border-teal-500/30",
