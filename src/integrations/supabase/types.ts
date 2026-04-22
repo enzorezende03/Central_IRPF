@@ -138,6 +138,45 @@ export type Database = {
           },
         ]
       }
+      case_pendencias: {
+        Row: {
+          case_id: string
+          client_response: string | null
+          created_at: string
+          created_by_name: string | null
+          description: string
+          id: string
+          resolved_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          client_response?: string | null
+          created_at?: string
+          created_by_name?: string | null
+          description: string
+          id?: string
+          resolved_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          client_response?: string | null
+          created_at?: string
+          created_by_name?: string | null
+          description?: string
+          id?: string
+          resolved_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       case_questions: {
         Row: {
           answer_type: Database["public"]["Enums"]["answer_type"]
