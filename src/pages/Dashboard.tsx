@@ -6,7 +6,7 @@ import {
   ArrowRight, Filter,
   FileText, Bell, Send, Ban,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { StatCard } from "@/components/StatCard";
 import { InternalLayout } from "@/components/InternalLayout";
