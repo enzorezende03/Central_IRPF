@@ -174,13 +174,18 @@ function OverviewBlock({ season }: { season: any }) {
 
   const totalGoal = weeks.reduce((s, w) => s + (w.goal_count || 0), 0);
 
-  // Per-week realized
+  // Per-week realized.
+  // Week 1 absorbs everything done BEFORE or DURING its window (includes pre-season
+  // work). Subsequent weeks count only items completed within their own range.
   const realizedPerWeek = weeks.map((w) => {
     const ws = parseISODate(w.week_start);
     const we = parseISODate(w.week_end);
+    const isFirst = w.week_number === 1;
     const count = finalized.filter((f) => {
       const d = new Date(f.updated_at);
-      return d >= ws && d <= addDays(we, 1);
+      const upper = d < addDays(we, 1);
+      const lower = isFirst ? true : d >= ws;
+      return upper && lower;
     }).length;
     return { ...w, realized: count };
   });
