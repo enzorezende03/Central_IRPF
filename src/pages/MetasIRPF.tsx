@@ -624,13 +624,17 @@ function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean })
                           {formatBR(ws)} a {formatBR(we)}
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={currentGoal}
-                            onChange={(e) => setEdits((p) => ({ ...p, [w.id]: Math.max(0, Number(e.target.value) || 0) }))}
-                            className="h-8 w-24"
-                          />
+                          {canManage ? (
+                            <Input
+                              type="number"
+                              min={0}
+                              value={currentGoal}
+                              onChange={(e) => setEdits((p) => ({ ...p, [w.id]: Math.max(0, Number(e.target.value) || 0) }))}
+                              className="h-8 w-24"
+                            />
+                          ) : (
+                            <span className="font-semibold">{currentGoal}</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-center font-semibold">{realized}</TableCell>
                         <TableCell className={`text-center font-medium ${diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : ""}`}>
