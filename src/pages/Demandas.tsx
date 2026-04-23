@@ -99,11 +99,17 @@ export default function Demandas() {
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
       const matchInternal = internalStatusFilter === "all" || c.status === internalStatusFilter;
       const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
+      let matchProc = true;
+      if (procuracaoFilter !== "all") {
+        const procItem = (c.internal_checklist ?? []).find((it: any) => it.label?.toLowerCase().includes("procura"));
+        const hasProc = !!procItem?.checked;
+        matchProc = procuracaoFilter === "ok" ? hasProc : !hasProc;
+      }
       // Hide dispensadas unless explicitly filtered
       if (c.status === "dispensada" && internalStatusFilter !== "dispensada") return false;
       if (c.status === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
       }
-      return matchSearch && matchTag && matchOwner && matchInternal && matchClient;
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchProc;
     });
     if (sortField) {
       list.sort((a, b) => {
