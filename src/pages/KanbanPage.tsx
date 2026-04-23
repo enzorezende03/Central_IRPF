@@ -66,9 +66,15 @@ export default function KanbanPage() {
       const matchOwner = ownerFilter === "all" || (ownerFilter === "__none__" ? !c.internal_owner : c.internal_owner === ownerFilter);
       const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
       const matchTag = tagFilter === "all" || (c.clients?.tags?.includes(tagFilter) ?? false);
-      return matchSearch && matchOwner && matchPriority && matchTag;
+      let matchProc = true;
+      if (procuracaoFilter !== "all") {
+        const procItem = (c.internal_checklist ?? []).find((it: any) => it.label?.toLowerCase().includes("procura"));
+        const hasProc = !!procItem?.checked;
+        matchProc = procuracaoFilter === "ok" ? hasProc : !hasProc;
+      }
+      return matchSearch && matchOwner && matchPriority && matchTag && matchProc;
     });
-  }, [cases, search, ownerFilter, priorityFilter, tagFilter]);
+  }, [cases, search, ownerFilter, priorityFilter, tagFilter, procuracaoFilter]);
 
   return (
     <InternalLayout>
