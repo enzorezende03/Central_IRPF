@@ -183,6 +183,16 @@ export default function Demandas() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={procuracaoFilter} onValueChange={setProcuracaoFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Procuração" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Procuração: todas</SelectItem>
+                <SelectItem value="ok">Com procuração</SelectItem>
+                <SelectItem value="missing">Sem procuração</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
