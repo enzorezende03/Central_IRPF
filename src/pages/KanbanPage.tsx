@@ -27,6 +27,7 @@ export default function KanbanPage() {
   const [ownerFilter, setOwnerFilter] = useState(saved.ownerFilter ?? "all");
   const [priorityFilter, setPriorityFilter] = useState(saved.priorityFilter ?? "all");
   const [tagFilter, setTagFilter] = useState(saved.tagFilter ?? "all");
+  const [procuracaoFilter, setProcuracaoFilter] = useState(saved.procuracaoFilter ?? "all");
 
   // Apply saved DB filters only if no localStorage filters exist
   useEffect(() => {
@@ -40,9 +41,9 @@ export default function KanbanPage() {
 
   useEffect(() => {
     localStorage.setItem(KANBAN_FILTERS_KEY, JSON.stringify({
-      search, ownerFilter, priorityFilter, tagFilter,
+      search, ownerFilter, priorityFilter, tagFilter, procuracaoFilter,
     }));
-  }, [search, ownerFilter, priorityFilter, tagFilter]);
+  }, [search, ownerFilter, priorityFilter, tagFilter, procuracaoFilter]);
 
   const owners = useMemo(() => {
     const set = new Set<string>();
@@ -65,9 +66,15 @@ export default function KanbanPage() {
       const matchOwner = ownerFilter === "all" || (ownerFilter === "__none__" ? !c.internal_owner : c.internal_owner === ownerFilter);
       const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
       const matchTag = tagFilter === "all" || (c.clients?.tags?.includes(tagFilter) ?? false);
-      return matchSearch && matchOwner && matchPriority && matchTag;
+      let matchProc = true;
+      if (procuracaoFilter !== "all") {
+        const procItem = (c.internal_checklist ?? []).find((it: any) => it.label?.toLowerCase().includes("procura"));
+        const hasProc = !!procItem?.checked;
+        matchProc = procuracaoFilter === "ok" ? hasProc : !hasProc;
+      }
+      return matchSearch && matchOwner && matchPriority && matchTag && matchProc;
     });
-  }, [cases, search, ownerFilter, priorityFilter, tagFilter]);
+  }, [cases, search, ownerFilter, priorityFilter, tagFilter, procuracaoFilter]);
 
   return (
     <InternalLayout>
@@ -104,6 +111,16 @@ export default function KanbanPage() {
             <SelectContent>
               <SelectItem value="all">Todas tags</SelectItem>
               {tags.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={procuracaoFilter} onValueChange={setProcuracaoFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Procuração" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Procuração: todas</SelectItem>
+              <SelectItem value="ok">Com procuração</SelectItem>
+              <SelectItem value="missing">Sem procuração</SelectItem>
             </SelectContent>
           </Select>
         </div>

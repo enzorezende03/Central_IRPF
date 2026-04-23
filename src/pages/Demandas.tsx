@@ -39,6 +39,7 @@ export default function Demandas() {
   const [ownerFilter, setOwnerFilter] = useState(initialOwner);
   const [internalStatusFilter, setInternalStatusFilter] = useState(initialStatus);
   const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
+  const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
   const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
@@ -59,14 +60,14 @@ export default function Demandas() {
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
-      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir, pageSize,
+      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, procuracaoFilter, sortField, sortDir, pageSize,
     }));
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, procuracaoFilter, sortField, sortDir, pageSize]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, procuracaoFilter, sortField, sortDir, pageSize]);
 
   const handleSort = (field: "cliente" | "ano") => {
     if (sortField === field) {
@@ -98,11 +99,17 @@ export default function Demandas() {
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
       const matchInternal = internalStatusFilter === "all" || c.status === internalStatusFilter;
       const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
+      let matchProc = true;
+      if (procuracaoFilter !== "all") {
+        const procItem = (c.internal_checklist ?? []).find((it: any) => it.label?.toLowerCase().includes("procura"));
+        const hasProc = !!procItem?.checked;
+        matchProc = procuracaoFilter === "ok" ? hasProc : !hasProc;
+      }
       // Hide dispensadas unless explicitly filtered
       if (c.status === "dispensada" && internalStatusFilter !== "dispensada") return false;
       if (c.status === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
       }
-      return matchSearch && matchTag && matchOwner && matchInternal && matchClient;
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchProc;
     });
     if (sortField) {
       list.sort((a, b) => {
@@ -174,6 +181,16 @@ export default function Demandas() {
                 {Object.entries(STATUS_LABELS).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={procuracaoFilter} onValueChange={setProcuracaoFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Procuração" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Procuração: todas</SelectItem>
+                <SelectItem value="ok">Com procuração</SelectItem>
+                <SelectItem value="missing">Sem procuração</SelectItem>
               </SelectContent>
             </Select>
           </div>
