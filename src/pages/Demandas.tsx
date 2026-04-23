@@ -39,6 +39,7 @@ export default function Demandas() {
   const [ownerFilter, setOwnerFilter] = useState(initialOwner);
   const [internalStatusFilter, setInternalStatusFilter] = useState(initialStatus);
   const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
+  const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
   const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
