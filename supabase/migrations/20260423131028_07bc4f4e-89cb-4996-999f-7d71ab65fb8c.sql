@@ -1,0 +1,1 @@
+UPDATE public.irpf_cases SET docs_received_at = updated_at WHERE docs_received_at IS NULL AND status IN ('documentos_em_analise','em_andamento','previa_enviada','pendencia','finalizado');
