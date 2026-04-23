@@ -171,12 +171,17 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                         );
                       })()}
                     </div>
-                    {c.docs_received_at && status === "documentos_em_analise" && (
-                      <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Recebido: {new Date(c.docs_received_at).toLocaleDateString("pt-BR")}
-                      </p>
-                    )}
+                    {status === "documentos_em_analise" && (() => {
+                      const receivedDate = c.docs_received_at ?? c.updated_at;
+                      if (!receivedDate) return null;
+                      return (
+                        <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Recebido: {new Date(receivedDate).toLocaleDateString("pt-BR")}
+                          {!c.docs_received_at && <span className="opacity-60">(aprox.)</span>}
+                        </p>
+                      );
+                    })()}
                     {billing && (
                       <p className="text-xs font-medium mt-1.5 text-right text-muted-foreground">
                         {fmt(billing.amount)}
