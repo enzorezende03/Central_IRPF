@@ -27,6 +27,7 @@ export default function KanbanPage() {
   const [ownerFilter, setOwnerFilter] = useState(saved.ownerFilter ?? "all");
   const [priorityFilter, setPriorityFilter] = useState(saved.priorityFilter ?? "all");
   const [tagFilter, setTagFilter] = useState(saved.tagFilter ?? "all");
+  const [procuracaoFilter, setProcuracaoFilter] = useState(saved.procuracaoFilter ?? "all");
 
   // Apply saved DB filters only if no localStorage filters exist
   useEffect(() => {
