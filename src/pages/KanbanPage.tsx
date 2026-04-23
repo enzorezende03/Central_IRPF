@@ -113,6 +113,16 @@ export default function KanbanPage() {
               {tags.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={procuracaoFilter} onValueChange={setProcuracaoFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Procuração" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Procuração: todas</SelectItem>
+              <SelectItem value="ok">Com procuração</SelectItem>
+              <SelectItem value="missing">Sem procuração</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {isLoading ? (
