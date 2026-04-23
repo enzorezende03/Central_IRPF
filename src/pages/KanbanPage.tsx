@@ -41,9 +41,9 @@ export default function KanbanPage() {
 
   useEffect(() => {
     localStorage.setItem(KANBAN_FILTERS_KEY, JSON.stringify({
-      search, ownerFilter, priorityFilter, tagFilter,
+      search, ownerFilter, priorityFilter, tagFilter, procuracaoFilter,
     }));
-  }, [search, ownerFilter, priorityFilter, tagFilter]);
+  }, [search, ownerFilter, priorityFilter, tagFilter, procuracaoFilter]);
 
   const owners = useMemo(() => {
     const set = new Set<string>();
