@@ -45,7 +45,7 @@ function fmtDate(d: string) {
   return format(new Date(d), "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
 
-import { getPortalUrl, getWhatsAppMessage, logTimelineEvent } from "@/lib/portal-utils";
+import { getPortalUrl, getWhatsAppMessage, getPendingDocsMessage, logTimelineEvent } from "@/lib/portal-utils";
 import { PendenciasCard } from "@/components/PendenciasCard";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 
@@ -555,6 +555,21 @@ export default function ClientDetail() {
                 <Button variant="outline" size="sm" className="text-xs" onClick={() => copyToClipboard(whatsappMsg, "Mensagem WhatsApp", "WhatsApp copiado", `Mensagem WhatsApp copiada para ${client?.full_name}`)}>
                   <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
                 </Button>
+                {(() => {
+                  const pendingList = docRequests.filter((d) => d.status === "pendente" || d.status === "rejeitado");
+                  if (pendingList.length === 0) return null;
+                  const msg = getPendingDocsMessage(clientName, linkId, pendingList.map((p) => ({ title: p.title, status: p.status })));
+                  return (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs bg-warning/10 border-warning/40 text-warning hover:bg-warning/20"
+                      onClick={() => copyToClipboard(msg, "Cobrança de documentos", "Cobrança copiada", `Mensagem de cobrança de ${pendingList.length} documento(s) copiada para ${client?.full_name}`)}
+                    >
+                      <Copy className="h-3.5 w-3.5 mr-1" /> Cobrar docs ({pendingList.length})
+                    </Button>
+                  );
+                })()}
                 <Button variant="outline" size="sm" className="text-xs" onClick={handleOpenPortal}>
                   <Eye className="h-3.5 w-3.5 mr-1" /> Abrir
                 </Button>
