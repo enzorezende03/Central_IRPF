@@ -45,7 +45,7 @@ function fmtDate(d: string) {
   return format(new Date(d), "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
 
-import { getPortalUrl, getWhatsAppMessage, logTimelineEvent } from "@/lib/portal-utils";
+import { getPortalUrl, getWhatsAppMessage, getPendingDocsMessage, logTimelineEvent } from "@/lib/portal-utils";
 import { PendenciasCard } from "@/components/PendenciasCard";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 
