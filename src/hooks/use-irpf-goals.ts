@@ -130,19 +130,26 @@ export function useUpdateWeeklyGoal() {
  */
 export function useFinalizedCasesInRange(start: string | undefined, end: string | undefined) {
   return useQuery({
-    queryKey: ["irpf_realized_in_range", end],
+    queryKey: ["irpf_realized_in_range", start, end],
     enabled: !!start && !!end,
+    // Always refetch fresh — counts must reflect newly finalized cases
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    refetchInterval: 60_000, // also poll once a minute while the page is open
     queryFn: async () => {
       // include the end day fully
       const endDate = new Date(`${end}T00:00:00`);
       endDate.setDate(endDate.getDate() + 1);
       const endIso = endDate.toISOString();
 
+      // Fetch with a high page size to bypass the default 1000-row limit safely.
       const { data, error } = await supabase
         .from("irpf_cases")
         .select("id, status, updated_at, created_at")
         .in("status", ["finalizado", "previa_enviada"])
-        .lt("updated_at", endIso);
+        .lt("updated_at", endIso)
+        .limit(10000);
       if (error) throw error;
       return data || [];
     },
