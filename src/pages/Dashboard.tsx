@@ -59,11 +59,7 @@ export default function Dashboard() {
 
   const total = filtered.length;
   const byStatus = (s: CaseStatus) => filtered.filter((c) => c.status === s).length;
-  const previaEnviada = filtered.filter((c) => {
-    if (c.status === "finalizado") return false;
-    const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
-    return fd?.preview_file_url && fd?.preview_status !== "aprovado";
-  }).length;
+  const previaEnviada = filtered.filter((c) => c.status === "previa_enviada").length;
 
   // Navegar para Demandas com o filtro do card
   const goToDemandasWithFilter = (key: string) => {
