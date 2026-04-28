@@ -703,28 +703,57 @@ export default function ClientDetail() {
                        variant="outline"
                        size="sm"
                        className="mt-2 w-full text-xs"
-                       onClick={async (e) => {
-                         e.stopPropagation();
-                         toast.info("Iniciando download dos documentos...");
-                         for (const doc of uploadedDocs) {
-                           try {
-                             const res = await fetch(doc.file_url);
-                             const blob = await res.blob();
-                             const a = document.createElement("a");
-                             a.href = URL.createObjectURL(blob);
-                             a.download = doc.file_name;
-                             document.body.appendChild(a);
-                             a.click();
-                             document.body.removeChild(a);
-                             URL.revokeObjectURL(a.href);
-                             // Small delay between downloads to avoid browser blocking
-                             await new Promise((r) => setTimeout(r, 500));
-                           } catch {
-                             toast.error(`Erro ao baixar: ${doc.file_name}`);
-                           }
-                         }
-                         toast.success(`${uploadedDocs.length} documento(s) baixado(s)!`);
-                       }}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          toast.info("Compactando documentos em .zip...");
+                          try {
+                            const JSZip = (await import("jszip")).default;
+                            const zip = new JSZip();
+                            const usedNames = new Map<string, number>();
+                            let failures = 0;
+
+                            await Promise.all(
+                              uploadedDocs.map(async (doc) => {
+                                try {
+                                  const res = await fetch(doc.file_url);
+                                  if (!res.ok) throw new Error("fetch failed");
+                                  const blob = await res.blob();
+                                  let name = doc.file_name;
+                                  const count = usedNames.get(name) ?? 0;
+                                  if (count > 0) {
+                                    const dot = name.lastIndexOf(".");
+                                    name = dot > 0
+                                      ? `${name.slice(0, dot)} (${count})${name.slice(dot)}`
+                                      : `${name} (${count})`;
+                                  }
+                                  usedNames.set(doc.file_name, count + 1);
+                                  zip.file(name, blob);
+                                } catch {
+                                  failures++;
+                                }
+                              }),
+                            );
+
+                            const zipBlob = await zip.generateAsync({ type: "blob" });
+                            const safeClient = (clientName || "cliente").replace(/[^a-zA-Z0-9._-]+/g, "_");
+                            const fileName = `documentos_${safeClient}_${caseData.base_year}.zip`;
+                            const a = document.createElement("a");
+                            a.href = URL.createObjectURL(zipBlob);
+                            a.download = fileName;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(a.href);
+
+                            if (failures > 0) {
+                              toast.warning(`${uploadedDocs.length - failures} baixados, ${failures} falharam.`);
+                            } else {
+                              toast.success(`${uploadedDocs.length} documento(s) baixados em .zip!`);
+                            }
+                          } catch (err) {
+                            toast.error("Erro ao gerar arquivo .zip");
+                          }
+                        }}
                      >
                        <Download className="h-3.5 w-3.5 mr-1.5" />
                        Baixar Todos ({uploadedDocs.length})
