@@ -256,18 +256,26 @@ function OverviewBlock({ season }: { season: any }) {
     };
   });
 
-  // Projection — only meaningful while the season is in progress.
-  // Pre-season: averages would divide by 0 (or be inflated by pre-season work).
-  // Post-season: just show what was achieved.
-  const projectionAvailable = seasonStarted && !seasonEnded && elapsedDays > 0;
-  const avgPerDay = projectionAvailable ? totalFinalized / elapsedDays : 0;
+  // Projection — média móvel dos últimos 7 dias (mais responsiva ao ritmo atual,
+  // evita distorção de picos antigos ou trabalho pré-temporada).
+  const projectionAvailable = seasonStarted && !seasonEnded;
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // janela inclusiva de 7 dias
+  const windowStart = sevenDaysAgo < start ? start : sevenDaysAgo;
+  const windowDays = Math.max(1, daysBetween(windowStart, today) + 1);
+  const finalizedInWindow = finalized.filter((f) => {
+    const d = new Date(f.updated_at);
+    return d >= windowStart && d <= new Date(today.getTime() + 86400000 - 1);
+  }).length;
+  const avgPerDay = projectionAvailable ? finalizedInWindow / windowDays : 0;
   const avgPerWeek = avgPerDay * 7;
   const projection = projectionAvailable
-    ? Math.round(avgPerDay * totalSeasonDays)
+    ? totalFinalized + Math.round(avgPerDay * daysRemaining)
     : seasonEnded
     ? totalFinalized
     : 0;
   const willMissGoal = projectionAvailable && totalPlanned > 0 && projection < totalPlanned;
+
 
   const statusVsGoal = realAcc - goalAcc;
 
