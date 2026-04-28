@@ -57,7 +57,7 @@ export default function Dashboard() {
     return cases.filter((c) => c.internal_owner === ownerFilter);
   }, [cases, ownerFilter]);
 
-  const total = filtered.length;
+  const total = filtered.filter((c) => c.status !== "dispensada").length;
   const byStatus = (s: CaseStatus) => filtered.filter((c) => c.status === s).length;
   const previaEnviada = filtered.filter((c) => c.status === "previa_enviada").length;
 
