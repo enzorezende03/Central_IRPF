@@ -100,6 +100,23 @@ export function NewCaseDialog() {
     mutationFn: async () => {
       if (!clientId) throw new Error("Selecione um cliente.");
       const selectedClient = clients.find((c) => c.id === clientId);
+      const yearNum = Number(baseYear);
+
+      // Validação: impedir demanda duplicada para mesmo cliente + ano-base (ignorando dispensadas)
+      const { data: existing, error: checkErr } = await supabase
+        .from("irpf_cases")
+        .select("id, status")
+        .eq("client_id", clientId)
+        .eq("base_year", yearNum)
+        .neq("status", "dispensada")
+        .limit(1);
+      if (checkErr) throw checkErr;
+      if (existing && existing.length > 0) {
+        throw new Error(
+          `Já existe uma demanda ativa para este cliente no ano-base ${yearNum}. Para criar uma nova demanda, escolha um ano-base diferente.`
+        );
+      }
+
       const token = generateToken();
       const slug = generateSlug(selectedClient?.full_name ?? "cliente");
       // Create case
