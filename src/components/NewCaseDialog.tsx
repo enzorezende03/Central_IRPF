@@ -124,8 +124,8 @@ export function NewCaseDialog() {
         .from("irpf_cases")
         .insert({
           client_id: clientId,
-          base_year: Number(baseYear),
-          tax_year: Number(baseYear) + 1,
+          base_year: yearNum,
+          tax_year: yearNum + 1,
           internal_owner: owner.trim() || null,
           priority: priority as any,
           portal_token: token,
