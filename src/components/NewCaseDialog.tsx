@@ -207,6 +207,15 @@ export function NewCaseDialog() {
       navigate(`/demandas/${caseId}`);
     },
     onError: (err: any) => {
+      const isDuplicate =
+        err?.code === "23505" ||
+        (typeof err?.message === "string" && err.message.includes("irpf_cases_unique_client_year"));
+      if (isDuplicate) {
+        toast.error(
+          `Já existe uma demanda ativa para este cliente no ano-base ${baseYear}. Escolha um ano-base diferente.`
+        );
+        return;
+      }
       toast.error(err.message || "Erro ao criar demanda.");
     },
   });
