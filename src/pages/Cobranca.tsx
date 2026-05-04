@@ -67,7 +67,13 @@ export default function Cobranca() {
       const billing = c.billing?.[0];
       const matchBilling = billingFilter === "all" || billing?.billing_status === billingFilter;
       const matchType = typeFilter === "all" || billing?.billing_type === typeFilter;
-      return matchSearch && matchBilling && matchType;
+      const tags = (c.clients?.tags ?? []) as string[];
+      const matchUnit =
+        unitFilter === "all" ||
+        (unitFilter === "2mc" && tags.includes("2M Contabilidade")) ||
+        (unitFilter === "2ms" && tags.includes("2M Saúde"));
+      const matchStatus = statusFilter === "all" || c.status === statusFilter;
+      return matchSearch && matchBilling && matchType && matchUnit && matchStatus;
     });
     if (sortField) {
       list.sort((a, b) => {
