@@ -5,7 +5,7 @@ import {
 import { Link } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatCard } from "@/components/StatCard";
-import { BillingBadge } from "@/components/StatusBadge";
+import { BillingBadge, StatusBadge } from "@/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
