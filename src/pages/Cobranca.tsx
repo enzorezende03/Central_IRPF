@@ -27,6 +27,8 @@ export default function Cobranca() {
   const [search, setSearch] = useState("");
   const [billingFilter, setBillingFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [unitFilter, setUnitFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   type SortField = "cliente" | "honorario" | "data_pgto" | null;
   type SortDir = "asc" | "desc";
   const [sortField, setSortField] = useState<SortField>(null);
