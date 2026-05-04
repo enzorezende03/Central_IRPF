@@ -203,6 +203,9 @@ export default function Cobranca() {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" onClick={handleExportExcel} disabled={filtered.length === 0} className="whitespace-nowrap">
+            <Download className="h-4 w-4 mr-2" /> Exportar Excel
+          </Button>
         </div>
 
         {/* Table */}
