@@ -189,8 +189,10 @@ export default function Cobranca() {
                       {sortField === "cliente" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                     </span>
                   </TableHead>
-                  <TableHead className="w-[12%] hidden sm:table-cell">Responsável</TableHead>
-                  <TableHead className="w-[8%] hidden sm:table-cell">Tipo</TableHead>
+                  <TableHead className="hidden sm:table-cell whitespace-nowrap">Unidade</TableHead>
+                  <TableHead className="hidden md:table-cell whitespace-nowrap">Status IRPF</TableHead>
+                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tipo</TableHead>
                   <TableHead className="w-[11%] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("honorario")}>
                     <span className="flex items-center gap-1">
                       Honorário
