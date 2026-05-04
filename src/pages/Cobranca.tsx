@@ -91,7 +91,7 @@ export default function Cobranca() {
       });
     }
     return list;
-  }, [cases, search, billingFilter, typeFilter, sortField, sortDir]);
+  }, [cases, search, billingFilter, typeFilter, unitFilter, statusFilter, sortField, sortDir]);
 
   const handleQuickStatusChange = async (billingId: string, newStatus: BillingStatus) => {
     const updates = {
