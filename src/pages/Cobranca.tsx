@@ -108,6 +108,35 @@ export default function Cobranca() {
     }
   };
 
+  const handleExportExcel = () => {
+    const rows = filtered.map((c) => {
+      const b = c.billing?.[0];
+      const tags = (c.clients?.tags ?? []) as string[];
+      const unidades = [tags.includes("2M Contabilidade") && "2MC", tags.includes("2M Saúde") && "2MS"].filter(Boolean).join(" / ");
+      const isIncluso = (b as any)?.billing_type === "incluso_mensalidade";
+      return {
+        Cliente: c.clients?.full_name ?? "",
+        CPF: c.clients?.cpf ?? "",
+        Unidade: unidades || "—",
+        "Status IRPF": STATUS_LABELS[c.status as keyof typeof STATUS_LABELS] ?? c.status,
+        "Ano-base": c.base_year,
+        Responsável: c.internal_owner ?? "",
+        Tipo: isIncluso ? "Incluso na Mensalidade" : "Cobrança Extra",
+        "Honorário (R$)": b?.amount ?? 0,
+        "Status Cobrança": isIncluso && b?.billing_status === "pago" ? "Incluso no Honorário" : (b ? BILLING_LABELS[b.billing_status as keyof typeof BILLING_LABELS] : "Sem cobrança"),
+        "Data Pagamento": b?.payment_date ? new Date(b.payment_date).toLocaleDateString("pt-BR") : "",
+        "Forma Pagamento": b?.payment_method ?? "",
+        Observações: b?.notes ?? "",
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Cobranças");
+    const fname = `cobrancas_${new Date().toISOString().split("T")[0]}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    toast.success("Exportação concluída!");
+  };
+
   return (
     <InternalLayout>
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
