@@ -223,6 +223,21 @@ export default function Cobranca() {
                           {c.clients?.full_name}
                         </Link>
                       </TableCell>
+                      <TableCell className="hidden sm:table-cell whitespace-nowrap">
+                        {(() => {
+                          const tags = (c.clients?.tags ?? []) as string[];
+                          const has2mc = tags.includes("2M Contabilidade");
+                          const has2ms = tags.includes("2M Saúde");
+                          if (!has2mc && !has2ms) return <span className="text-xs text-muted-foreground">—</span>;
+                          return (
+                            <div className="flex gap-1">
+                              {has2mc && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-info/10 text-info">2MC</span>}
+                              {has2ms && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600">2MS</span>}
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell"><StatusBadge status={c.status as any} /></TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground truncate">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell className="hidden sm:table-cell">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${isIncluso ? "bg-success/10 text-success" : "bg-primary/10 text-primary"}`}>
