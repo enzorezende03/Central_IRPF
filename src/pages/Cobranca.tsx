@@ -5,7 +5,7 @@ import {
 import { Link } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatCard } from "@/components/StatCard";
-import { BillingBadge } from "@/components/StatusBadge";
+import { BillingBadge, StatusBadge } from "@/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useCases } from "@/hooks/use-cases";
-import { BILLING_LABELS, BILLING_TYPE_LABELS } from "@/lib/types";
+import { BILLING_LABELS, BILLING_TYPE_LABELS, STATUS_LABELS } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { EditBillingDialog } from "@/components/EditBillingDialog";
@@ -27,6 +27,8 @@ export default function Cobranca() {
   const [search, setSearch] = useState("");
   const [billingFilter, setBillingFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [unitFilter, setUnitFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   type SortField = "cliente" | "honorario" | "data_pgto" | null;
   type SortDir = "asc" | "desc";
   const [sortField, setSortField] = useState<SortField>(null);
@@ -65,7 +67,13 @@ export default function Cobranca() {
       const billing = c.billing?.[0];
       const matchBilling = billingFilter === "all" || billing?.billing_status === billingFilter;
       const matchType = typeFilter === "all" || billing?.billing_type === typeFilter;
-      return matchSearch && matchBilling && matchType;
+      const tags = (c.clients?.tags ?? []) as string[];
+      const matchUnit =
+        unitFilter === "all" ||
+        (unitFilter === "2mc" && tags.includes("2M Contabilidade")) ||
+        (unitFilter === "2ms" && tags.includes("2M Saúde"));
+      const matchStatus = statusFilter === "all" || c.status === statusFilter;
+      return matchSearch && matchBilling && matchType && matchUnit && matchStatus;
     });
     if (sortField) {
       list.sort((a, b) => {
@@ -83,7 +91,7 @@ export default function Cobranca() {
       });
     }
     return list;
-  }, [cases, search, billingFilter, typeFilter, sortField, sortDir]);
+  }, [cases, search, billingFilter, typeFilter, unitFilter, statusFilter, sortField, sortDir]);
 
   const handleQuickStatusChange = async (billingId: string, newStatus: BillingStatus) => {
     const updates = {
@@ -144,6 +152,27 @@ export default function Cobranca() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={unitFilter} onValueChange={setUnitFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Unidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas unidades</SelectItem>
+              <SelectItem value="2mc">2M Contabilidade</SelectItem>
+              <SelectItem value="2ms">2M Saúde</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Status IRPF" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos status IRPF</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Table */}
@@ -151,7 +180,7 @@ export default function Cobranca() {
           <Skeleton className="h-96 rounded-xl" />
         ) : (
           <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
-            <Table className="table-fixed w-full min-w-[900px]">
+            <Table className="w-full min-w-[1100px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[18%] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
@@ -160,8 +189,10 @@ export default function Cobranca() {
                       {sortField === "cliente" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                     </span>
                   </TableHead>
-                  <TableHead className="w-[12%] hidden sm:table-cell">Responsável</TableHead>
-                  <TableHead className="w-[8%] hidden sm:table-cell">Tipo</TableHead>
+                  <TableHead className="hidden sm:table-cell whitespace-nowrap">Unidade</TableHead>
+                  <TableHead className="hidden md:table-cell whitespace-nowrap">Status IRPF</TableHead>
+                  <TableHead className="hidden sm:table-cell">Responsável</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tipo</TableHead>
                   <TableHead className="w-[11%] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("honorario")}>
                     <span className="flex items-center gap-1">
                       Honorário
@@ -192,6 +223,21 @@ export default function Cobranca() {
                           {c.clients?.full_name}
                         </Link>
                       </TableCell>
+                      <TableCell className="hidden sm:table-cell whitespace-nowrap">
+                        {(() => {
+                          const tags = (c.clients?.tags ?? []) as string[];
+                          const has2mc = tags.includes("2M Contabilidade");
+                          const has2ms = tags.includes("2M Saúde");
+                          if (!has2mc && !has2ms) return <span className="text-xs text-muted-foreground">—</span>;
+                          return (
+                            <div className="flex gap-1">
+                              {has2mc && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-info/10 text-info">2MC</span>}
+                              {has2ms && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600">2MS</span>}
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell"><StatusBadge status={c.status as any} /></TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground truncate">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell className="hidden sm:table-cell">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${isIncluso ? "bg-success/10 text-success" : "bg-primary/10 text-primary"}`}>
@@ -255,7 +301,7 @@ export default function Cobranca() {
                 })}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">
                       Nenhuma cobrança encontrada.
                     </TableCell>
                   </TableRow>
