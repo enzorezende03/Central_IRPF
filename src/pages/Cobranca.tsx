@@ -152,6 +152,27 @@ export default function Cobranca() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={unitFilter} onValueChange={setUnitFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Unidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas unidades</SelectItem>
+              <SelectItem value="2mc">2M Contabilidade</SelectItem>
+              <SelectItem value="2ms">2M Saúde</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Status IRPF" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos status IRPF</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Table */}
