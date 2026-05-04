@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import {
-  Search, DollarSign, TrendingUp, Ban, CheckCircle, Pencil, ArrowUpDown, ArrowUp, ArrowDown,
+  Search, DollarSign, TrendingUp, Ban, CheckCircle, Pencil, ArrowUpDown, ArrowUp, ArrowDown, Download,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { Link } from "react-router-dom";
 import { InternalLayout } from "@/components/InternalLayout";
 import { StatCard } from "@/components/StatCard";
