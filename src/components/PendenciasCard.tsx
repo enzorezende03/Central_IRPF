@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { AlertCircle, CheckCircle2, Plus, Trash2, Copy, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Plus, Trash2, Copy, Loader2, Paperclip, Download } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -55,6 +55,38 @@ export function PendenciasCard({
     },
     enabled: !!caseId,
   });
+
+  const { data: uploadedDocs = [] } = useQuery({
+    queryKey: ["case-uploaded-docs-pendencias", caseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("uploaded_documents")
+        .select("id, file_name, file_url, uploaded_at, uploaded_by")
+        .eq("case_id", caseId)
+        .eq("uploaded_by", "client")
+        .order("uploaded_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!caseId,
+  });
+
+  // Extract attached file names from a client_response string
+  const parseAttachedNames = (response: string | null): string[] => {
+    if (!response) return [];
+    const match = response.match(/📎\s*Documentos anexados:\s*(.+?)(?:\n|$)/);
+    if (!match) return [];
+    return match[1].split(",").map((s) => s.trim()).filter(Boolean);
+  };
+
+  // Strip the "Documentos anexados" line so we display only the textual reply
+  const stripAttachmentsLine = (response: string | null): string => {
+    if (!response) return "";
+    return response.replace(/\n*📎\s*Documentos anexados:.+?(?:\n|$)/g, "").trim();
+  };
+
+  const findDocByName = (name: string) =>
+    uploadedDocs.find((d) => d.file_name === name);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["case-pendencias", caseId] });
 
@@ -195,28 +227,66 @@ export function PendenciasCard({
             <div className="pt-2 border-t">
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Resolvidas</p>
               <div className="space-y-2">
-                {resolvidas.map((p) => (
-                  <div key={p.id} className="rounded-lg border bg-muted/30 p-2.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium line-through opacity-70">{p.title}</p>
-                        {p.client_response && (
-                          <p className="text-xs text-muted-foreground mt-1 italic">
-                            Resposta do cliente: "{p.client_response}"
-                          </p>
-                        )}
-                        {p.resolved_at && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            Resolvida em {format(new Date(p.resolved_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                          </p>
-                        )}
+                {resolvidas.map((p) => {
+                  const attachedNames = parseAttachedNames(p.client_response);
+                  const responseText = stripAttachmentsLine(p.client_response);
+                  return (
+                    <div key={p.id} className="rounded-lg border bg-muted/30 p-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium line-through opacity-70">{p.title}</p>
+                          {responseText && (
+                            <p className="text-xs text-muted-foreground mt-1 italic whitespace-pre-wrap">
+                              Resposta do cliente: "{responseText}"
+                            </p>
+                          )}
+                          {attachedNames.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                                <Paperclip className="h-3 w-3" />
+                                Documentos anexados:
+                              </p>
+                              <ul className="space-y-1">
+                                {attachedNames.map((name, i) => {
+                                  const doc = findDocByName(name);
+                                  return (
+                                    <li key={i} className="text-xs">
+                                      {doc ? (
+                                        <a
+                                          href={doc.file_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 text-primary hover:underline break-all"
+                                        >
+                                          <Download className="h-3 w-3 shrink-0" />
+                                          {name}
+                                        </a>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-muted-foreground break-all">
+                                          <Paperclip className="h-3 w-3 shrink-0" />
+                                          {name}
+                                          <span className="text-[10px] opacity-70">(arquivo não localizado)</span>
+                                        </span>
+                                      )}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          )}
+                          {p.resolved_at && (
+                            <p className="text-[10px] text-muted-foreground mt-1.5">
+                              Resolvida em {format(new Date(p.resolved_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            </p>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(p.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(p.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
