@@ -180,7 +180,7 @@ export default function Cobranca() {
           <Skeleton className="h-96 rounded-xl" />
         ) : (
           <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
-            <Table className="table-fixed w-full min-w-[900px]">
+            <Table className="w-full min-w-[1100px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[18%] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
