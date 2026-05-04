@@ -56,6 +56,38 @@ export function PendenciasCard({
     enabled: !!caseId,
   });
 
+  const { data: uploadedDocs = [] } = useQuery({
+    queryKey: ["case-uploaded-docs-pendencias", caseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("uploaded_documents")
+        .select("id, file_name, file_url, uploaded_at, uploaded_by")
+        .eq("case_id", caseId)
+        .eq("uploaded_by", "client")
+        .order("uploaded_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!caseId,
+  });
+
+  // Extract attached file names from a client_response string
+  const parseAttachedNames = (response: string | null): string[] => {
+    if (!response) return [];
+    const match = response.match(/📎\s*Documentos anexados:\s*(.+?)(?:\n|$)/);
+    if (!match) return [];
+    return match[1].split(",").map((s) => s.trim()).filter(Boolean);
+  };
+
+  // Strip the "Documentos anexados" line so we display only the textual reply
+  const stripAttachmentsLine = (response: string | null): string => {
+    if (!response) return "";
+    return response.replace(/\n*📎\s*Documentos anexados:.+?(?:\n|$)/g, "").trim();
+  };
+
+  const findDocByName = (name: string) =>
+    uploadedDocs.find((d) => d.file_name === name);
+
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["case-pendencias", caseId] });
 
   const abertas = pendencias.filter((p) => p.status === "aberta");
