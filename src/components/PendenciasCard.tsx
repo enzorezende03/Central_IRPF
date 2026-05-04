@@ -227,28 +227,66 @@ export function PendenciasCard({
             <div className="pt-2 border-t">
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Resolvidas</p>
               <div className="space-y-2">
-                {resolvidas.map((p) => (
-                  <div key={p.id} className="rounded-lg border bg-muted/30 p-2.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium line-through opacity-70">{p.title}</p>
-                        {p.client_response && (
-                          <p className="text-xs text-muted-foreground mt-1 italic">
-                            Resposta do cliente: "{p.client_response}"
-                          </p>
-                        )}
-                        {p.resolved_at && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            Resolvida em {format(new Date(p.resolved_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                          </p>
-                        )}
+                {resolvidas.map((p) => {
+                  const attachedNames = parseAttachedNames(p.client_response);
+                  const responseText = stripAttachmentsLine(p.client_response);
+                  return (
+                    <div key={p.id} className="rounded-lg border bg-muted/30 p-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium line-through opacity-70">{p.title}</p>
+                          {responseText && (
+                            <p className="text-xs text-muted-foreground mt-1 italic whitespace-pre-wrap">
+                              Resposta do cliente: "{responseText}"
+                            </p>
+                          )}
+                          {attachedNames.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                                <Paperclip className="h-3 w-3" />
+                                Documentos anexados:
+                              </p>
+                              <ul className="space-y-1">
+                                {attachedNames.map((name, i) => {
+                                  const doc = findDocByName(name);
+                                  return (
+                                    <li key={i} className="text-xs">
+                                      {doc ? (
+                                        <a
+                                          href={doc.file_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 text-primary hover:underline break-all"
+                                        >
+                                          <Download className="h-3 w-3 shrink-0" />
+                                          {name}
+                                        </a>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-muted-foreground break-all">
+                                          <Paperclip className="h-3 w-3 shrink-0" />
+                                          {name}
+                                          <span className="text-[10px] opacity-70">(arquivo não localizado)</span>
+                                        </span>
+                                      )}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          )}
+                          {p.resolved_at && (
+                            <p className="text-[10px] text-muted-foreground mt-1.5">
+                              Resolvida em {format(new Date(p.resolved_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            </p>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(p.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(p.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
