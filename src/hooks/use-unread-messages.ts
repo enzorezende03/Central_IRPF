@@ -16,7 +16,7 @@ export function useUnreadMessages() {
       // Get all messages from clients
       const { data: messages } = await supabase
         .from("case_messages")
-        .select("id, case_id, message, created_at, sender")
+        .select("id, case_id, message, created_at, sender, read_at")
         .order("created_at", { ascending: false });
 
       if (!messages || messages.length === 0) return [];
