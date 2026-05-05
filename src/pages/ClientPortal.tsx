@@ -795,12 +795,33 @@ function PreviewApprovalCard({
 }) {
   const [feedback, setFeedback] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showRevert, setShowRevert] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const del = deliverable as any;
 
   const previewStatus = del.preview_status as string;
   const isApproved = previewStatus === "aprovado";
   const isAdjustments = previewStatus === "ajustes_solicitados";
+  const approvedAt = del.preview_approved_at ? new Date(del.preview_approved_at).getTime() : null;
+  const REVERT_WINDOW_MS = 60 * 60 * 1000;
+  const msSinceApproval = approvedAt ? now - approvedAt : null;
+  const canRevert = isApproved && msSinceApproval !== null && msSinceApproval < REVERT_WINDOW_MS;
+  const msLeft = canRevert ? REVERT_WINDOW_MS - (msSinceApproval as number) : 0;
+
+  useEffect(() => {
+    if (!canRevert) return;
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, [canRevert]);
+
+  const formatCountdown = (ms: number) => {
+    const totalMin = Math.max(0, Math.floor(ms / 60000));
+    const m = totalMin % 60;
+    const h = Math.floor(totalMin / 60);
+    if (h > 0) return `${h}h${m.toString().padStart(2, "0")}min`;
+    return `${m} min`;
+  };
 
   const handleApprove = async () => {
     setSubmitting(true);
@@ -808,6 +829,7 @@ function PreviewApprovalCard({
       await supabase.from("final_deliverables").update({
         preview_status: "aprovado",
         preview_feedback: null,
+        preview_approved_at: new Date().toISOString(),
       } as any).eq("id", deliverable.id);
       await supabase.from("case_timeline").insert({
         case_id: caseId,
