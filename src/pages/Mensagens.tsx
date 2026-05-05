@@ -246,39 +246,44 @@ export default function Mensagens() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {filtered.map((thread) => (
+            {filtered.map((thread) => {
+              const isPending = !thread.isReplied && !thread.isRead;
+              return (
               <Card
                 key={thread.caseId}
                 className={`cursor-pointer transition-all hover:shadow-md hover:border-primary/30 ${
-                  !thread.isReplied ? "border-l-4 border-l-destructive" : ""
+                  isPending ? "border-l-4 border-l-destructive" : ""
                 }`}
                 onClick={() => navigate(`/demandas/${thread.caseId}`)}
               >
                 <CardContent className="p-4 flex items-start gap-4">
-                  {/* Status icon */}
                   <div
                     className={`mt-0.5 h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
-                      !thread.isReplied
+                      isPending
                         ? "bg-destructive/10 text-destructive"
                         : "bg-emerald-500/10 text-emerald-600"
                     }`}
                   >
-                    {!thread.isReplied ? (
+                    {isPending ? (
                       <AlertCircle className="h-4 w-4" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
                   </div>
 
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-semibold text-sm text-foreground truncate">
                         {thread.clientName}
                       </span>
-                      {!thread.isReplied && thread.unreadCount > 0 && (
+                      {isPending && thread.unreadCount > 0 && (
                         <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                           {thread.unreadCount} nova{thread.unreadCount > 1 ? "s" : ""}
+                        </Badge>
+                      )}
+                      {!thread.isReplied && thread.isRead && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          Lida
                         </Badge>
                       )}
                     </div>
@@ -287,8 +292,7 @@ export default function Mensagens() {
                     </p>
                   </div>
 
-                  {/* Time */}
-                  <div className="text-right shrink-0">
+                  <div className="flex flex-col items-end gap-2 shrink-0">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
                       {formatDistanceToNow(new Date(thread.lastClientMessageAt), {
@@ -297,15 +301,31 @@ export default function Mensagens() {
                       })}
                     </div>
                     <Badge
-                      variant={thread.isReplied ? "secondary" : "outline"}
-                      className="mt-1.5 text-[10px]"
+                      variant={!isPending ? "secondary" : "outline"}
+                      className="text-[10px]"
                     >
-                      {thread.isReplied ? "Respondida" : "Aguardando"}
+                      {thread.isReplied
+                        ? "Respondida"
+                        : thread.isRead
+                          ? "Lida"
+                          : "Aguardando"}
                     </Badge>
+                    {isPending && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[11px]"
+                        onClick={(e) => handleMarkAsRead(thread, e)}
+                        title="Marcar como lida sem responder"
+                      >
+                        <Check className="h-3 w-3 mr-1" /> Marcar como lida
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
