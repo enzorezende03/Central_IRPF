@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Search, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { MessageCircle, Search, Clock, CheckCircle2, AlertCircle, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -19,11 +20,12 @@ interface MessageThread {
   lastClientMessageAt: string;
   lastOfficeReplyAt: string | null;
   isReplied: boolean;
+  isRead: boolean;
   unreadCount: number;
+  unreadMessageIds: string[];
 }
 
 async function fetchMessageThreads(): Promise<MessageThread[]> {
-  // Fetch all messages with case + client info
   const { data: cases, error: casesError } = await supabase
     .from("irpf_cases")
     .select("id, clients(full_name)");
@@ -41,7 +43,6 @@ async function fetchMessageThreads(): Promise<MessageThread[]> {
     caseMap.set(c.id, client?.full_name || "Cliente");
   }
 
-  // Group messages by case
   const grouped = new Map<string, typeof messages>();
   for (const msg of messages || []) {
     if (!grouped.has(msg.case_id)) grouped.set(msg.case_id, []);
@@ -52,16 +53,17 @@ async function fetchMessageThreads(): Promise<MessageThread[]> {
 
   for (const [caseId, msgs] of grouped) {
     const clientMsgs = msgs.filter((m) => m.sender === "client");
-    if (clientMsgs.length === 0) continue; // only show cases with client messages
+    if (clientMsgs.length === 0) continue;
 
-    const lastClientMsg = clientMsgs[0]; // already sorted desc
+    const lastClientMsg = clientMsgs[0];
     const lastOfficeReply = msgs.find(
       (m) => m.sender === "office" && m.created_at > lastClientMsg.created_at
     );
 
-    // Count client messages after last office reply
     const lastReplyTime = lastOfficeReply?.created_at || "1970-01-01";
-    const unread = clientMsgs.filter((m) => m.created_at > lastReplyTime).length;
+    const newerClientMsgs = clientMsgs.filter((m) => m.created_at > lastReplyTime);
+    const unreadMsgs = newerClientMsgs.filter((m: any) => !m.read_at);
+    const isRead = newerClientMsgs.length > 0 && unreadMsgs.length === 0;
 
     threads.push({
       caseId,
@@ -70,13 +72,17 @@ async function fetchMessageThreads(): Promise<MessageThread[]> {
       lastClientMessageAt: lastClientMsg.created_at,
       lastOfficeReplyAt: lastOfficeReply?.created_at || null,
       isReplied: !!lastOfficeReply,
-      unreadCount: unread,
+      isRead,
+      unreadCount: unreadMsgs.length,
+      unreadMessageIds: unreadMsgs.map((m) => m.id),
     });
   }
 
-  // Sort: unreplied first, then by date desc
+  // Sort: unread (não respondidas e não lidas) primeiro, depois por data
   threads.sort((a, b) => {
-    if (a.isReplied !== b.isReplied) return a.isReplied ? 1 : -1;
+    const aPending = !a.isReplied && !a.isRead;
+    const bPending = !b.isReplied && !b.isRead;
+    if (aPending !== bPending) return aPending ? -1 : 1;
     return new Date(b.lastClientMessageAt).getTime() - new Date(a.lastClientMessageAt).getTime();
   });
 
@@ -136,8 +142,8 @@ export default function Mensagens() {
 
   const filtered = useMemo(() => {
     let result = threads;
-    if (filter === "pending") result = result.filter((t) => !t.isReplied);
-    if (filter === "replied") result = result.filter((t) => t.isReplied);
+    if (filter === "pending") result = result.filter((t) => !t.isReplied && !t.isRead);
+    if (filter === "replied") result = result.filter((t) => t.isReplied || t.isRead);
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -149,7 +155,23 @@ export default function Mensagens() {
     return result;
   }, [threads, filter, search]);
 
-  const pendingCount = threads.filter((t) => !t.isReplied).length;
+  const pendingCount = threads.filter((t) => !t.isReplied && !t.isRead).length;
+
+  const handleMarkAsRead = async (thread: MessageThread, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (thread.unreadMessageIds.length === 0) return;
+    const { error } = await supabase
+      .from("case_messages")
+      .update({ read_at: new Date().toISOString() } as any)
+      .in("id", thread.unreadMessageIds);
+    if (error) {
+      toast.error("Erro ao marcar como lida.");
+      return;
+    }
+    toast.success("Mensagem marcada como lida.");
+    queryClient.invalidateQueries({ queryKey: ["message-threads"] });
+    queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
+  };
 
   return (
     <InternalLayout>
@@ -224,39 +246,44 @@ export default function Mensagens() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {filtered.map((thread) => (
+            {filtered.map((thread) => {
+              const isPending = !thread.isReplied && !thread.isRead;
+              return (
               <Card
                 key={thread.caseId}
                 className={`cursor-pointer transition-all hover:shadow-md hover:border-primary/30 ${
-                  !thread.isReplied ? "border-l-4 border-l-destructive" : ""
+                  isPending ? "border-l-4 border-l-destructive" : ""
                 }`}
                 onClick={() => navigate(`/demandas/${thread.caseId}`)}
               >
                 <CardContent className="p-4 flex items-start gap-4">
-                  {/* Status icon */}
                   <div
                     className={`mt-0.5 h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
-                      !thread.isReplied
+                      isPending
                         ? "bg-destructive/10 text-destructive"
                         : "bg-emerald-500/10 text-emerald-600"
                     }`}
                   >
-                    {!thread.isReplied ? (
+                    {isPending ? (
                       <AlertCircle className="h-4 w-4" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
                   </div>
 
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-semibold text-sm text-foreground truncate">
                         {thread.clientName}
                       </span>
-                      {!thread.isReplied && thread.unreadCount > 0 && (
+                      {isPending && thread.unreadCount > 0 && (
                         <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                           {thread.unreadCount} nova{thread.unreadCount > 1 ? "s" : ""}
+                        </Badge>
+                      )}
+                      {!thread.isReplied && thread.isRead && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          Lida
                         </Badge>
                       )}
                     </div>
@@ -265,8 +292,7 @@ export default function Mensagens() {
                     </p>
                   </div>
 
-                  {/* Time */}
-                  <div className="text-right shrink-0">
+                  <div className="flex flex-col items-end gap-2 shrink-0">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
                       {formatDistanceToNow(new Date(thread.lastClientMessageAt), {
@@ -275,15 +301,31 @@ export default function Mensagens() {
                       })}
                     </div>
                     <Badge
-                      variant={thread.isReplied ? "secondary" : "outline"}
-                      className="mt-1.5 text-[10px]"
+                      variant={!isPending ? "secondary" : "outline"}
+                      className="text-[10px]"
                     >
-                      {thread.isReplied ? "Respondida" : "Aguardando"}
+                      {thread.isReplied
+                        ? "Respondida"
+                        : thread.isRead
+                          ? "Lida"
+                          : "Aguardando"}
                     </Badge>
+                    {isPending && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[11px]"
+                        onClick={(e) => handleMarkAsRead(thread, e)}
+                        title="Marcar como lida sem responder"
+                      >
+                        <Check className="h-3 w-3 mr-1" /> Marcar como lida
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -109,6 +109,7 @@ export type Database = {
           created_at: string
           id: string
           message: string
+          read_at: string | null
           sender: string
           visible_to_client: boolean
         }
@@ -117,6 +118,7 @@ export type Database = {
           created_at?: string
           id?: string
           message: string
+          read_at?: string | null
           sender?: string
           visible_to_client?: boolean
         }
@@ -125,6 +127,7 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
+          read_at?: string | null
           sender?: string
           visible_to_client?: boolean
         }

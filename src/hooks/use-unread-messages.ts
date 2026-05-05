@@ -16,7 +16,7 @@ export function useUnreadMessages() {
       // Get all messages from clients
       const { data: messages } = await supabase
         .from("case_messages")
-        .select("id, case_id, message, created_at, sender")
+        .select("id, case_id, message, created_at, sender, read_at")
         .order("created_at", { ascending: false });
 
       if (!messages || messages.length === 0) return [];
@@ -32,16 +32,16 @@ export function useUnreadMessages() {
       const caseUnreads = new Map<string, { count: number; lastMsg: typeof messages[0] }>();
 
       for (const [caseId, msgs] of caseMap) {
-        // msgs are already sorted desc by created_at
-        if (msgs[0].sender === "client") {
-          // Count consecutive client messages from the top
+        if (msgs[0].sender === "client" && !(msgs[0] as any).read_at) {
           let count = 0;
           for (const m of msgs) {
-            if (m.sender === "client") count++;
+            if (m.sender === "client" && !(m as any).read_at) count++;
             else break;
           }
-          unreadCaseIds.push(caseId);
-          caseUnreads.set(caseId, { count, lastMsg: msgs[0] });
+          if (count > 0) {
+            unreadCaseIds.push(caseId);
+            caseUnreads.set(caseId, { count, lastMsg: msgs[0] });
+          }
         }
       }
 
