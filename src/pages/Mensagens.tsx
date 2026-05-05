@@ -142,8 +142,8 @@ export default function Mensagens() {
 
   const filtered = useMemo(() => {
     let result = threads;
-    if (filter === "pending") result = result.filter((t) => !t.isReplied);
-    if (filter === "replied") result = result.filter((t) => t.isReplied);
+    if (filter === "pending") result = result.filter((t) => !t.isReplied && !t.isRead);
+    if (filter === "replied") result = result.filter((t) => t.isReplied || t.isRead);
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -155,7 +155,23 @@ export default function Mensagens() {
     return result;
   }, [threads, filter, search]);
 
-  const pendingCount = threads.filter((t) => !t.isReplied).length;
+  const pendingCount = threads.filter((t) => !t.isReplied && !t.isRead).length;
+
+  const handleMarkAsRead = async (thread: MessageThread, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (thread.unreadMessageIds.length === 0) return;
+    const { error } = await supabase
+      .from("case_messages")
+      .update({ read_at: new Date().toISOString() } as any)
+      .in("id", thread.unreadMessageIds);
+    if (error) {
+      toast.error("Erro ao marcar como lida.");
+      return;
+    }
+    toast.success("Mensagem marcada como lida.");
+    queryClient.invalidateQueries({ queryKey: ["message-threads"] });
+    queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
+  };
 
   return (
     <InternalLayout>
