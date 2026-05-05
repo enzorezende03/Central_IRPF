@@ -20,11 +20,12 @@ interface MessageThread {
   lastClientMessageAt: string;
   lastOfficeReplyAt: string | null;
   isReplied: boolean;
+  isRead: boolean;
   unreadCount: number;
+  unreadMessageIds: string[];
 }
 
 async function fetchMessageThreads(): Promise<MessageThread[]> {
-  // Fetch all messages with case + client info
   const { data: cases, error: casesError } = await supabase
     .from("irpf_cases")
     .select("id, clients(full_name)");
@@ -42,7 +43,6 @@ async function fetchMessageThreads(): Promise<MessageThread[]> {
     caseMap.set(c.id, client?.full_name || "Cliente");
   }
 
-  // Group messages by case
   const grouped = new Map<string, typeof messages>();
   for (const msg of messages || []) {
     if (!grouped.has(msg.case_id)) grouped.set(msg.case_id, []);
@@ -53,16 +53,17 @@ async function fetchMessageThreads(): Promise<MessageThread[]> {
 
   for (const [caseId, msgs] of grouped) {
     const clientMsgs = msgs.filter((m) => m.sender === "client");
-    if (clientMsgs.length === 0) continue; // only show cases with client messages
+    if (clientMsgs.length === 0) continue;
 
-    const lastClientMsg = clientMsgs[0]; // already sorted desc
+    const lastClientMsg = clientMsgs[0];
     const lastOfficeReply = msgs.find(
       (m) => m.sender === "office" && m.created_at > lastClientMsg.created_at
     );
 
-    // Count client messages after last office reply
     const lastReplyTime = lastOfficeReply?.created_at || "1970-01-01";
-    const unread = clientMsgs.filter((m) => m.created_at > lastReplyTime).length;
+    const newerClientMsgs = clientMsgs.filter((m) => m.created_at > lastReplyTime);
+    const unreadMsgs = newerClientMsgs.filter((m: any) => !m.read_at);
+    const isRead = newerClientMsgs.length > 0 && unreadMsgs.length === 0;
 
     threads.push({
       caseId,
@@ -71,13 +72,17 @@ async function fetchMessageThreads(): Promise<MessageThread[]> {
       lastClientMessageAt: lastClientMsg.created_at,
       lastOfficeReplyAt: lastOfficeReply?.created_at || null,
       isReplied: !!lastOfficeReply,
-      unreadCount: unread,
+      isRead,
+      unreadCount: unreadMsgs.length,
+      unreadMessageIds: unreadMsgs.map((m) => m.id),
     });
   }
 
-  // Sort: unreplied first, then by date desc
+  // Sort: unread (não respondidas e não lidas) primeiro, depois por data
   threads.sort((a, b) => {
-    if (a.isReplied !== b.isReplied) return a.isReplied ? 1 : -1;
+    const aPending = !a.isReplied && !a.isRead;
+    const bPending = !b.isReplied && !b.isRead;
+    if (aPending !== bPending) return aPending ? -1 : 1;
     return new Date(b.lastClientMessageAt).getTime() - new Date(a.lastClientMessageAt).getTime();
   });
 
