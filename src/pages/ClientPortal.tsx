@@ -795,12 +795,33 @@ function PreviewApprovalCard({
 }) {
   const [feedback, setFeedback] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showRevert, setShowRevert] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const del = deliverable as any;
 
   const previewStatus = del.preview_status as string;
   const isApproved = previewStatus === "aprovado";
   const isAdjustments = previewStatus === "ajustes_solicitados";
+  const approvedAt = del.preview_approved_at ? new Date(del.preview_approved_at).getTime() : null;
+  const REVERT_WINDOW_MS = 60 * 60 * 1000;
+  const msSinceApproval = approvedAt ? now - approvedAt : null;
+  const canRevert = isApproved && msSinceApproval !== null && msSinceApproval < REVERT_WINDOW_MS;
+  const msLeft = canRevert ? REVERT_WINDOW_MS - (msSinceApproval as number) : 0;
+
+  useEffect(() => {
+    if (!canRevert) return;
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, [canRevert]);
+
+  const formatCountdown = (ms: number) => {
+    const totalMin = Math.max(0, Math.floor(ms / 60000));
+    const m = totalMin % 60;
+    const h = Math.floor(totalMin / 60);
+    if (h > 0) return `${h}h${m.toString().padStart(2, "0")}min`;
+    return `${m} min`;
+  };
 
   const handleApprove = async () => {
     setSubmitting(true);
@@ -808,6 +829,7 @@ function PreviewApprovalCard({
       await supabase.from("final_deliverables").update({
         preview_status: "aprovado",
         preview_feedback: null,
+        preview_approved_at: new Date().toISOString(),
       } as any).eq("id", deliverable.id);
       await supabase.from("case_timeline").insert({
         case_id: caseId,
@@ -908,9 +930,79 @@ function PreviewApprovalCard({
         </Button>
 
         {isApproved && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-success/10 text-success">
-            <CheckCircle className="h-5 w-5 shrink-0" />
-            <p className="text-sm font-medium">Prévia aprovada</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-success/10 text-success">
+              <CheckCircle className="h-5 w-5 shrink-0" />
+              <p className="text-sm font-medium">Prévia aprovada</p>
+            </div>
+            {canRevert && !showRevert && (
+              <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 space-y-2">
+                <p className="text-xs text-foreground">
+                  Aprovou sem querer? Você ainda pode reverter a aprovação e solicitar alterações.
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Tempo restante para reverter: <span className="font-semibold text-foreground">{formatCountdown(msLeft)}</span>
+                </p>
+                <Button variant="outline" size="sm" className="w-full" onClick={() => setShowRevert(true)}>
+                  <AlertTriangle className="h-4 w-4 mr-2" /> Reverter aprovação e solicitar ajustes
+                </Button>
+              </div>
+            )}
+            {canRevert && showRevert && (
+              <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-3">
+                <p className="text-xs text-foreground">Descreva os ajustes necessários:</p>
+                <Textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Ex.: incluir despesa médica, corrigir dependente..."
+                  rows={3}
+                  className="text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { setShowRevert(false); setFeedback(""); }}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    disabled={submitting || !feedback.trim()}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      try {
+                        await supabase.from("final_deliverables").update({
+                          preview_status: "ajustes_solicitados",
+                          preview_feedback: feedback.trim(),
+                          preview_approved_at: null,
+                        } as any).eq("id", deliverable.id);
+                        await supabase.from("case_timeline").insert({
+                          case_id: caseId,
+                          event_type: "Aprovação revertida",
+                          description: `Cliente reverteu a aprovação e solicitou ajustes: ${feedback.trim()}`,
+                          visible_to_client: true,
+                          created_by: "Cliente",
+                        });
+                        toast.success("Aprovação revertida e ajustes enviados!");
+                        setShowRevert(false);
+                        setFeedback("");
+                        onSuccess();
+                      } catch {
+                        toast.error("Erro ao reverter aprovação.");
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
+                  >
+                    {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                    Confirmar
+                  </Button>
+                </div>
+              </div>
+            )}
+            {isApproved && !canRevert && approvedAt && (
+              <p className="text-[11px] text-muted-foreground px-1">
+                A janela de 1 hora para reverter a aprovação expirou. Para alterações, entre em contato com o escritório.
+              </p>
+            )}
           </div>
         )}
 
