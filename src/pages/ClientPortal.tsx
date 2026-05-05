@@ -1203,6 +1203,16 @@ function DocumentRow({
               Não Tenho
             </Button>
           </div>
+          {isDependentes && (stagedFiles.length > 0 || uploadedDocs.length > 0) && (
+            <div className="w-full mt-1 rounded-md border border-warning/40 bg-warning/10 p-2.5 text-[11px] leading-relaxed text-foreground">
+              <p className="flex items-start gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning mt-0.5" />
+                <span>
+                  <strong>Observação importante:</strong> Caso você possua dependentes em sua declaração de Imposto de Renda, é importante informar que, se esses dependentes tiverem bens (como imóveis, veículos, investimentos, etc.) ou tiverem recebido rendimentos ao longo do ano, essas informações também devem ser enviadas para inclusão na declaração.
+                </span>
+              </p>
+            </div>
+          )}
           {stagedFiles.length > 0 && (
             <div className="w-full space-y-1.5 mt-1">
               {stagedFiles.map((f, i) => (
