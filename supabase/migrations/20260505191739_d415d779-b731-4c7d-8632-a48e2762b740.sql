@@ -1,0 +1,1 @@
+ALTER TABLE public.case_messages ADD COLUMN IF NOT EXISTS read_at timestamptz;
