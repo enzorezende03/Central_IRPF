@@ -1066,6 +1066,7 @@ function DocumentRow({
   } satisfies Record<DocumentStatus, string>;
 
   const canUpload = doc.status !== "aprovado";
+  const isDependentes = /depend[eê]nte/i.test(doc.title);
 
   const handleStageFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
