@@ -368,6 +368,7 @@ export type Database = {
           has_guide: boolean
           id: string
           irpf_file_url: string | null
+          preview_approved_at: string | null
           preview_feedback: string | null
           preview_file_url: string | null
           preview_status: Database["public"]["Enums"]["preview_status"] | null
@@ -383,6 +384,7 @@ export type Database = {
           has_guide?: boolean
           id?: string
           irpf_file_url?: string | null
+          preview_approved_at?: string | null
           preview_feedback?: string | null
           preview_file_url?: string | null
           preview_status?: Database["public"]["Enums"]["preview_status"] | null
@@ -398,6 +400,7 @@ export type Database = {
           has_guide?: boolean
           id?: string
           irpf_file_url?: string | null
+          preview_approved_at?: string | null
           preview_feedback?: string | null
           preview_file_url?: string | null
           preview_status?: Database["public"]["Enums"]["preview_status"] | null

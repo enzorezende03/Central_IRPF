@@ -1,0 +1,1 @@
+ALTER TABLE public.final_deliverables ADD COLUMN IF NOT EXISTS preview_approved_at timestamptz;
