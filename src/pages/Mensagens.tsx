@@ -93,7 +93,7 @@ export default function Mensagens() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "pending" | "replied">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "replied">("pending");
   const caseNamesRef = useRef<Map<string, string>>(new Map());
 
   const { data: threads = [], isLoading } = useQuery({
