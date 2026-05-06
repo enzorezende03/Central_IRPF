@@ -77,7 +77,15 @@ export default function Dashboard() {
 
   const recentCases = useMemo(() => filtered.slice(0, 5), [filtered]);
   const urgentCases = useMemo(
-    () => filtered.filter((c) => c.priority === "urgente" || c.status === "pendencia").slice(0, 5),
+    () =>
+      filtered
+        .filter(
+          (c) =>
+            c.priority === "urgente" &&
+            c.status !== "finalizado" &&
+            c.status !== "dispensada"
+        )
+        .slice(0, 5),
     [filtered]
   );
 
