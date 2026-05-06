@@ -33,12 +33,14 @@ export default function Demandas() {
   // Query params override saved filters when presentes (vindo do Dashboard)
   const initialStatus = searchParams.get("status") ?? saved.internalStatusFilter ?? "all";
   const initialOwner = searchParams.get("owner") ?? saved.ownerFilter ?? "all";
+  const initialPriority = searchParams.get("priority") ?? saved.priorityFilter ?? "all";
 
   const [search, setSearch] = useState(saved.search ?? "");
   const [tagFilter, setTagFilter] = useState(saved.tagFilter ?? "all");
   const [ownerFilter, setOwnerFilter] = useState(initialOwner);
   const [internalStatusFilter, setInternalStatusFilter] = useState(initialStatus);
   const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
+  const [priorityFilter, setPriorityFilter] = useState<string>(initialPriority);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
   const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
@@ -49,10 +51,12 @@ export default function Demandas() {
   useEffect(() => {
     const qStatus = searchParams.get("status");
     const qOwner = searchParams.get("owner");
+    const qPriority = searchParams.get("priority");
     if (qStatus !== null) setInternalStatusFilter(qStatus);
     if (qOwner !== null) setOwnerFilter(qOwner);
+    if (qPriority !== null) setPriorityFilter(qPriority);
     // Limpa os params da URL após aplicar para não persistir indefinidamente
-    if (qStatus !== null || qOwner !== null) {
+    if (qStatus !== null || qOwner !== null || qPriority !== null) {
       setSearchParams({}, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
