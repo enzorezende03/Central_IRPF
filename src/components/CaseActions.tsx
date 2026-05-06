@@ -130,6 +130,11 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
             Abrir portal do cliente
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setPlanOpen(true)}>
+            <CalendarPlus className="mr-2 h-4 w-4" />
+            Enviar ao planejamento semanal
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           {statuses
             .filter((s) => s !== caseData.status)
             .map((s) => (
