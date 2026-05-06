@@ -18,6 +18,7 @@ import { BILLING_LABELS, BILLING_TYPE_LABELS, STATUS_LABELS } from "@/lib/types"
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { EditBillingDialog } from "@/components/EditBillingDialog";
+import { useAuth } from "@/hooks/use-auth";
 import type { Database } from "@/integrations/supabase/types";
 
 type BillingStatus = Database["public"]["Enums"]["billing_status"];
