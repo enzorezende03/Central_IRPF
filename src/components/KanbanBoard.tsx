@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
 import { CheckCircle2, AlertCircle, Clock, CalendarPlus } from "lucide-react";
 import { AddToWeekDialog } from "@/components/AddToWeekDialog";
+import { useAllPlanItems } from "@/hooks/use-weekly-plan";
 
 import type { Database } from "@/integrations/supabase/types";
 
