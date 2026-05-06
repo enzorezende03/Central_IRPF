@@ -191,11 +191,12 @@ export default function Clientes() {
                       <TableCell className="text-center">
                         <Switch
                           checked={isActive}
+                          disabled={!canEdit}
                           onCheckedChange={(checked) => toggleActive.mutate({ id: client.id, is_active: checked })}
                         />
                       </TableCell>
                       <TableCell className="flex items-center gap-1">
-                        <EditClientDialog client={client as any} />
+                        {canEdit && <EditClientDialog client={client as any} />}
                         {role === "admin" && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
