@@ -501,6 +501,7 @@ export type Database = {
           base_year: number
           client_id: string
           client_message: string | null
+          completed_at: string | null
           created_at: string
           declaration_type: string
           docs_received_at: string | null
@@ -519,6 +520,7 @@ export type Database = {
           base_year?: number
           client_id: string
           client_message?: string | null
+          completed_at?: string | null
           created_at?: string
           declaration_type?: string
           docs_received_at?: string | null
@@ -537,6 +539,7 @@ export type Database = {
           base_year?: number
           client_id?: string
           client_message?: string | null
+          completed_at?: string | null
           created_at?: string
           declaration_type?: string
           docs_received_at?: string | null
