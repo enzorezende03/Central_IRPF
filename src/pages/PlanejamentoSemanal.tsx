@@ -366,80 +366,6 @@ function PlanContent({ season }: { season: any }) {
         </CardContent>
       </Card>
 
-      {/* Suggestions */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap">
-          <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" /> Sugestões
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Ordenadas pela data em que o cliente enviou a documentação (mais antigos primeiro).
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Select value={suggestionLimit.toString()} onValueChange={(v) => setSuggestionLimit(Number(v))}>
-              <SelectTrigger className="w-[120px] h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {[5, 10, 15, 20, 30].map((n) => <SelectItem key={n} value={n.toString()}>{n} primeiros</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button size="sm" onClick={handleAddSuggestionsBulk} disabled={suggestions.length === 0 || add.isPending}>
-              <Plus className="h-4 w-4 mr-1.5" /> Adicionar todos
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {suggestions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Sem sugestões pendentes.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="min-w-[820px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead className="whitespace-nowrap">Docs enviados</TableHead>
-                    <TableHead className="text-right w-32">Ação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {suggestions.map((c) => {
-                    const ref = getReferenceDate(c);
-                    const days = daysSince(ref);
-                    const hasDocs = !!(c.docs_received_at || c.earliest_doc_at);
-                    return (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          <Link to={`/demandas/${c.id}`} className="hover:underline">
-                            {c.client_name ?? "—"}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">{c.internal_owner ?? <span className="text-muted-foreground">Sem responsável</span>}</TableCell>
-                        <TableCell className="whitespace-nowrap text-sm">
-                          {hasDocs ? (
-                            <Badge variant={days >= 14 ? "destructive" : days >= 7 ? "default" : "secondary"}>
-                              há {days} {days === 1 ? "dia" : "dias"}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">sem documentos</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant="outline" onClick={() => handleAddOne(c)} disabled={add.isPending}>
-                            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Two columns: planned + available */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Planned for selected week */}
@@ -531,6 +457,80 @@ function PlanContent({ season }: { season: any }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Suggestions */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" /> Sugestões
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Ordenadas pela data em que o cliente enviou a documentação (mais antigos primeiro).
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={suggestionLimit.toString()} onValueChange={(v) => setSuggestionLimit(Number(v))}>
+              <SelectTrigger className="w-[120px] h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[5, 10, 15, 20, 30].map((n) => <SelectItem key={n} value={n.toString()}>{n} primeiros</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={handleAddSuggestionsBulk} disabled={suggestions.length === 0 || add.isPending}>
+              <Plus className="h-4 w-4 mr-1.5" /> Adicionar todos
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {suggestions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Sem sugestões pendentes.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table className="min-w-[820px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    <TableHead className="whitespace-nowrap">Docs enviados</TableHead>
+                    <TableHead className="text-right w-32">Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {suggestions.map((c) => {
+                    const ref = getReferenceDate(c);
+                    const days = daysSince(ref);
+                    const hasDocs = !!(c.docs_received_at || c.earliest_doc_at);
+                    return (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium whitespace-nowrap">
+                          <Link to={`/demandas/${c.id}`} className="hover:underline">
+                            {c.client_name ?? "—"}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">{c.internal_owner ?? <span className="text-muted-foreground">Sem responsável</span>}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {hasDocs ? (
+                            <Badge variant={days >= 14 ? "destructive" : days >= 7 ? "default" : "secondary"}>
+                              há {days} {days === 1 ? "dia" : "dias"}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">sem documentos</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="outline" onClick={() => handleAddOne(c)} disabled={add.isPending}>
+                            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </>
   );
 }
