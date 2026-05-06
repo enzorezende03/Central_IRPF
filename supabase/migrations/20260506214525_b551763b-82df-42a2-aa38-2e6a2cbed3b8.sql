@@ -1,0 +1,1 @@
+UPDATE public.irpf_season_config SET total_planned = 450, updated_at = now() WHERE season_year = 2026;
