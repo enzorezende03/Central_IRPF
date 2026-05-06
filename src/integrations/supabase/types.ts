@@ -638,6 +638,39 @@ export type Database = {
           },
         ]
       }
+      irpf_weekly_plan: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          planned_by: string | null
+          responsible: string | null
+          season_id: string
+          updated_at: string
+          week_number: number
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          planned_by?: string | null
+          responsible?: string | null
+          season_id: string
+          updated_at?: string
+          week_number: number
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          planned_by?: string | null
+          responsible?: string | null
+          season_id?: string
+          updated_at?: string
+          week_number?: number
+        }
+        Relationships: []
+      }
       kanban_preferences: {
         Row: {
           column_order: string[]
