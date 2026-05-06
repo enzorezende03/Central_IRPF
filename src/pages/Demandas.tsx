@@ -200,6 +200,34 @@ export default function Demandas() {
                 <SelectItem value="missing">Sem procuração</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Prioridade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as prioridades</SelectItem>
+                <SelectItem value="urgente">Urgente</SelectItem>
+                <SelectItem value="alta">Alta</SelectItem>
+                <SelectItem value="media">Média</SelectItem>
+                <SelectItem value="baixa">Baixa</SelectItem>
+              </SelectContent>
+            </Select>
+            {(search || tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all") && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch("");
+                  setTagFilter("all");
+                  setOwnerFilter("all");
+                  setInternalStatusFilter("all");
+                  setProcuracaoFilter("all");
+                  setPriorityFilter("all");
+                  setClientStatusFilter("all");
+                }}
+              >
+                Limpar filtros
+              </Button>
+            )}
           </div>
         </div>
 
