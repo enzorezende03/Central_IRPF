@@ -234,7 +234,7 @@ function OverviewBlock({ season }: { season: any }) {
     const we = parseISODate(w.week_end);
     const isFirst = w.week_number === 1;
     const count = finalized.filter((f) => {
-      const d = new Date(f.updated_at);
+      const d = new Date((f as any).completed_at ?? f.updated_at);
       const upper = d < addDays(we, 1);
       const lower = isFirst ? true : d >= ws;
       return upper && lower;
@@ -264,7 +264,7 @@ function OverviewBlock({ season }: { season: any }) {
   const windowStart = sevenDaysAgo < start ? start : sevenDaysAgo;
   const windowDays = Math.max(1, daysBetween(windowStart, today) + 1);
   const finalizedInWindow = finalized.filter((f) => {
-    const d = new Date(f.updated_at);
+    const d = new Date((f as any).completed_at ?? f.updated_at);
     return d >= windowStart && d <= new Date(today.getTime() + 86400000 - 1);
   }).length;
   const avgPerDay = projectionAvailable ? finalizedInWindow / windowDays : 0;
@@ -594,7 +594,7 @@ function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean })
                     const we = parseISODate(w.week_end);
                     const isFirst = w.week_number === 1;
                     const realized = finalized.filter((f) => {
-                      const d = new Date(f.updated_at);
+                      const d = new Date((f as any).completed_at ?? f.updated_at);
                       const upper = d < addDays(we, 1);
                       const lower = isFirst ? true : d >= ws;
                       return upper && lower;
