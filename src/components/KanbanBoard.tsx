@@ -213,6 +213,15 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
           </div>
         </div>
       ))}
+      {planCase && (
+        <AddToWeekDialog
+          open={!!planCase}
+          onOpenChange={(o) => { if (!o) setPlanCase(null); }}
+          caseId={planCase.id}
+          internalOwner={planCase.internal_owner}
+          clientName={planCase.clients?.full_name ?? null}
+        />
+      )}
     </div>
   );
 }
