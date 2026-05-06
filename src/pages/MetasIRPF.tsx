@@ -493,6 +493,79 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "su
   );
 }
 
+/* ─────────────────────────────  BONUS SCALE  ───────────────────────────── */
+
+const BONUS_TIERS = [
+  { min: 0, max: 70, value: 0, label: "Abaixo de 70%" },
+  { min: 70, max: 80, value: 1000, label: "70% a 79%" },
+  { min: 80, max: 90, value: 1400, label: "80% a 89%" },
+  { min: 90, max: 100, value: 1700, label: "90% a 99%" },
+  { min: 100, max: Infinity, value: 2000, label: "100% ou mais" },
+];
+
+function getBonusTier(percent: number) {
+  return BONUS_TIERS.findIndex((t) => percent >= t.min && percent < t.max);
+}
+
+function formatBRL(v: number) {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
+}
+
+function BonusScaleCard({ percent }: { percent: number }) {
+  const currentIdx = getBonusTier(percent);
+  const current = BONUS_TIERS[currentIdx];
+  const next = BONUS_TIERS[currentIdx + 1];
+  const toNext = next ? Math.max(0, next.min - percent) : 0;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Trophy className="h-4 w-4" /> Escala de premiação
+        </CardTitle>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Bonificação conforme % de atingimento do total previsto da temporada
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          {BONUS_TIERS.map((t, i) => {
+            const active = i === currentIdx;
+            return (
+              <div
+                key={i}
+                className={`rounded-lg border p-3 text-center transition-all ${
+                  active
+                    ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
+                    : "border-border bg-muted/30"
+                }`}
+              >
+                <div className={`text-[11px] font-medium ${active ? "text-primary" : "text-muted-foreground"}`}>
+                  {t.label}
+                </div>
+                <div className={`text-lg font-bold mt-1 ${active ? "text-primary" : "text-foreground"}`}>
+                  {formatBRL(t.value)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-sm">
+          <div>
+            Atingimento atual: <strong>{percent.toFixed(1)}%</strong> — faixa atual:{" "}
+            <strong className="text-primary">{formatBRL(current?.value ?? 0)}</strong>
+          </div>
+          {next && (
+            <div className="text-xs text-muted-foreground">
+              Faltam <strong>{toNext.toFixed(1)} pp</strong> para a faixa de {formatBRL(next.value)}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ─────────────────────────────  WEEKLY  ───────────────────────────── */
 
 function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean }) {
