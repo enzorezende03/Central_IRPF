@@ -33,8 +33,9 @@ type CaseStatus = Database["public"]["Enums"]["case_status"];
 
 export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   const queryClient = useQueryClient();
-  const { role } = useAuth();
+  const { role, hasPermission } = useAuth();
   const isAdmin = role === "admin";
+  const canEdit = isAdmin || hasPermission("editar_demandas");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const clientName = caseData.clients?.full_name ?? "Cliente";
