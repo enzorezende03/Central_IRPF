@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
 import { CheckCircle2, AlertCircle, Clock, CalendarPlus } from "lucide-react";
 import { AddToWeekDialog } from "@/components/AddToWeekDialog";
+import { useAllPlanItems } from "@/hooks/use-weekly-plan";
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -63,6 +64,12 @@ const dotColors: Record<KanbanColumn, string> = {
 
 export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: CaseWithClient[]; columnOrder?: string[]; hiddenColumns?: string[] }) {
   const [planCase, setPlanCase] = useState<CaseWithClient | null>(null);
+  const { data: planItems = [] } = useAllPlanItems();
+  const planByCase = useMemo(() => {
+    const m = new Map<string, { week_number: number }>();
+    planItems.forEach((p) => m.set(p.case_id, { week_number: p.week_number }));
+    return m;
+  }, [planItems]);
   const grouped = useMemo(() => {
     const map: Record<KanbanColumn, CaseWithClient[]> = {
       aguardando_cliente: [],
@@ -137,6 +144,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
           <div className="p-2 space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto">
             {(grouped[status] ?? []).map((c, i) => {
               const billing = c.billing?.[0];
+              const planInfo = planByCase.get(c.id);
               return (
                 <motion.div
                   key={c.id}
@@ -147,7 +155,11 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                   <div className="relative group">
                     <Link
                       to={`/demandas/${c.id}`}
-                      className="block p-3 rounded-lg border bg-background hover:shadow-md transition-shadow cursor-pointer"
+                      className={`block p-3 rounded-lg border hover:shadow-md transition-shadow cursor-pointer ${
+                        planInfo
+                          ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
+                          : "bg-background"
+                      }`}
                     >
                       <p className="text-sm font-medium truncate pr-7">
                         {c.clients?.full_name}
@@ -157,6 +169,11 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                       </p>
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <PriorityBadge priority={c.priority} />
+                      {planInfo && (
+                        <Badge variant="outline" className="bg-primary/15 text-primary border-primary/30 text-xs gap-1">
+                          <CalendarPlus className="h-3 w-3" /> S{planInfo.week_number}
+                        </Badge>
+                      )}
                       {billing && (
                         <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />
                       )}

@@ -28,6 +28,21 @@ export function useSeasonPlan(seasonId: string | null | undefined) {
   });
 }
 
+/** All plan items across all seasons — used to flag planned cases (e.g. in Kanban). */
+export function useAllPlanItems() {
+  return useQuery({
+    queryKey: ["irpf_weekly_plan_all"],
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("irpf_weekly_plan" as any)
+        .select("case_id, week_number, season_id, responsible");
+      if (error) throw error;
+      return (data || []) as unknown as Array<Pick<WeeklyPlanItem, "case_id" | "week_number" | "season_id" | "responsible">>;
+    },
+  });
+}
+
 export function useAddToPlan() {
   const qc = useQueryClient();
   return useMutation({
