@@ -1,12 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatCPF } from "@/lib/format-utils";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CaseWithClient } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
-import { CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock, CalendarPlus } from "lucide-react";
+import { AddToWeekDialog } from "@/components/AddToWeekDialog";
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -60,6 +62,7 @@ const dotColors: Record<KanbanColumn, string> = {
 };
 
 export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: CaseWithClient[]; columnOrder?: string[]; hiddenColumns?: string[] }) {
+  const [planCase, setPlanCase] = useState<CaseWithClient | null>(null);
   const grouped = useMemo(() => {
     const map: Record<KanbanColumn, CaseWithClient[]> = {
       aguardando_cliente: [],
@@ -141,17 +144,18 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
                 >
-                  <Link
-                    to={`/demandas/${c.id}`}
-                    className="block p-3 rounded-lg border bg-background hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    <p className="text-sm font-medium truncate">
-                      {c.clients?.full_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <div className="relative group">
+                    <Link
+                      to={`/demandas/${c.id}`}
+                      className="block p-3 rounded-lg border bg-background hover:shadow-md transition-shadow cursor-pointer"
+                    >
+                      <p className="text-sm font-medium truncate pr-7">
+                        {c.clients?.full_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <PriorityBadge priority={c.priority} />
                       {billing && (
                         <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />
@@ -187,7 +191,17 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                         {fmt(billing.amount)}
                       </p>
                     )}
-                  </Link>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-1.5 right-1.5 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+                      title="Enviar ao planejamento semanal"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPlanCase(c); }}
+                    >
+                      <CalendarPlus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </motion.div>
               );
             })}
@@ -199,6 +213,15 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
           </div>
         </div>
       ))}
+      {planCase && (
+        <AddToWeekDialog
+          open={!!planCase}
+          onOpenChange={(o) => { if (!o) setPlanCase(null); }}
+          caseId={planCase.id}
+          internalOwner={planCase.internal_owner}
+          clientName={planCase.clients?.full_name ?? null}
+        />
+      )}
     </div>
   );
 }

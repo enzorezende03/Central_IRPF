@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Eye, Copy, MessageCircle, ExternalLink, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
+import { Eye, Copy, MessageCircle, ExternalLink, MoreHorizontal, RefreshCw, Trash2, CalendarPlus } from "lucide-react";
+import { AddToWeekDialog } from "@/components/AddToWeekDialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const clientName = caseData.clients?.full_name ?? "Cliente";
 
   const linkId = caseData.portal_slug || caseData.portal_token;
@@ -128,6 +130,11 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
             Abrir portal do cliente
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setPlanOpen(true)}>
+            <CalendarPlus className="mr-2 h-4 w-4" />
+            Enviar ao planejamento semanal
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           {statuses
             .filter((s) => s !== caseData.status)
             .map((s) => (
@@ -170,6 +177,14 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddToWeekDialog
+        open={planOpen}
+        onOpenChange={setPlanOpen}
+        caseId={caseData.id}
+        internalOwner={caseData.internal_owner}
+        clientName={clientName}
+      />
     </>
   );
 }
