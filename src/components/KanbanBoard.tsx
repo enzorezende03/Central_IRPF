@@ -191,7 +191,17 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                         {fmt(billing.amount)}
                       </p>
                     )}
-                  </Link>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-1.5 right-1.5 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+                      title="Enviar ao planejamento semanal"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPlanCase(c); }}
+                    >
+                      <CalendarPlus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </motion.div>
               );
             })}
