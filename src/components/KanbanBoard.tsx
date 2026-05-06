@@ -62,6 +62,7 @@ const dotColors: Record<KanbanColumn, string> = {
 };
 
 export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: CaseWithClient[]; columnOrder?: string[]; hiddenColumns?: string[] }) {
+  const [planCase, setPlanCase] = useState<CaseWithClient | null>(null);
   const grouped = useMemo(() => {
     const map: Record<KanbanColumn, CaseWithClient[]> = {
       aguardando_cliente: [],
