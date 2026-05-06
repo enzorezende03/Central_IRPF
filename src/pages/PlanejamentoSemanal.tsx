@@ -209,8 +209,12 @@ function PlanContent({ season }: { season: any }) {
   }, [responsibles, weekPlan, realizedThisWeek, meta, ownerByCase]);
 
   // ─── Suggestions ─────────────────────────────────────────
+  // Apenas clientes que já enviaram toda a documentação (status "documentos_em_analise"),
+  // ordenados pelos que enviaram há mais tempo.
   const [suggestionLimit, setSuggestionLimit] = useState(10);
-  const suggestions = sortedEligible.slice(0, suggestionLimit);
+  const suggestions = sortedEligible
+    .filter((c) => c.status === "documentos_em_analise")
+    .slice(0, suggestionLimit);
   const handleAddSuggestionsBulk = async () => {
     if (!week) return;
     await add.mutateAsync(
