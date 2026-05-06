@@ -25,7 +25,8 @@ export default function Clientes() {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const queryClient = useQueryClient();
-  const { role } = useAuth();
+  const { role, hasPermission } = useAuth();
+  const canEdit = role === "admin" || hasPermission("editar_demandas");
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
