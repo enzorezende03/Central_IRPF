@@ -130,7 +130,7 @@ export default function Demandas() {
       });
     }
     return list;
-  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir]);
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir]);
 
   const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
   const paginatedData = useMemo(() => {
