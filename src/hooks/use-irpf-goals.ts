@@ -146,9 +146,9 @@ export function useFinalizedCasesInRange(start: string | undefined, end: string 
       // Fetch with a high page size to bypass the default 1000-row limit safely.
       const { data, error } = await supabase
         .from("irpf_cases")
-        .select("id, status, updated_at, created_at")
+        .select("id, status, updated_at, created_at, completed_at")
         .in("status", ["finalizado", "previa_enviada"])
-        .lt("updated_at", endIso)
+        .lt("completed_at", endIso)
         .limit(10000);
       if (error) throw error;
       return data || [];
