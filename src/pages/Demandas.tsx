@@ -28,6 +28,8 @@ function loadSavedFilters() {
 
 export default function Demandas() {
   const { data: cases = [], isLoading } = useCases();
+  const { role, hasPermission } = useAuth();
+  const canEdit = role === "admin" || hasPermission("editar_demandas");
   const [searchParams, setSearchParams] = useSearchParams();
   const saved = useMemo(() => loadSavedFilters(), []);
 
