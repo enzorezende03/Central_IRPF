@@ -33,12 +33,14 @@ export default function Demandas() {
   // Query params override saved filters when presentes (vindo do Dashboard)
   const initialStatus = searchParams.get("status") ?? saved.internalStatusFilter ?? "all";
   const initialOwner = searchParams.get("owner") ?? saved.ownerFilter ?? "all";
+  const initialPriority = searchParams.get("priority") ?? saved.priorityFilter ?? "all";
 
   const [search, setSearch] = useState(saved.search ?? "");
   const [tagFilter, setTagFilter] = useState(saved.tagFilter ?? "all");
   const [ownerFilter, setOwnerFilter] = useState(initialOwner);
   const [internalStatusFilter, setInternalStatusFilter] = useState(initialStatus);
   const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
+  const [priorityFilter, setPriorityFilter] = useState<string>(initialPriority);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
   const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
@@ -49,10 +51,12 @@ export default function Demandas() {
   useEffect(() => {
     const qStatus = searchParams.get("status");
     const qOwner = searchParams.get("owner");
+    const qPriority = searchParams.get("priority");
     if (qStatus !== null) setInternalStatusFilter(qStatus);
     if (qOwner !== null) setOwnerFilter(qOwner);
+    if (qPriority !== null) setPriorityFilter(qPriority);
     // Limpa os params da URL após aplicar para não persistir indefinidamente
-    if (qStatus !== null || qOwner !== null) {
+    if (qStatus !== null || qOwner !== null || qPriority !== null) {
       setSearchParams({}, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,14 +64,14 @@ export default function Demandas() {
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
-      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, procuracaoFilter, sortField, sortDir, pageSize,
+      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize,
     }));
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, procuracaoFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, procuracaoFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize]);
 
   const handleSort = (field: "cliente" | "ano") => {
     if (sortField === field) {
@@ -99,6 +103,7 @@ export default function Demandas() {
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
       const matchInternal = internalStatusFilter === "all" || c.status === internalStatusFilter;
       const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
+      const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
       let matchProc = true;
       if (procuracaoFilter !== "all") {
         const procItem = (c.internal_checklist ?? []).find((it: any) => it.label?.toLowerCase().includes("procura"));
@@ -107,9 +112,11 @@ export default function Demandas() {
       }
       // Hide dispensadas unless explicitly filtered
       if (c.status === "dispensada" && internalStatusFilter !== "dispensada") return false;
+      // Quando filtro por urgentes em aberto, ocultar finalizadas
+      if (priorityFilter === "urgente" && (c.status === "finalizado" || c.status === "dispensada")) return false;
       if (c.status === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
       }
-      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchProc;
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc;
     });
     if (sortField) {
       list.sort((a, b) => {
@@ -123,7 +130,7 @@ export default function Demandas() {
       });
     }
     return list;
-  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, sortField, sortDir]);
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir]);
 
   const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
   const paginatedData = useMemo(() => {

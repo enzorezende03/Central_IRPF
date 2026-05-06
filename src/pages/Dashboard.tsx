@@ -238,7 +238,7 @@ export default function Dashboard() {
                   Atenção Necessária
                 </CardTitle>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/demandas" className="text-xs">
+                  <Link to="/demandas?priority=urgente" className="text-xs">
                     Ver todas <ArrowRight className="h-3 w-3 ml-1" />
                   </Link>
                 </Button>
