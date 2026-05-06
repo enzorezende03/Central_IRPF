@@ -144,17 +144,18 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
                 >
-                  <Link
-                    to={`/demandas/${c.id}`}
-                    className="block p-3 rounded-lg border bg-background hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    <p className="text-sm font-medium truncate">
-                      {c.clients?.full_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <div className="relative group">
+                    <Link
+                      to={`/demandas/${c.id}`}
+                      className="block p-3 rounded-lg border bg-background hover:shadow-md transition-shadow cursor-pointer"
+                    >
+                      <p className="text-sm font-medium truncate pr-7">
+                        {c.clients?.full_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatCPF(c.clients?.cpf)} · {c.internal_owner ?? "Sem responsável"}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <PriorityBadge priority={c.priority} />
                       {billing && (
                         <BillingBadge status={billing.billing_status} billingType={billing.billing_type} />
