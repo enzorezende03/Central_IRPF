@@ -16,28 +16,38 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const PERMISSIONS_BY_ROLE: Record<string, { key: string; label: string }[]> = {
-  operacional: [
-    { key: "acesso_demandas", label: "Acesso a Demandas" },
-    { key: "acesso_configuracao", label: "Acesso a Configuração" },
-    { key: "acesso_metas", label: "Visualizar Metas IRPF" },
-    { key: "gerenciar_metas", label: "Configurar Metas IRPF" },
-  ],
-  financeiro: [
-    { key: "acesso_cobranca", label: "Acesso a Cobrança" },
-    { key: "acesso_configuracao", label: "Acesso a Configuração" },
-    { key: "acesso_metas", label: "Visualizar Metas IRPF" },
-    { key: "gerenciar_metas", label: "Configurar Metas IRPF" },
-  ],
-};
+// Permissões agrupadas por área (Visualizar / Editar)
+const PERMISSION_GROUPS: { area: string; perms: { key: string; label: string }[] }[] = [
+  {
+    area: "Demandas, Kanban, Mensagens e Clientes",
+    perms: [
+      { key: "acesso_demandas", label: "Visualizar" },
+      { key: "editar_demandas", label: "Criar / Editar / Excluir" },
+    ],
+  },
+  {
+    area: "Cobrança",
+    perms: [
+      { key: "acesso_cobranca", label: "Visualizar" },
+      { key: "editar_cobranca", label: "Criar / Editar / Excluir" },
+    ],
+  },
+  {
+    area: "Metas IRPF e Planejamento Semanal",
+    perms: [
+      { key: "acesso_metas", label: "Visualizar" },
+      { key: "editar_metas", label: "Configurar metas e planejamento" },
+    ],
+  },
+  {
+    area: "Configurações do Sistema",
+    perms: [
+      { key: "acesso_configuracao", label: "Acessar Configurações" },
+    ],
+  },
+];
 
-const ALL_PERMISSIONS = [
-  { key: "acesso_demandas", label: "Acesso a Demandas" },
-  { key: "acesso_cobranca", label: "Acesso a Cobrança" },
-  { key: "acesso_configuracao", label: "Acesso a Configuração" },
-  { key: "acesso_metas", label: "Visualizar Metas IRPF" },
-  { key: "gerenciar_metas", label: "Configurar Metas IRPF" },
-] as const;
+const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.perms);
 
 interface UserRow {
   id: string;
@@ -548,21 +558,28 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
             </Select>
           </div>
           {!isAdminRole && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Permissões</Label>
-              <div className="space-y-2 rounded-lg border p-3">
-                {(PERMISSIONS_BY_ROLE[role] ?? ALL_PERMISSIONS).map((p) => (
-                  <div key={p.key} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`edit-perm-${p.key}`}
-                      checked={permissions.includes(p.key)}
-                      onCheckedChange={() => togglePerm(p.key)}
-                    />
-                    <label htmlFor={`edit-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+              <div className="space-y-3 rounded-lg border p-3">
+                {PERMISSION_GROUPS.map((group) => (
+                  <div key={group.area} className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">{group.area}</p>
+                    <div className="space-y-1.5 pl-2">
+                      {group.perms.map((p) => (
+                        <div key={p.key} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`edit-perm-${p.key}`}
+                            checked={permissions.includes(p.key)}
+                            onCheckedChange={() => togglePerm(p.key)}
+                          />
+                          <label htmlFor={`edit-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">Selecione as áreas que este usuário pode acessar.</p>
+              <p className="text-xs text-muted-foreground">"Visualizar" libera o acesso à página. "Editar" libera os botões de criar/editar/excluir.</p>
             </div>
           )}
         </div>
@@ -659,21 +676,28 @@ function InviteUserDialog() {
             </Select>
           </div>
           {!isAdminRole && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Permissões</Label>
-              <div className="space-y-2 rounded-lg border p-3">
-                {(PERMISSIONS_BY_ROLE[role] ?? ALL_PERMISSIONS).map((p) => (
-                  <div key={p.key} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`inv-perm-${p.key}`}
-                      checked={permissions.includes(p.key)}
-                      onCheckedChange={() => togglePerm(p.key)}
-                    />
-                    <label htmlFor={`inv-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+              <div className="space-y-3 rounded-lg border p-3">
+                {PERMISSION_GROUPS.map((group) => (
+                  <div key={group.area} className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">{group.area}</p>
+                    <div className="space-y-1.5 pl-2">
+                      {group.perms.map((p) => (
+                        <div key={p.key} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`inv-perm-${p.key}`}
+                            checked={permissions.includes(p.key)}
+                            onCheckedChange={() => togglePerm(p.key)}
+                          />
+                          <label htmlFor={`inv-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">Selecione as áreas que este usuário pode acessar.</p>
+              <p className="text-xs text-muted-foreground">"Visualizar" libera o acesso à página. "Editar" libera os botões de criar/editar/excluir.</p>
             </div>
           )}
         </div>

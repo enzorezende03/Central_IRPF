@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewCaseDialog } from "@/components/NewCaseDialog";
 import { useCases } from "@/hooks/use-cases";
+import { useAuth } from "@/hooks/use-auth";
 import { STATUS_LABELS } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -27,6 +28,8 @@ function loadSavedFilters() {
 
 export default function Demandas() {
   const { data: cases = [], isLoading } = useCases();
+  const { role, hasPermission } = useAuth();
+  const canEdit = role === "admin" || hasPermission("editar_demandas");
   const [searchParams, setSearchParams] = useSearchParams();
   const saved = useMemo(() => loadSavedFilters(), []);
 
@@ -144,7 +147,7 @@ export default function Demandas() {
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Filters */}
         <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
-          <NewCaseDialog />
+          {canEdit && <NewCaseDialog />}
         </div>
         <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center">
           <div className="relative flex-1 w-full">

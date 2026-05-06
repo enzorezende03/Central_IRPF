@@ -18,6 +18,7 @@ import { BILLING_LABELS, BILLING_TYPE_LABELS, STATUS_LABELS } from "@/lib/types"
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { EditBillingDialog } from "@/components/EditBillingDialog";
+import { useAuth } from "@/hooks/use-auth";
 import type { Database } from "@/integrations/supabase/types";
 
 type BillingStatus = Database["public"]["Enums"]["billing_status"];
@@ -25,6 +26,8 @@ type BillingStatus = Database["public"]["Enums"]["billing_status"];
 export default function Cobranca() {
   const { data: cases = [], isLoading } = useCases();
   const queryClient = useQueryClient();
+  const { role, hasPermission } = useAuth();
+  const canEdit = role === "admin" || hasPermission("editar_cobranca");
   const [search, setSearch] = useState("");
   const [billingFilter, setBillingFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -314,7 +317,7 @@ export default function Cobranca() {
                               <CheckCircle className="h-3 w-3" /> Quitado
                             </span>
                           )}
-                          {!isIncluso && billing && (
+                          {!isIncluso && billing && canEdit && (
                             <Button
                               variant="ghost"
                               size="sm"

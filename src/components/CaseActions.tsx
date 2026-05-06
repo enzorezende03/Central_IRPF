@@ -33,8 +33,9 @@ type CaseStatus = Database["public"]["Enums"]["case_status"];
 
 export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   const queryClient = useQueryClient();
-  const { role } = useAuth();
+  const { role, hasPermission } = useAuth();
   const isAdmin = role === "admin";
+  const canEdit = isAdmin || hasPermission("editar_demandas");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const clientName = caseData.clients?.full_name ?? "Cliente";
@@ -129,20 +130,24 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
             <ExternalLink className="mr-2 h-4 w-4" />
             Abrir portal do cliente
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setPlanOpen(true)}>
-            <CalendarPlus className="mr-2 h-4 w-4" />
-            Enviar ao planejamento semanal
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {statuses
-            .filter((s) => s !== caseData.status)
-            .map((s) => (
-              <DropdownMenuItem key={s} onClick={() => changeStatus(s)}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {STATUS_LABELS[s]}
+          {canEdit && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setPlanOpen(true)}>
+                <CalendarPlus className="mr-2 h-4 w-4" />
+                Enviar ao planejamento semanal
               </DropdownMenuItem>
-            ))}
+              <DropdownMenuSeparator />
+              {statuses
+                .filter((s) => s !== caseData.status)
+                .map((s) => (
+                  <DropdownMenuItem key={s} onClick={() => changeStatus(s)}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    {STATUS_LABELS[s]}
+                  </DropdownMenuItem>
+                ))}
+            </>
+          )}
           {isAdmin && (
             <>
               <DropdownMenuSeparator />

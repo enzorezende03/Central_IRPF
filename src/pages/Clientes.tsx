@@ -25,7 +25,8 @@ export default function Clientes() {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const queryClient = useQueryClient();
-  const { role } = useAuth();
+  const { role, hasPermission } = useAuth();
+  const canEdit = role === "admin" || hasPermission("editar_demandas");
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -119,8 +120,8 @@ export default function Clientes() {
             <Badge variant="secondary" className="shrink-0">
               <Users className="h-3 w-3 mr-1" /> {allClients.length} clientes
             </Badge>
-            <ImportClientsDialog />
-            <NewClientDialog onCreated={() => queryClient.invalidateQueries({ queryKey: ["all-clients"] })} />
+            {canEdit && <ImportClientsDialog />}
+            {canEdit && <NewClientDialog onCreated={() => queryClient.invalidateQueries({ queryKey: ["all-clients"] })} />}
           </div>
         </div>
 
@@ -190,11 +191,12 @@ export default function Clientes() {
                       <TableCell className="text-center">
                         <Switch
                           checked={isActive}
+                          disabled={!canEdit}
                           onCheckedChange={(checked) => toggleActive.mutate({ id: client.id, is_active: checked })}
                         />
                       </TableCell>
                       <TableCell className="flex items-center gap-1">
-                        <EditClientDialog client={client as any} />
+                        {canEdit && <EditClientDialog client={client as any} />}
                         {role === "admin" && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
