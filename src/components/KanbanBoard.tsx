@@ -144,6 +144,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
           <div className="p-2 space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto">
             {(grouped[status] ?? []).map((c, i) => {
               const billing = c.billing?.[0];
+              const planInfo = planByCase.get(c.id);
               return (
                 <motion.div
                   key={c.id}
@@ -154,7 +155,11 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                   <div className="relative group">
                     <Link
                       to={`/demandas/${c.id}`}
-                      className="block p-3 rounded-lg border bg-background hover:shadow-md transition-shadow cursor-pointer"
+                      className={`block p-3 rounded-lg border hover:shadow-md transition-shadow cursor-pointer ${
+                        planInfo
+                          ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
+                          : "bg-background"
+                      }`}
                     >
                       <p className="text-sm font-medium truncate pr-7">
                         {c.clients?.full_name}
