@@ -155,10 +155,10 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                   <div className="relative group">
                     <Link
                       to={`/demandas/${c.id}`}
-                      className={`block p-3 rounded-lg border hover:shadow-md transition-shadow cursor-pointer ${
+                      className={`block p-3 rounded-lg border-2 hover:shadow-md transition-shadow cursor-pointer ${
                         planInfo
-                          ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
-                          : "bg-background"
+                          ? "bg-violet-500/15 border-violet-500 ring-2 ring-violet-500/40 shadow-sm shadow-violet-500/20"
+                          : "bg-background border-border"
                       }`}
                     >
                       <p className="text-sm font-medium truncate pr-7">
