@@ -130,20 +130,24 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
             <ExternalLink className="mr-2 h-4 w-4" />
             Abrir portal do cliente
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setPlanOpen(true)}>
-            <CalendarPlus className="mr-2 h-4 w-4" />
-            Enviar ao planejamento semanal
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {statuses
-            .filter((s) => s !== caseData.status)
-            .map((s) => (
-              <DropdownMenuItem key={s} onClick={() => changeStatus(s)}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {STATUS_LABELS[s]}
+          {canEdit && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setPlanOpen(true)}>
+                <CalendarPlus className="mr-2 h-4 w-4" />
+                Enviar ao planejamento semanal
               </DropdownMenuItem>
-            ))}
+              <DropdownMenuSeparator />
+              {statuses
+                .filter((s) => s !== caseData.status)
+                .map((s) => (
+                  <DropdownMenuItem key={s} onClick={() => changeStatus(s)}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    {STATUS_LABELS[s]}
+                  </DropdownMenuItem>
+                ))}
+            </>
+          )}
           {isAdmin && (
             <>
               <DropdownMenuSeparator />
