@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle, Target,
+  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle, Target, CalendarCheck,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
@@ -30,6 +30,7 @@ const menuItems = [
   { title: "Mensagens", url: "/mensagens", icon: MessageCircle, permission: "acesso_demandas" },
   { title: "Cobrança", url: "/cobranca", icon: DollarSign, permission: "acesso_cobranca" },
   { title: "Metas IRPF", url: "/metas", icon: Target, permission: "acesso_metas" },
+  { title: "Planejamento", url: "/planejamento", icon: CalendarCheck, permission: "acesso_metas" },
   { title: "Clientes", url: "/clientes", icon: Users, permission: "acesso_demandas" },
   { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "acesso_configuracao" },
 ];

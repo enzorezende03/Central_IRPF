@@ -11,6 +11,7 @@ import ClientDetail from "./pages/ClientDetail";
 import KanbanPage from "./pages/KanbanPage";
 import Cobranca from "./pages/Cobranca";
 import MetasIRPF from "./pages/MetasIRPF";
+import PlanejamentoSemanal from "./pages/PlanejamentoSemanal";
 import Clientes from "./pages/Clientes";
 import Configuracoes from "./pages/Configuracoes";
 import Mensagens from "./pages/Mensagens";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
             <Route path="/cobranca" element={<ProtectedRoute><Cobranca /></ProtectedRoute>} />
             <Route path="/metas" element={<ProtectedRoute><MetasIRPF /></ProtectedRoute>} />
+            <Route path="/planejamento" element={<ProtectedRoute><PlanejamentoSemanal /></ProtectedRoute>} />
             <Route path="/mensagens" element={<ProtectedRoute><Mensagens /></ProtectedRoute>} />
             <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
