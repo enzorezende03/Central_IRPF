@@ -37,7 +37,7 @@ import { toast } from "@/hooks/use-toast";
 export default function MetasIRPF() {
   const { hasPermission, loading: authLoading } = useAuth();
   const canView = hasPermission("acesso_metas");
-  const canManage = hasPermission("gerenciar_metas");
+  const canManage = hasPermission("editar_metas");
 
   const { data: seasons = [], isLoading: loadingSeasons } = useSeasons();
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
