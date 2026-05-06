@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Eye, Copy, MessageCircle, ExternalLink, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
+import { Eye, Copy, MessageCircle, ExternalLink, MoreHorizontal, RefreshCw, Trash2, CalendarPlus } from "lucide-react";
+import { AddToWeekDialog } from "@/components/AddToWeekDialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
