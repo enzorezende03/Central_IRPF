@@ -170,8 +170,8 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <PriorityBadge priority={c.priority} />
                       {planInfo && (
-                        <Badge variant="outline" className="bg-primary/15 text-primary border-primary/30 text-xs gap-1">
-                          <CalendarPlus className="h-3 w-3" /> S{planInfo.week_number}
+                        <Badge className="bg-violet-500 text-white hover:bg-violet-500 text-xs gap-1 border-0">
+                          <CalendarPlus className="h-3 w-3" /> Planejada · S{planInfo.week_number}
                         </Badge>
                       )}
                       {billing && (
