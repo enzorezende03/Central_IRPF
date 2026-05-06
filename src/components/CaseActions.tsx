@@ -177,6 +177,14 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddToWeekDialog
+        open={planOpen}
+        onOpenChange={setPlanOpen}
+        caseId={caseData.id}
+        internalOwner={caseData.internal_owner}
+        clientName={clientName}
+      />
     </>
   );
 }
