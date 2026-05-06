@@ -324,7 +324,7 @@ function OverviewBlock({ season }: { season: any }) {
       </div>
 
       {/* Bonus scale */}
-      <BonusScaleCard percent={percentDone} />
+      <BonusScaleCard weeks={realizedPerWeek} today={today} />
 
       {/* Chart */}
       <Card>
@@ -511,26 +511,48 @@ function formatBRL(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 }
 
-function BonusScaleCard({ percent }: { percent: number }) {
-  const currentIdx = getBonusTier(percent);
-  const current = BONUS_TIERS[currentIdx];
-  const next = BONUS_TIERS[currentIdx + 1];
-  const toNext = next ? Math.max(0, next.min - percent) : 0;
+function BonusScaleCard({
+  weeks,
+  today,
+}: {
+  weeks: Array<{ id: string; week_number: number; week_start: string; week_end: string; goal_count: number; realized: number }>;
+  today: Date;
+}) {
+  // Determine current week (today within window) — fallback to last completed week
+  const currentWeek =
+    weeks.find((w) => {
+      const ws = parseISODate(w.week_start);
+      const we = addDays(parseISODate(w.week_end), 1);
+      return today >= ws && today < we;
+    }) ?? null;
+
+  const totalEarned = weeks.reduce((sum, w) => {
+    const we = parseISODate(w.week_end);
+    const closed = today > addDays(we, 0); // só conta semanas já encerradas
+    if (!closed) return sum;
+    const pct = w.goal_count > 0 ? (w.realized / w.goal_count) * 100 : 0;
+    const tierIdx = getBonusTier(pct);
+    return sum + (BONUS_TIERS[tierIdx]?.value ?? 0);
+  }, 0);
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <Trophy className="h-4 w-4" /> Escala de premiação
+          <Trophy className="h-4 w-4" /> Escala de premiação semanal
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Bonificação conforme % de atingimento do total previsto da temporada
+          Bonificação calculada por semana, conforme % de atingimento da meta semanal
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
+        {/* Tier table */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
           {BONUS_TIERS.map((t, i) => {
-            const active = i === currentIdx;
+            const currentPct = currentWeek && currentWeek.goal_count > 0
+              ? (currentWeek.realized / currentWeek.goal_count) * 100
+              : -1;
+            const active = currentPct >= 0 && i === getBonusTier(currentPct);
             return (
               <div
                 key={i}
@@ -550,16 +572,63 @@ function BonusScaleCard({ percent }: { percent: number }) {
             );
           })}
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-sm">
-          <div>
-            Atingimento atual: <strong>{percent.toFixed(1)}%</strong> — faixa atual:{" "}
-            <strong className="text-primary">{formatBRL(current?.value ?? 0)}</strong>
-          </div>
-          {next && (
-            <div className="text-xs text-muted-foreground">
-              Faltam <strong>{toNext.toFixed(1)} pp</strong> para a faixa de {formatBRL(next.value)}
-            </div>
-          )}
+
+        {/* Weekly breakdown */}
+        <div className="overflow-x-auto">
+          <Table className="min-w-[640px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16">Semana</TableHead>
+                <TableHead>Período</TableHead>
+                <TableHead className="text-center w-20">Meta</TableHead>
+                <TableHead className="text-center w-24">Realizado</TableHead>
+                <TableHead className="text-center w-24">% atingido</TableHead>
+                <TableHead className="text-right w-28">Premiação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {weeks.map((w) => {
+                const ws = parseISODate(w.week_start);
+                const we = parseISODate(w.week_end);
+                const isCurrent = today >= ws && today < addDays(we, 1);
+                const isClosed = today > we;
+                const pct = w.goal_count > 0 ? (w.realized / w.goal_count) * 100 : 0;
+                const tierIdx = getBonusTier(pct);
+                const bonus = w.goal_count > 0 ? (BONUS_TIERS[tierIdx]?.value ?? 0) : 0;
+                return (
+                  <TableRow key={w.id} className={isCurrent ? "bg-primary/5" : ""}>
+                    <TableCell className="font-semibold">
+                      S{w.week_number}
+                      {isCurrent && (
+                        <Badge variant="outline" className="ml-1.5 text-[9px] py-0 px-1 border-primary/40 text-primary">
+                          atual
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {formatBR(ws)} a {formatBR(we)}
+                    </TableCell>
+                    <TableCell className="text-center">{w.goal_count}</TableCell>
+                    <TableCell className="text-center font-semibold">{w.realized}</TableCell>
+                    <TableCell className="text-center font-medium">
+                      {w.goal_count > 0 ? `${pct.toFixed(0)}%` : "—"}
+                    </TableCell>
+                    <TableCell className={`text-right font-bold ${bonus > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+                      {formatBRL(bonus)}
+                      {!isClosed && isCurrent && (
+                        <span className="block text-[9px] font-normal text-muted-foreground">parcial</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex items-center justify-between pt-1 border-t text-sm">
+          <span className="text-muted-foreground">Total acumulado (semanas encerradas)</span>
+          <strong className="text-lg text-emerald-600 dark:text-emerald-400">{formatBRL(totalEarned)}</strong>
         </div>
       </CardContent>
     </Card>
