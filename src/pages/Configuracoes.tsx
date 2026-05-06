@@ -558,21 +558,28 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
             </Select>
           </div>
           {!isAdminRole && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Permissões</Label>
-              <div className="space-y-2 rounded-lg border p-3">
-                {(PERMISSIONS_BY_ROLE[role] ?? ALL_PERMISSIONS).map((p) => (
-                  <div key={p.key} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`edit-perm-${p.key}`}
-                      checked={permissions.includes(p.key)}
-                      onCheckedChange={() => togglePerm(p.key)}
-                    />
-                    <label htmlFor={`edit-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+              <div className="space-y-3 rounded-lg border p-3">
+                {PERMISSION_GROUPS.map((group) => (
+                  <div key={group.area} className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">{group.area}</p>
+                    <div className="space-y-1.5 pl-2">
+                      {group.perms.map((p) => (
+                        <div key={p.key} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`edit-perm-${p.key}`}
+                            checked={permissions.includes(p.key)}
+                            onCheckedChange={() => togglePerm(p.key)}
+                          />
+                          <label htmlFor={`edit-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">Selecione as áreas que este usuário pode acessar.</p>
+              <p className="text-xs text-muted-foreground">"Visualizar" libera o acesso à página. "Editar" libera os botões de criar/editar/excluir.</p>
             </div>
           )}
         </div>
