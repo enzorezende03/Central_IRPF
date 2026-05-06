@@ -155,10 +155,10 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                   <div className="relative group">
                     <Link
                       to={`/demandas/${c.id}`}
-                      className={`block p-3 rounded-lg border hover:shadow-md transition-shadow cursor-pointer ${
+                      className={`block p-3 rounded-lg border-2 hover:shadow-md transition-shadow cursor-pointer ${
                         planInfo
-                          ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
-                          : "bg-background"
+                          ? "bg-violet-500/15 border-violet-500 ring-2 ring-violet-500/40 shadow-sm shadow-violet-500/20"
+                          : "bg-background border-border"
                       }`}
                     >
                       <p className="text-sm font-medium truncate pr-7">
@@ -170,8 +170,8 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <PriorityBadge priority={c.priority} />
                       {planInfo && (
-                        <Badge variant="outline" className="bg-primary/15 text-primary border-primary/30 text-xs gap-1">
-                          <CalendarPlus className="h-3 w-3" /> S{planInfo.week_number}
+                        <Badge className="bg-violet-500 text-white hover:bg-violet-500 text-xs gap-1 border-0">
+                          <CalendarPlus className="h-3 w-3" /> Planejada · S{planInfo.week_number}
                         </Badge>
                       )}
                       {billing && (
