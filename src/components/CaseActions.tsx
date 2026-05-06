@@ -36,6 +36,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const clientName = caseData.clients?.full_name ?? "Cliente";
 
   const linkId = caseData.portal_slug || caseData.portal_token;
