@@ -323,6 +323,9 @@ function OverviewBlock({ season }: { season: any }) {
         />
       </div>
 
+      {/* Bonus scale */}
+      <BonusScaleCard percent={percentDone} />
+
       {/* Chart */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
