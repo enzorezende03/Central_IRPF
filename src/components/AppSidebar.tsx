@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle, Target,
+  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle, Target, CalendarCheck,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
