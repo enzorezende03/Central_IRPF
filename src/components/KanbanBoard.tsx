@@ -1,12 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatCPF } from "@/lib/format-utils";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CaseWithClient } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
-import { CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock, CalendarPlus } from "lucide-react";
+import { AddToWeekDialog } from "@/components/AddToWeekDialog";
 
 import type { Database } from "@/integrations/supabase/types";
 
