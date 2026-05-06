@@ -103,6 +103,7 @@ export default function Demandas() {
       const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
       const matchInternal = internalStatusFilter === "all" || c.status === internalStatusFilter;
       const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
+      const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
       let matchProc = true;
       if (procuracaoFilter !== "all") {
         const procItem = (c.internal_checklist ?? []).find((it: any) => it.label?.toLowerCase().includes("procura"));
@@ -111,9 +112,11 @@ export default function Demandas() {
       }
       // Hide dispensadas unless explicitly filtered
       if (c.status === "dispensada" && internalStatusFilter !== "dispensada") return false;
+      // Quando filtro por urgentes em aberto, ocultar finalizadas
+      if (priorityFilter === "urgente" && (c.status === "finalizado" || c.status === "dispensada")) return false;
       if (c.status === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
       }
-      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchProc;
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc;
     });
     if (sortField) {
       list.sort((a, b) => {
