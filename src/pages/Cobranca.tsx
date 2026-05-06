@@ -317,7 +317,7 @@ export default function Cobranca() {
                               <CheckCircle className="h-3 w-3" /> Quitado
                             </span>
                           )}
-                          {!isIncluso && billing && (
+                          {!isIncluso && billing && canEdit && (
                             <Button
                               variant="ghost"
                               size="sm"
