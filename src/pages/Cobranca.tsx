@@ -26,6 +26,8 @@ type BillingStatus = Database["public"]["Enums"]["billing_status"];
 export default function Cobranca() {
   const { data: cases = [], isLoading } = useCases();
   const queryClient = useQueryClient();
+  const { role, hasPermission } = useAuth();
+  const canEdit = role === "admin" || hasPermission("editar_cobranca");
   const [search, setSearch] = useState("");
   const [billingFilter, setBillingFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
