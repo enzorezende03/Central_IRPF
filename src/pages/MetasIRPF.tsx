@@ -324,7 +324,7 @@ function OverviewBlock({ season }: { season: any }) {
       </div>
 
       {/* Bonus scale */}
-      <BonusScaleCard percent={percentDone} />
+      <BonusScaleCard weeks={realizedPerWeek} today={today} />
 
       {/* Chart */}
       <Card>
