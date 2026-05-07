@@ -69,9 +69,9 @@ export default function Demandas() {
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
-      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize,
+      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize, showDeleted,
     }));
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize, showDeleted]);
 
   // Reset page when filters change
   useEffect(() => {
