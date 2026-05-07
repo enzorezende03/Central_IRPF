@@ -200,7 +200,7 @@ export default function Clientes() {
                       </TableCell>
                       <TableCell className="flex items-center gap-1">
                         {canEdit && <EditClientDialog client={client as any} />}
-                        {role === "admin" && (
+                        {canDelete && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
