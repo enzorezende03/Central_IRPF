@@ -1,82 +1,34 @@
-# Planejamento Semanal de IRs
+## Anexo em lote no checklist documental
 
-Nova aba interna onde Admin/Operacional atribui demandas (IRPF) a cada semana da temporada, por responsável. Integra-se às metas semanais (meta x planejado x realizado) e oferece **sugestões automáticas** com base na data em que o cliente enviou a documentação completa — quem enviou há mais tempo entra primeiro.
+Adicionar um botão **"Anexar em lote"** no cabeçalho do card "Checklist Documental Interno" da página de demanda do cliente, permitindo subir vários arquivos de uma vez (recebidos por e-mail/WhatsApp) e marcar múltiplos itens pendentes como recebidos em uma única operação.
 
-## Banco de dados (migration)
+### Como vai funcionar (UX)
 
-Nova tabela `irpf_weekly_plan`:
-- `season_id` — referencia `irpf_season_config`
-- `week_number` — referencia `irpf_weekly_goals.week_number`
-- `case_id` — referencia `irpf_cases`
-- `responsible` (text) — nome do responsável (mesmo padrão de `internal_owner`)
-- `planned_by` (uuid) — usuário que adicionou ao plano
-- Único: `(season_id, week_number, case_id)` — uma demanda só pode estar em uma semana por temporada.
+1. No cabeçalho do checklist (ao lado do "Baixar Todos") aparece um botão **"Anexar em lote"** (ícone Paperclip).
+2. Ao clicar, abre um diálogo com duas etapas:
+   - **Etapa 1 — Selecionar arquivos**: drag-and-drop ou seletor múltiplo. Mostra a lista dos arquivos com nome e tamanho, validando tipo/tamanho (regras já existentes em `upload-utils`).
+   - **Etapa 2 — Vincular aos itens pendentes**: para cada arquivo, um `Select` lista os itens do checklist que ainda estão `pendente` ou `rejeitado` (mais opção "Avulso — não vincular a item"). 
+     - Botão de atalho **"Auto-vincular por nome"** tenta casar nome do arquivo com o título do item (match aproximado, sem sobrescrever escolhas manuais).
+     - Vários arquivos podem ser vinculados ao mesmo item (ex: 3 páginas do mesmo informe).
+3. Botão **"Enviar tudo"**: para cada arquivo faz upload no bucket `documentos_clientes`, insere em `uploaded_documents` (com `uploaded_by: 'office'` e `document_request_id` se vinculado) e, ao final, atualiza o status dos itens vinculados para `enviado` (que é o estado que habilita o botão "Aprovar"). Cada item recebe um evento na timeline ("Documento recebido fora do portal — anexado pela equipe").
+4. Toast com resumo ("8 arquivos enviados, 5 itens marcados como recebidos") e refresh do card.
 
-RLS:
-- SELECT/INSERT/UPDATE/DELETE liberado para `authenticated` (mesmo padrão das demais tabelas internas).
+### Decisão sobre dar baixa nos pendentes
 
-## Página `/planejamento` (nova)
+Os arquivos vinculados deixam o item em **"enviado"** (não "aprovado") — assim a equipe ainda passa pela conferência manual antes de aprovar, igual quando o cliente envia pelo portal. Isso preserva o fluxo de QA e os triggers existentes de progresso/status.
 
-Rota nova + item na sidebar (ícone `CalendarCheck`), abaixo de "Metas IRPF".
+> Alternativa que NÃO vou aplicar (a menos que você prefira): pular direto para "aprovado". Mais rápido, mas remove a etapa de revisão.
 
-```text
-[Temporada ▾]   [Semana: S3 (06/05–12/05) ▾]   [Responsável: Todos ▾]
+### Detalhes técnicos
 
-┌─ Resumo da semana ────────────────────────────────────────────┐
-│  Meta: 90    Planejado: 78    Realizado: 42    Saldo: -12     │
-└───────────────────────────────────────────────────────────────┘
+- Novo componente `BulkUploadDialog.tsx` em `src/components/`.
+- Renderizado no header do checklist em `ClientDetail.tsx` (perto da linha 760), só aparece se houver pelo menos 1 item pendente/rejeitado.
+- Reusa `validateFile`, `buildStoragePath`, `uploadFileToBucket` de `src/lib/upload-utils.ts`.
+- Inserts em `uploaded_documents` e update em `document_requests.status='enviado'` agrupados; invalida as queries `doc-requests`, `uploaded-docs` e `case-timeline` ao final.
+- Auto-vinculação: normaliza (lowercase, sem acentos) tanto o nome do arquivo quanto o `title` do item e usa `includes` em qualquer direção para sugerir o match.
+- Sem mudanças de schema, sem migração.
 
-┌─ Por responsável ─────────────────────────────────────────────┐
-│  Maria   Meta 30 · Planejado 28 · Realizado 15                │
-│  João    Meta 30 · Planejado 25 · Realizado 12                │
-│  Ana     Meta 30 · Planejado 25 · Realizado 15                │
-└───────────────────────────────────────────────────────────────┘
+### Arquivos alterados
 
-┌─ Sugestões (mais antigas primeiro) ───────────────────────────┐
-│  • Cliente A — docs há 18 dias — João   [+ Adicionar]         │
-│  • Cliente B — docs há 14 dias — Maria  [+ Adicionar]         │
-│  ...                                  [Adicionar 10 primeiros]│
-└───────────────────────────────────────────────────────────────┘
-
-┌─ Demandas planejadas (S3) ────────────┐ ┌─ Disponíveis ──────┐
-│  • Cliente C — Maria         [remover]│ │ Buscar...          │
-│  • Cliente D — João          [remover]│ │ Resp: [Todos ▾]    │
-└───────────────────────────────────────┘ └────────────────────┘
-```
-
-### Lógica de sugestões
-
-Demandas elegíveis (não finalizadas, não dispensadas, ainda não planejadas em nenhuma semana da temporada) são ordenadas por **data de envio da documentação** (mais antigo primeiro):
-
-1. `irpf_cases.docs_received_at` quando preenchido (já existe — marcado quando o cliente conclui o envio).
-2. Fallback: data do upload mais antigo em `uploaded_documents` (`min(uploaded_at)` por `case_id`).
-3. Fallback final: `created_at` do caso (ainda sem documentos).
-
-Cada sugestão exibe há quantos dias os documentos foram enviados. Botão "Adicionar 10 primeiros" planeja em massa para a semana atualmente selecionada, distribuindo entre os responsáveis pelo `internal_owner` da própria demanda.
-
-### Listas inferiores
-
-- **Planejadas (esquerda):** demandas já no plano da semana, agrupadas por responsável; remover ou abrir a demanda.
-- **Disponíveis (direita):** todas as elegíveis com busca e filtro por responsável; seleção múltipla + "Adicionar à semana".
-- Mover entre semanas = remover + adicionar.
-
-## Integração com Metas
-
-- **Meta** vem de `irpf_weekly_goals.goal_count`.
-- **Planejado** = contagem em `irpf_weekly_plan` para a semana.
-- **Realizado** reusa lógica existente (`completed_at` na janela, S1 absorve pré-temporada).
-- Quebra por responsável: meta distribuída igualmente entre os responsáveis ativos; planejado/realizado contados por `responsible`/`internal_owner`.
-
-## Arquivos
-
-Novos:
-- `supabase/migrations/<ts>_create_irpf_weekly_plan.sql`
-- `src/hooks/use-weekly-plan.ts` — `useWeeklyPlan`, `useAddToPlan`, `useRemoveFromPlan`, `useSuggestedCases` (faz a query ordenada).
-- `src/pages/PlanejamentoSemanal.tsx`
-
-Editados:
-- `src/App.tsx` — rota `/planejamento`.
-- `src/components/AppSidebar.tsx` — novo item de menu.
-- `src/integrations/supabase/types.ts` — atualizado pela migration automaticamente.
-
-Reaproveita `src/lib/goals-utils.ts` e os hooks de `src/hooks/use-irpf-goals.ts` para meta/realizado. Sem alteração nos triggers.
+- `src/components/BulkUploadDialog.tsx` (novo)
+- `src/pages/ClientDetail.tsx` (adicionar botão e abrir o diálogo)

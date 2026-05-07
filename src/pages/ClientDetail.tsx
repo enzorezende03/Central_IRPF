@@ -47,6 +47,7 @@ function fmtDate(d: string) {
 
 import { getPortalUrl, getWhatsAppMessage, getPendingDocsMessage, logTimelineEvent } from "@/lib/portal-utils";
 import { PendenciasCard } from "@/components/PendenciasCard";
+import { BulkUploadDialog } from "@/components/BulkUploadDialog";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 
 export default function ClientDetail() {
@@ -205,6 +206,7 @@ export default function ClientDetail() {
   const [impedirJustificativa, setImpedirJustificativa] = useState("");
   const [showDispensarDialog, setShowDispensarDialog] = useState(false);
   const [dispensarJustificativa, setDispensarJustificativa] = useState("");
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
 
@@ -758,8 +760,17 @@ export default function ClientDetail() {
                        <Download className="h-3.5 w-3.5 mr-1.5" />
                        Baixar Todos ({uploadedDocs.length})
                      </Button>
-                   )}
-                 </CardHeader>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 w-full text-xs"
+                      onClick={(e) => { e.stopPropagation(); setBulkUploadOpen(true); }}
+                    >
+                      <Upload className="h-3.5 w-3.5 mr-1.5" />
+                      Anexar em lote (e-mail/WhatsApp)
+                    </Button>
+                  </CardHeader>
                 <CollapsibleContent>
                   <CardContent className="space-y-2">
                     {docRequests.map((doc) => {
@@ -879,6 +890,19 @@ export default function ClientDetail() {
         </div>
       </div>
     </InternalLayout>
+
+    <BulkUploadDialog
+      open={bulkUploadOpen}
+      onOpenChange={setBulkUploadOpen}
+      caseId={id!}
+      docRequests={docRequests}
+      onDone={() => {
+        queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+        queryClient.invalidateQueries({ queryKey: ["uploaded-docs", id] });
+        queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+        queryClient.invalidateQueries({ queryKey: ["irpf-case", id] });
+      }}
+    />
 
     {/* Dialog de Justificativa para Impedimento */}
     <Dialog open={showImpedirDialog} onOpenChange={(open) => { setShowImpedirDialog(open); if (!open) setImpedirJustificativa(""); }}>
