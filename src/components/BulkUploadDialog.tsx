@@ -135,22 +135,23 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
         if (docRequestId) touchedDocIds.add(docRequestId);
       }
 
-      // Marca itens vinculados como "enviado"
+      const newStatus = autoApprove ? "aprovado" : "enviado";
+      const eventLabel = autoApprove ? "Documento concluído fora do portal" : "Documento recebido fora do portal";
       for (const docId of touchedDocIds) {
         await supabase
           .from("document_requests")
-          .update({ status: "enviado" })
+          .update({ status: newStatus })
           .eq("id", docId);
         const doc = pendingDocs.find((d) => d.id === docId);
         await logTimelineEvent(
           caseId,
-          "Documento recebido fora do portal",
-          `Equipe anexou arquivo(s) referente(s) a "${doc?.title ?? "item"}" recebido(s) por e-mail/WhatsApp.`,
+          eventLabel,
+          `Equipe anexou arquivo(s) referente(s) a "${doc?.title ?? "item"}" recebido(s) por e-mail/WhatsApp${autoApprove ? " e marcou como concluído" : ""}.`,
         );
       }
 
       toast.success(
-        `${files.length} arquivo(s) enviados${touchedDocIds.size > 0 ? `, ${touchedDocIds.size} item(ns) marcado(s) como recebido(s)` : ""}.`,
+        `${files.length} arquivo(s) enviados${touchedDocIds.size > 0 ? `, ${touchedDocIds.size} item(ns) ${autoApprove ? "concluído(s)" : "marcado(s) como recebido(s)"}` : ""}.`,
       );
       reset();
       onOpenChange(false);
