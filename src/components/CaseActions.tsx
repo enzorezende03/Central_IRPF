@@ -176,7 +176,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
                 ))}
             </>
           )}
-          {isAdmin && (
+          {isAdmin && !isDeleted && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -185,6 +185,15 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Excluir demanda
+              </DropdownMenuItem>
+            </>
+          )}
+          {isAdmin && isDeleted && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleRestore}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Restaurar demanda
               </DropdownMenuItem>
             </>
           )}
