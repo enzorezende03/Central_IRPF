@@ -266,6 +266,24 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
           )}
         </div>
 
+
+        <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3">
+          <input
+            id="bulk-auto-approve"
+            type="checkbox"
+            checked={autoApprove}
+            onChange={(e) => setAutoApprove(e.target.checked)}
+            disabled={saving}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
+          <label htmlFor="bulk-auto-approve" className="text-xs cursor-pointer flex-1">
+            <span className="font-medium">Concluir itens vinculados automaticamente</span>
+            <span className="block text-muted-foreground mt-0.5">
+              Marca os itens como aprovados (concluídos) — útil quando os documentos já foram conferidos. Desmarque para deixá-los apenas como "Recebido" e revisar item por item.
+            </span>
+          </label>
+        </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancelar
