@@ -205,7 +205,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir demanda</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a demanda de <strong>{clientName}</strong>? Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
+              Tem certeza que deseja excluir a demanda de <strong>{clientName}</strong>? Ela ficará disponível em "Excluídas" e poderá ser restaurada.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
