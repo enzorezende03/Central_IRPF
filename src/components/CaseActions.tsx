@@ -177,7 +177,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
                 ))}
             </>
           )}
-          {isAdmin && !isDeleted && (
+          {canDelete && !isDeleted && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
