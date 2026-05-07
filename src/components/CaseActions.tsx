@@ -33,12 +33,13 @@ type CaseStatus = Database["public"]["Enums"]["case_status"];
 
 export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   const queryClient = useQueryClient();
-  const { role, hasPermission } = useAuth();
+  const { role, hasPermission, user, profileName } = useAuth();
   const isAdmin = role === "admin";
   const canEdit = isAdmin || hasPermission("editar_demandas");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const clientName = caseData.clients?.full_name ?? "Cliente";
+  const isDeleted = !!(caseData as any).deleted_at;
 
   const linkId = caseData.portal_slug || caseData.portal_token;
   const copyLink = async () => {
