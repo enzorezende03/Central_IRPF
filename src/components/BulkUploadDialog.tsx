@@ -62,6 +62,7 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
   const [files, setFiles] = useState<File[]>([]);
   const [links, setLinks] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const pendingDocs = useMemo(
