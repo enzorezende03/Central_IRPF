@@ -271,6 +271,7 @@ export default function Demandas() {
                     <TableHead className="min-w-[100px]">Status</TableHead>
                     <TableHead className="hidden md:table-cell">Prioridade</TableHead>
                     <TableHead className="hidden lg:table-cell">Tipo</TableHead>
+                    {showDeleted && <TableHead className="whitespace-nowrap">Excluída por</TableHead>}
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
