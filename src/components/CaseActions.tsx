@@ -85,15 +85,42 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   const handleDelete = async () => {
     const { error } = await supabase
       .from("irpf_cases")
-      .delete()
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: user?.id ?? null,
+        deleted_by_name: profileName ?? user?.email ?? "Usuário",
+      } as any)
       .eq("id", caseData.id);
     if (error) {
       toast.error("Erro ao excluir demanda");
     } else {
       toast.success("Demanda excluída com sucesso!");
+      await logTimelineEvent(
+        caseData.id,
+        "Demanda excluída",
+        `Excluída por ${profileName ?? user?.email ?? "Usuário"}`,
+      );
       queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
     }
     setConfirmDelete(false);
+  };
+
+  const handleRestore = async () => {
+    const { error } = await supabase
+      .from("irpf_cases")
+      .update({ deleted_at: null, deleted_by: null, deleted_by_name: null } as any)
+      .eq("id", caseData.id);
+    if (error) {
+      toast.error("Erro ao restaurar demanda");
+    } else {
+      toast.success("Demanda restaurada!");
+      await logTimelineEvent(
+        caseData.id,
+        "Demanda restaurada",
+        `Restaurada por ${profileName ?? user?.email ?? "Usuário"}`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
+    }
   };
 
   const statuses: CaseStatus[] = [
