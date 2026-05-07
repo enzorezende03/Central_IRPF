@@ -891,6 +891,19 @@ export default function ClientDetail() {
       </div>
     </InternalLayout>
 
+    <BulkUploadDialog
+      open={bulkUploadOpen}
+      onOpenChange={setBulkUploadOpen}
+      caseId={id!}
+      docRequests={docRequests}
+      onDone={() => {
+        queryClient.invalidateQueries({ queryKey: ["doc-requests", id] });
+        queryClient.invalidateQueries({ queryKey: ["uploaded-docs", id] });
+        queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+        queryClient.invalidateQueries({ queryKey: ["irpf-case", id] });
+      }}
+    />
+
     {/* Dialog de Justificativa para Impedimento */}
     <Dialog open={showImpedirDialog} onOpenChange={(open) => { setShowImpedirDialog(open); if (!open) setImpedirJustificativa(""); }}>
       <DialogContent>
