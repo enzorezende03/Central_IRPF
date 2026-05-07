@@ -531,6 +531,9 @@ export type Database = {
           completed_at: string | null
           created_at: string
           declaration_type: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
           docs_received_at: string | null
           id: string
           internal_notes: string | null
@@ -550,6 +553,9 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           declaration_type?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
           docs_received_at?: string | null
           id?: string
           internal_notes?: string | null
@@ -569,6 +575,9 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           declaration_type?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
           docs_received_at?: string | null
           id?: string
           internal_notes?: string | null

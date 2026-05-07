@@ -9,20 +9,24 @@ export type CaseWithClient = Tables<"irpf_cases"> & {
   internal_checklist: Tables<"internal_checklist">[];
 };
 
-async function fetchCasesWithClients(): Promise<CaseWithClient[]> {
-  const { data, error } = await supabase
+async function fetchCasesWithClients(includeDeleted = false): Promise<CaseWithClient[]> {
+  let query = supabase
     .from("irpf_cases")
     .select("*, clients(*), billing(*), final_deliverables(*), internal_checklist(*)")
     .order("updated_at", { ascending: false });
+  if (!includeDeleted) {
+    query = query.is("deleted_at", null);
+  }
+  const { data, error } = await query;
 
   if (error) throw error;
   return (data as unknown as CaseWithClient[]) ?? [];
 }
 
-export function useCases() {
+export function useCases(includeDeleted = false) {
   return useQuery({
-    queryKey: ["irpf-cases"],
-    queryFn: fetchCasesWithClients,
+    queryKey: ["irpf-cases", { includeDeleted }],
+    queryFn: () => fetchCasesWithClients(includeDeleted),
   });
 }
 

@@ -27,7 +27,9 @@ function loadSavedFilters() {
 }
 
 export default function Demandas() {
-  const { data: cases = [], isLoading } = useCases();
+  const saved0 = useMemo(() => loadSavedFilters(), []);
+  const [showDeleted, setShowDeleted] = useState<boolean>(saved0.showDeleted ?? false);
+  const { data: cases = [], isLoading } = useCases(showDeleted);
   const { role, hasPermission } = useAuth();
   const canEdit = role === "admin" || hasPermission("editar_demandas");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -67,9 +69,9 @@ export default function Demandas() {
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
-      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize,
+      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize, showDeleted,
     }));
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize, showDeleted]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -215,6 +217,14 @@ export default function Demandas() {
                 <SelectItem value="baixa">Baixa</SelectItem>
               </SelectContent>
             </Select>
+            {role === "admin" && (
+              <Button
+                variant={showDeleted ? "default" : "outline"}
+                onClick={() => setShowDeleted((v) => !v)}
+              >
+                {showDeleted ? "Mostrando excluídas" : "Ver excluídas"}
+              </Button>
+            )}
             {(search || tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all") && (
               <Button
                 variant="outline"
@@ -261,6 +271,7 @@ export default function Demandas() {
                     <TableHead className="min-w-[100px]">Status</TableHead>
                     <TableHead className="hidden md:table-cell">Prioridade</TableHead>
                     <TableHead className="hidden lg:table-cell">Tipo</TableHead>
+                    {showDeleted && <TableHead className="whitespace-nowrap">Excluída por</TableHead>}
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
@@ -312,6 +323,18 @@ export default function Demandas() {
                             {c.declaration_type === "completa" ? "Completa" : "Simples"}
                           </Badge>
                         </TableCell>
+                        {showDeleted && (
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                            {(c as any).deleted_by_name ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium text-foreground">{(c as any).deleted_by_name}</span>
+                                {(c as any).deleted_at && (
+                                  <span>{new Date((c as any).deleted_at).toLocaleString("pt-BR")}</span>
+                                )}
+                              </div>
+                            ) : "—"}
+                          </TableCell>
+                        )}
                         <TableCell>
                           <CaseActions caseData={c} />
                         </TableCell>
@@ -320,7 +343,7 @@ export default function Demandas() {
                   })}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">
+                      <TableCell colSpan={showDeleted ? 11 : 10} className="text-center py-10 text-muted-foreground">
                         {cases.length === 0
                           ? "Nenhuma demanda cadastrada ainda."
                           : "Nenhuma demanda encontrada com os filtros aplicados."}
