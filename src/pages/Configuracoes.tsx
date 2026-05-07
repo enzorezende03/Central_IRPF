@@ -49,13 +49,21 @@ const PERMISSION_GROUPS: { area: string; perms: { key: string; label: string }[]
 
 const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.perms);
 
+interface AccessProfile {
+  id: string;
+  name: string;
+  description: string | null;
+  permissions: string[];
+}
+
 interface UserRow {
   id: string;
   full_name: string;
   email: string;
   created_at: string;
   role: string;
-  permissions: string[];
+  access_profile_id: string | null;
+  access_profile_name: string | null;
 }
 
 interface OfficeData {
@@ -83,27 +91,27 @@ export default function Configuracoes() {
 
       const { data: roles } = await supabase
         .from("user_roles" as any)
-        .select("user_id, role");
+        .select("user_id, role, access_profile_id");
 
-      const { data: perms } = await supabase
-        .from("user_permissions" as any)
-        .select("user_id, permission");
+      const { data: profilesList } = await supabase
+        .from("access_profiles" as any)
+        .select("id, name");
 
-      const roleMap = new Map<string, string>();
-      (roles ?? []).forEach((r: any) => roleMap.set(r.user_id, r.role));
+      const profMap = new Map<string, string>();
+      (profilesList ?? []).forEach((p: any) => profMap.set(p.id, p.name));
 
-      const permMap = new Map<string, string[]>();
-      (perms ?? []).forEach((p: any) => {
-        const arr = permMap.get(p.user_id) ?? [];
-        arr.push(p.permission);
-        permMap.set(p.user_id, arr);
+      const roleMap = new Map<string, { role: string; access_profile_id: string | null }>();
+      (roles ?? []).forEach((r: any) => roleMap.set(r.user_id, { role: r.role, access_profile_id: r.access_profile_id }));
+
+      return (profiles as any[]).map((p) => {
+        const r = roleMap.get(p.id);
+        return {
+          ...p,
+          role: r?.role ?? "sem_perfil",
+          access_profile_id: r?.access_profile_id ?? null,
+          access_profile_name: r?.access_profile_id ? profMap.get(r.access_profile_id) ?? null : null,
+        };
       });
-
-      return (profiles as any[]).map((p) => ({
-        ...p,
-        role: roleMap.get(p.id) ?? "sem_perfil",
-        permissions: permMap.get(p.id) ?? [],
-      }));
     },
     enabled: isAdmin,
   });
@@ -164,8 +172,8 @@ export default function Configuracoes() {
                         <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
                         <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{u.email}</TableCell>
                         <TableCell>
-                          <Badge variant={u.role === "admin" ? "default" : u.role === "operacional" ? "secondary" : "outline"} className="text-xs">
-                            {u.role === "admin" ? "Administrador" : u.role === "operacional" ? "Operacional" : "Sem perfil"}
+                          <Badge variant={u.role === "admin" ? "default" : "secondary"} className="text-xs">
+                            {u.role === "admin" ? "Administrador" : (u.access_profile_name || "Sem perfil")}
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
@@ -218,6 +226,8 @@ export default function Configuracoes() {
             </CardContent>
           </Card>
         )}
+
+        {isAdmin && <AccessProfilesCard />}
 
         <OfficeSettingsCard />
 
@@ -489,28 +499,39 @@ function OfficeSettingsCard() {
   );
 }
 
+function useAccessProfiles() {
+  return useQuery<AccessProfile[]>({
+    queryKey: ["access-profiles"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("access_profiles" as any)
+        .select("id, name, description, permissions")
+        .order("name");
+      return ((data as any) ?? []) as AccessProfile[];
+    },
+  });
+}
+
 function EditUserDialog({ user: u }: { user: UserRow }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const [fullName, setFullName] = useState(u.full_name || "");
-  const [role, setRole] = useState(u.role);
-  const [permissions, setPermissions] = useState<string[]>(u.permissions);
-
-  const togglePerm = (key: string) => {
-    setPermissions((prev) => prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]);
-  };
+  const [role, setRole] = useState(u.role === "sem_perfil" ? "operacional" : u.role);
+  const [accessProfileId, setAccessProfileId] = useState<string | null>(u.access_profile_id);
+  const { data: profiles = [] } = useAccessProfiles();
 
   const isAdminRole = role === "admin";
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (!isAdminRole && !accessProfileId) throw new Error("Selecione um perfil de acesso.");
       const { data, error } = await supabase.functions.invoke("create-user", {
         body: {
           action: "update",
           user_id: u.id,
           full_name: fullName.trim(),
           role,
-          permissions: isAdminRole ? ALL_PERMISSIONS.map((p) => p.key) : permissions,
+          access_profile_id: isAdminRole ? null : accessProfileId,
         },
       });
       if (error) throw error;
@@ -525,7 +546,7 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
   });
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setFullName(u.full_name || ""); setRole(u.role); setPermissions(u.permissions); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setFullName(u.full_name || ""); setRole(u.role === "sem_perfil" ? "operacional" : u.role); setAccessProfileId(u.access_profile_id); } }}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar">
           <Pencil className="h-3.5 w-3.5" />
@@ -545,41 +566,27 @@ function EditUserDialog({ user: u }: { user: UserRow }) {
             <Input id="edit-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Perfil de Acesso</Label>
+            <Label>Tipo</Label>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador — Acesso total</SelectItem>
-                <SelectItem value="operacional">Operacional — Acesso a Demandas</SelectItem>
-                <SelectItem value="financeiro">Financeiro — Acesso a Cobrança</SelectItem>
+                <SelectItem value="operacional">Usuário com perfil de acesso</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {!isAdminRole && (
-            <div className="space-y-3">
-              <Label>Permissões</Label>
-              <div className="space-y-3 rounded-lg border p-3">
-                {PERMISSION_GROUPS.map((group) => (
-                  <div key={group.area} className="space-y-1.5">
-                    <p className="text-xs font-semibold text-muted-foreground">{group.area}</p>
-                    <div className="space-y-1.5 pl-2">
-                      {group.perms.map((p) => (
-                        <div key={p.key} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`edit-perm-${p.key}`}
-                            checked={permissions.includes(p.key)}
-                            onCheckedChange={() => togglePerm(p.key)}
-                          />
-                          <label htmlFor={`edit-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">"Visualizar" libera o acesso à página. "Editar" libera os botões de criar/editar/excluir.</p>
+            <div className="space-y-1.5">
+              <Label>Perfil de Acesso *</Label>
+              <Select value={accessProfileId ?? ""} onValueChange={(v) => setAccessProfileId(v || null)}>
+                <SelectTrigger><SelectValue placeholder="Selecione um perfil" /></SelectTrigger>
+                <SelectContent>
+                  {profiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">As permissões são herdadas do perfil selecionado.</p>
             </div>
           )}
         </div>
@@ -601,11 +608,8 @@ function InviteUserDialog() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("admin");
-  const [permissions, setPermissions] = useState<string[]>(["acesso_demandas"]);
-
-  const togglePerm = (key: string) => {
-    setPermissions((prev) => prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]);
-  };
+  const [accessProfileId, setAccessProfileId] = useState<string | null>(null);
+  const { data: profiles = [] } = useAccessProfiles();
 
   const isAdminRole = role === "admin";
 
@@ -613,6 +617,7 @@ function InviteUserDialog() {
     mutationFn: async () => {
       if (!email.trim() || !password.trim()) throw new Error("E-mail e senha são obrigatórios.");
       if (password.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres.");
+      if (!isAdminRole && !accessProfileId) throw new Error("Selecione um perfil de acesso.");
 
       const { data, error } = await supabase.functions.invoke("create-user", {
         body: {
@@ -621,7 +626,7 @@ function InviteUserDialog() {
           password,
           full_name: fullName.trim(),
           role,
-          permissions: isAdminRole ? ALL_PERMISSIONS.map((p) => p.key) : permissions,
+          access_profile_id: isAdminRole ? null : accessProfileId,
         },
       });
       if (error) throw error;
@@ -632,7 +637,7 @@ function InviteUserDialog() {
       toast.success("Usuário convidado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setOpen(false);
-      setEmail(""); setPassword(""); setFullName(""); setRole("admin"); setPermissions(["acesso_demandas"]);
+      setEmail(""); setPassword(""); setFullName(""); setRole("admin"); setAccessProfileId(null);
     },
     onError: (err: any) => toast.error(err.message || "Erro ao convidar usuário."),
   });
@@ -663,41 +668,29 @@ function InviteUserDialog() {
             <Input id="inv-pass" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
           </div>
           <div className="space-y-1.5">
-            <Label>Perfil de Acesso</Label>
+            <Label>Tipo</Label>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador — Acesso total</SelectItem>
-                <SelectItem value="operacional">Operacional — Acesso a Demandas</SelectItem>
-                <SelectItem value="financeiro">Financeiro — Acesso a Cobrança</SelectItem>
+                <SelectItem value="operacional">Usuário com perfil de acesso</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {!isAdminRole && (
-            <div className="space-y-3">
-              <Label>Permissões</Label>
-              <div className="space-y-3 rounded-lg border p-3">
-                {PERMISSION_GROUPS.map((group) => (
-                  <div key={group.area} className="space-y-1.5">
-                    <p className="text-xs font-semibold text-muted-foreground">{group.area}</p>
-                    <div className="space-y-1.5 pl-2">
-                      {group.perms.map((p) => (
-                        <div key={p.key} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`inv-perm-${p.key}`}
-                            checked={permissions.includes(p.key)}
-                            onCheckedChange={() => togglePerm(p.key)}
-                          />
-                          <label htmlFor={`inv-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">"Visualizar" libera o acesso à página. "Editar" libera os botões de criar/editar/excluir.</p>
+            <div className="space-y-1.5">
+              <Label>Perfil de Acesso *</Label>
+              <Select value={accessProfileId ?? ""} onValueChange={(v) => setAccessProfileId(v || null)}>
+                <SelectTrigger><SelectValue placeholder="Selecione um perfil" /></SelectTrigger>
+                <SelectContent>
+                  {profiles.length === 0 ? (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">Crie um perfil primeiro em "Perfis de Acesso".</div>
+                  ) : profiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">As permissões serão herdadas do perfil selecionado.</p>
             </div>
           )}
         </div>
@@ -711,6 +704,181 @@ function InviteUserDialog() {
     </Dialog>
   );
 }
+
+function AccessProfilesCard() {
+  const queryClient = useQueryClient();
+  const { data: profiles = [], isLoading } = useAccessProfiles();
+  const [editing, setEditing] = useState<AccessProfile | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const deleteProfile = async (id: string) => {
+    const { error } = await supabase.from("access_profiles" as any).delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Perfil excluído.");
+    queryClient.invalidateQueries({ queryKey: ["access-profiles"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Shield className="h-4 w-4 text-primary" />
+            Perfis de Acesso
+          </CardTitle>
+          <CardDescription>Defina perfis com permissões e atribua aos usuários</CardDescription>
+        </div>
+        <Button size="sm" onClick={() => { setEditing(null); setOpen(true); }}>
+          <Plus className="h-4 w-4 mr-1.5" />
+          Novo Perfil
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : profiles.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">Nenhum perfil cadastrado. Crie o primeiro perfil para atribuí-lo aos usuários.</p>
+        ) : (
+          <div className="space-y-2">
+            {profiles.map((p) => (
+              <div key={p.id} className="flex items-start justify-between gap-3 p-3 rounded-lg border hover:bg-muted/30">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{p.name}</p>
+                  {p.description && <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>}
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {p.permissions.length === 0 ? (
+                      <Badge variant="outline" className="text-[10px]">Sem permissões</Badge>
+                    ) : ALL_PERMISSIONS.filter((perm) => p.permissions.includes(perm.key)).map((perm) => (
+                      <Badge key={perm.key} variant="secondary" className="text-[10px]">{perm.label === "Visualizar" || perm.label.startsWith("Criar") || perm.label.startsWith("Configurar") || perm.label.startsWith("Acessar") ? `${ALL_PERMISSIONS.find(x => x.key === perm.key)?.label ?? perm.key}` : perm.key}</Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(p); setOpen(true); }}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir perfil</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir o perfil <strong>{p.name}</strong>? Os usuários vinculados ficarão sem perfil até serem reatribuídos.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteProfile(p.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+      <AccessProfileDialog open={open} onOpenChange={setOpen} editing={editing} />
+    </Card>
+  );
+}
+
+function AccessProfileDialog({ open, onOpenChange, editing }: { open: boolean; onOpenChange: (v: boolean) => void; editing: AccessProfile | null }) {
+  const queryClient = useQueryClient();
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [perms, setPerms] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      setName(editing?.name ?? "");
+      setDescription(editing?.description ?? "");
+      setPerms(editing?.permissions ?? []);
+    }
+  }, [open, editing]);
+
+  const togglePerm = (key: string) => {
+    setPerms((prev) => prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]);
+  };
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!name.trim()) throw new Error("Nome obrigatório");
+      const payload = { name: name.trim(), description: description.trim() || null, permissions: perms };
+      if (editing) {
+        const { error } = await supabase.from("access_profiles" as any).update(payload).eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("access_profiles" as any).insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editing ? "Perfil atualizado!" : "Perfil criado!");
+      queryClient.invalidateQueries({ queryKey: ["access-profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      onOpenChange(false);
+    },
+    onError: (err: any) => toast.error(err.message || "Erro ao salvar perfil."),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{editing ? "Editar Perfil" : "Novo Perfil de Acesso"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Nome *</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Operacional Pleno" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Descrição</Label>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Opcional" />
+          </div>
+          <div className="space-y-3">
+            <Label>Permissões</Label>
+            <div className="space-y-3 rounded-lg border p-3">
+              {PERMISSION_GROUPS.map((group) => (
+                <div key={group.area} className="space-y-1.5">
+                  <p className="text-xs font-semibold text-muted-foreground">{group.area}</p>
+                  <div className="space-y-1.5 pl-2">
+                    {group.perms.map((p) => (
+                      <div key={p.key} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`prof-perm-${p.key}`}
+                          checked={perms.includes(p.key)}
+                          onCheckedChange={() => togglePerm(p.key)}
+                        />
+                        <label htmlFor={`prof-perm-${p.key}`} className="text-sm cursor-pointer">{p.label}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">"Visualizar" libera o acesso à página. "Criar / Editar / Excluir" libera os botões de ação.</p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+            {mutation.isPending ? "Salvando..." : editing ? "Salvar" : "Criar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 interface ChecklistTemplate {
   id: string;
