@@ -323,6 +323,18 @@ export default function Demandas() {
                             {c.declaration_type === "completa" ? "Completa" : "Simples"}
                           </Badge>
                         </TableCell>
+                        {showDeleted && (
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                            {(c as any).deleted_by_name ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium text-foreground">{(c as any).deleted_by_name}</span>
+                                {(c as any).deleted_at && (
+                                  <span>{new Date((c as any).deleted_at).toLocaleString("pt-BR")}</span>
+                                )}
+                              </div>
+                            ) : "—"}
+                          </TableCell>
+                        )}
                         <TableCell>
                           <CaseActions caseData={c} />
                         </TableCell>
