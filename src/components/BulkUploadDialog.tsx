@@ -62,6 +62,7 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
   const [files, setFiles] = useState<File[]>([]);
   const [links, setLinks] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const pendingDocs = useMemo(
@@ -134,22 +135,23 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
         if (docRequestId) touchedDocIds.add(docRequestId);
       }
 
-      // Marca itens vinculados como "enviado"
+      const newStatus = autoApprove ? "aprovado" : "enviado";
+      const eventLabel = autoApprove ? "Documento concluído fora do portal" : "Documento recebido fora do portal";
       for (const docId of touchedDocIds) {
         await supabase
           .from("document_requests")
-          .update({ status: "enviado" })
+          .update({ status: newStatus })
           .eq("id", docId);
         const doc = pendingDocs.find((d) => d.id === docId);
         await logTimelineEvent(
           caseId,
-          "Documento recebido fora do portal",
-          `Equipe anexou arquivo(s) referente(s) a "${doc?.title ?? "item"}" recebido(s) por e-mail/WhatsApp.`,
+          eventLabel,
+          `Equipe anexou arquivo(s) referente(s) a "${doc?.title ?? "item"}" recebido(s) por e-mail/WhatsApp${autoApprove ? " e marcou como concluído" : ""}.`,
         );
       }
 
       toast.success(
-        `${files.length} arquivo(s) enviados${touchedDocIds.size > 0 ? `, ${touchedDocIds.size} item(ns) marcado(s) como recebido(s)` : ""}.`,
+        `${files.length} arquivo(s) enviados${touchedDocIds.size > 0 ? `, ${touchedDocIds.size} item(ns) ${autoApprove ? "concluído(s)" : "marcado(s) como recebido(s)"}` : ""}.`,
       );
       reset();
       onOpenChange(false);
@@ -262,6 +264,24 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
               )}
             </>
           )}
+        </div>
+
+
+        <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3">
+          <input
+            id="bulk-auto-approve"
+            type="checkbox"
+            checked={autoApprove}
+            onChange={(e) => setAutoApprove(e.target.checked)}
+            disabled={saving}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
+          <label htmlFor="bulk-auto-approve" className="text-xs cursor-pointer flex-1">
+            <span className="font-medium">Concluir itens vinculados automaticamente</span>
+            <span className="block text-muted-foreground mt-0.5">
+              Marca os itens como aprovados (concluídos) — útil quando os documentos já foram conferidos. Desmarque para deixá-los apenas como "Recebido" e revisar item por item.
+            </span>
+          </label>
         </div>
 
         <DialogFooter>
