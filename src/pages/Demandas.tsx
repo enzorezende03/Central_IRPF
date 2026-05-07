@@ -343,7 +343,7 @@ export default function Demandas() {
                   })}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">
+                      <TableCell colSpan={showDeleted ? 11 : 10} className="text-center py-10 text-muted-foreground">
                         {cases.length === 0
                           ? "Nenhuma demanda cadastrada ainda."
                           : "Nenhuma demanda encontrada com os filtros aplicados."}
