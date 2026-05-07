@@ -91,27 +91,27 @@ export default function Configuracoes() {
 
       const { data: roles } = await supabase
         .from("user_roles" as any)
-        .select("user_id, role");
+        .select("user_id, role, access_profile_id");
 
-      const { data: perms } = await supabase
-        .from("user_permissions" as any)
-        .select("user_id, permission");
+      const { data: profilesList } = await supabase
+        .from("access_profiles" as any)
+        .select("id, name");
 
-      const roleMap = new Map<string, string>();
-      (roles ?? []).forEach((r: any) => roleMap.set(r.user_id, r.role));
+      const profMap = new Map<string, string>();
+      (profilesList ?? []).forEach((p: any) => profMap.set(p.id, p.name));
 
-      const permMap = new Map<string, string[]>();
-      (perms ?? []).forEach((p: any) => {
-        const arr = permMap.get(p.user_id) ?? [];
-        arr.push(p.permission);
-        permMap.set(p.user_id, arr);
+      const roleMap = new Map<string, { role: string; access_profile_id: string | null }>();
+      (roles ?? []).forEach((r: any) => roleMap.set(r.user_id, { role: r.role, access_profile_id: r.access_profile_id }));
+
+      return (profiles as any[]).map((p) => {
+        const r = roleMap.get(p.id);
+        return {
+          ...p,
+          role: r?.role ?? "sem_perfil",
+          access_profile_id: r?.access_profile_id ?? null,
+          access_profile_name: r?.access_profile_id ? profMap.get(r.access_profile_id) ?? null : null,
+        };
       });
-
-      return (profiles as any[]).map((p) => ({
-        ...p,
-        role: roleMap.get(p.id) ?? "sem_perfil",
-        permissions: permMap.get(p.id) ?? [],
-      }));
     },
     enabled: isAdmin,
   });
