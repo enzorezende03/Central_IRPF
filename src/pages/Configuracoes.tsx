@@ -19,17 +19,29 @@ import { Checkbox } from "@/components/ui/checkbox";
 // Permissões agrupadas por área (Visualizar / Editar)
 const PERMISSION_GROUPS: { area: string; perms: { key: string; label: string }[] }[] = [
   {
-    area: "Demandas, Kanban, Mensagens e Clientes",
+    area: "Demandas, Kanban e Mensagens",
     perms: [
       { key: "acesso_demandas", label: "Visualizar" },
-      { key: "editar_demandas", label: "Criar / Editar / Excluir" },
+      { key: "criar_demandas", label: "Criar" },
+      { key: "editar_demandas", label: "Editar" },
+      { key: "excluir_demandas", label: "Excluir" },
+    ],
+  },
+  {
+    area: "Clientes",
+    perms: [
+      { key: "criar_clientes", label: "Criar / Importar" },
+      { key: "editar_clientes", label: "Editar" },
+      { key: "excluir_clientes", label: "Excluir" },
     ],
   },
   {
     area: "Cobrança",
     perms: [
       { key: "acesso_cobranca", label: "Visualizar" },
-      { key: "editar_cobranca", label: "Criar / Editar / Excluir" },
+      { key: "criar_cobranca", label: "Criar" },
+      { key: "editar_cobranca", label: "Editar" },
+      { key: "excluir_cobranca", label: "Excluir" },
     ],
   },
   {
@@ -751,8 +763,8 @@ function AccessProfilesCard() {
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {p.permissions.length === 0 ? (
                       <Badge variant="outline" className="text-[10px]">Sem permissões</Badge>
-                    ) : ALL_PERMISSIONS.filter((perm) => p.permissions.includes(perm.key)).map((perm) => (
-                      <Badge key={perm.key} variant="secondary" className="text-[10px]">{perm.label === "Visualizar" || perm.label.startsWith("Criar") || perm.label.startsWith("Configurar") || perm.label.startsWith("Acessar") ? `${ALL_PERMISSIONS.find(x => x.key === perm.key)?.label ?? perm.key}` : perm.key}</Badge>
+                    ) : PERMISSION_GROUPS.flatMap((g) => g.perms.filter((perm) => p.permissions.includes(perm.key)).map((perm) => ({ ...perm, area: g.area }))).map((perm) => (
+                      <Badge key={perm.key} variant="secondary" className="text-[10px]" title={perm.area}>{perm.area.split(/[ ,]/)[0]}: {perm.label}</Badge>
                     ))}
                   </div>
                 </div>

@@ -36,6 +36,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
   const { role, hasPermission, user, profileName } = useAuth();
   const isAdmin = role === "admin";
   const canEdit = isAdmin || hasPermission("editar_demandas");
+  const canDelete = isAdmin || hasPermission("excluir_demandas");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const clientName = caseData.clients?.full_name ?? "Cliente";
@@ -176,7 +177,7 @@ export function CaseActions({ caseData }: { caseData: CaseWithClient }) {
                 ))}
             </>
           )}
-          {isAdmin && !isDeleted && (
+          {canDelete && !isDeleted && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
