@@ -26,7 +26,10 @@ export default function Clientes() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const queryClient = useQueryClient();
   const { role, hasPermission } = useAuth();
-  const canEdit = role === "admin" || hasPermission("editar_demandas");
+  const isAdmin = role === "admin";
+  const canCreate = isAdmin || hasPermission("criar_clientes");
+  const canEdit = isAdmin || hasPermission("editar_clientes");
+  const canDelete = isAdmin || hasPermission("excluir_clientes");
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
