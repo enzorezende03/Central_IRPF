@@ -19,17 +19,29 @@ import { Checkbox } from "@/components/ui/checkbox";
 // Permissões agrupadas por área (Visualizar / Editar)
 const PERMISSION_GROUPS: { area: string; perms: { key: string; label: string }[] }[] = [
   {
-    area: "Demandas, Kanban, Mensagens e Clientes",
+    area: "Demandas, Kanban e Mensagens",
     perms: [
       { key: "acesso_demandas", label: "Visualizar" },
-      { key: "editar_demandas", label: "Criar / Editar / Excluir" },
+      { key: "criar_demandas", label: "Criar" },
+      { key: "editar_demandas", label: "Editar" },
+      { key: "excluir_demandas", label: "Excluir" },
+    ],
+  },
+  {
+    area: "Clientes",
+    perms: [
+      { key: "criar_clientes", label: "Criar / Importar" },
+      { key: "editar_clientes", label: "Editar" },
+      { key: "excluir_clientes", label: "Excluir" },
     ],
   },
   {
     area: "Cobrança",
     perms: [
       { key: "acesso_cobranca", label: "Visualizar" },
-      { key: "editar_cobranca", label: "Criar / Editar / Excluir" },
+      { key: "criar_cobranca", label: "Criar" },
+      { key: "editar_cobranca", label: "Editar" },
+      { key: "excluir_cobranca", label: "Excluir" },
     ],
   },
   {
