@@ -49,13 +49,21 @@ const PERMISSION_GROUPS: { area: string; perms: { key: string; label: string }[]
 
 const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.perms);
 
+interface AccessProfile {
+  id: string;
+  name: string;
+  description: string | null;
+  permissions: string[];
+}
+
 interface UserRow {
   id: string;
   full_name: string;
   email: string;
   created_at: string;
   role: string;
-  permissions: string[];
+  access_profile_id: string | null;
+  access_profile_name: string | null;
 }
 
 interface OfficeData {
