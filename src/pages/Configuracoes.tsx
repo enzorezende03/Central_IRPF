@@ -227,6 +227,8 @@ export default function Configuracoes() {
           </Card>
         )}
 
+        {isAdmin && <AccessProfilesCard />}
+
         <OfficeSettingsCard />
 
         <DocumentChecklistCard />
