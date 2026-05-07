@@ -763,8 +763,8 @@ function AccessProfilesCard() {
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {p.permissions.length === 0 ? (
                       <Badge variant="outline" className="text-[10px]">Sem permissões</Badge>
-                    ) : ALL_PERMISSIONS.filter((perm) => p.permissions.includes(perm.key)).map((perm) => (
-                      <Badge key={perm.key} variant="secondary" className="text-[10px]">{perm.label === "Visualizar" || perm.label.startsWith("Criar") || perm.label.startsWith("Configurar") || perm.label.startsWith("Acessar") ? `${ALL_PERMISSIONS.find(x => x.key === perm.key)?.label ?? perm.key}` : perm.key}</Badge>
+                    ) : PERMISSION_GROUPS.flatMap((g) => g.perms.filter((perm) => p.permissions.includes(perm.key)).map((perm) => ({ ...perm, area: g.area }))).map((perm) => (
+                      <Badge key={perm.key} variant="secondary" className="text-[10px]" title={perm.area}>{perm.area.split(/[ ,]/)[0]}: {perm.label}</Badge>
                     ))}
                   </div>
                 </div>
