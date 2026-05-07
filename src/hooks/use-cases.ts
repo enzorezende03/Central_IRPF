@@ -9,13 +9,17 @@ export type CaseWithClient = Tables<"irpf_cases"> & {
   internal_checklist: Tables<"internal_checklist">[];
 };
 
-async function fetchCasesWithClients(includeDeleted = false): Promise<CaseWithClient[]> {
+type DeletedMode = "active" | "deleted" | "all";
+
+async function fetchCasesWithClients(mode: DeletedMode = "active"): Promise<CaseWithClient[]> {
   let query = supabase
     .from("irpf_cases")
     .select("*, clients(*), billing(*), final_deliverables(*), internal_checklist(*)")
     .order("updated_at", { ascending: false });
-  if (!includeDeleted) {
+  if (mode === "active") {
     query = query.is("deleted_at", null);
+  } else if (mode === "deleted") {
+    query = query.not("deleted_at", "is", null);
   }
   const { data, error } = await query;
 
@@ -23,10 +27,12 @@ async function fetchCasesWithClients(includeDeleted = false): Promise<CaseWithCl
   return (data as unknown as CaseWithClient[]) ?? [];
 }
 
-export function useCases(includeDeleted = false) {
+export function useCases(includeDeleted: boolean | DeletedMode = false) {
+  const mode: DeletedMode =
+    typeof includeDeleted === "string" ? includeDeleted : includeDeleted ? "deleted" : "active";
   return useQuery({
-    queryKey: ["irpf-cases", { includeDeleted }],
-    queryFn: () => fetchCasesWithClients(includeDeleted),
+    queryKey: ["irpf-cases", { mode }],
+    queryFn: () => fetchCasesWithClients(mode),
   });
 }
 
