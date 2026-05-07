@@ -150,7 +150,7 @@ export default function Demandas() {
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Filters */}
         <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
-          {canEdit && <NewCaseDialog />}
+          {canCreate && <NewCaseDialog />}
         </div>
         <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center">
           <div className="relative flex-1 w-full">
