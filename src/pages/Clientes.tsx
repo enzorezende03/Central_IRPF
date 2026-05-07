@@ -123,8 +123,8 @@ export default function Clientes() {
             <Badge variant="secondary" className="shrink-0">
               <Users className="h-3 w-3 mr-1" /> {allClients.length} clientes
             </Badge>
-            {canEdit && <ImportClientsDialog />}
-            {canEdit && <NewClientDialog onCreated={() => queryClient.invalidateQueries({ queryKey: ["all-clients"] })} />}
+            {canCreate && <ImportClientsDialog />}
+            {canCreate && <NewClientDialog onCreated={() => queryClient.invalidateQueries({ queryKey: ["all-clients"] })} />}
           </div>
         </div>
 
