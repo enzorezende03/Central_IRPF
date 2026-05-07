@@ -27,7 +27,9 @@ function loadSavedFilters() {
 }
 
 export default function Demandas() {
-  const { data: cases = [], isLoading } = useCases();
+  const saved0 = useMemo(() => loadSavedFilters(), []);
+  const [showDeleted, setShowDeleted] = useState<boolean>(saved0.showDeleted ?? false);
+  const { data: cases = [], isLoading } = useCases(showDeleted);
   const { role, hasPermission } = useAuth();
   const canEdit = role === "admin" || hasPermission("editar_demandas");
   const [searchParams, setSearchParams] = useSearchParams();
