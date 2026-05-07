@@ -206,6 +206,7 @@ export default function ClientDetail() {
   const [impedirJustificativa, setImpedirJustificativa] = useState("");
   const [showDispensarDialog, setShowDispensarDialog] = useState(false);
   const [dispensarJustificativa, setDispensarJustificativa] = useState("");
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
 
