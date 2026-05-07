@@ -760,8 +760,17 @@ export default function ClientDetail() {
                        <Download className="h-3.5 w-3.5 mr-1.5" />
                        Baixar Todos ({uploadedDocs.length})
                      </Button>
-                   )}
-                 </CardHeader>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 w-full text-xs"
+                      onClick={(e) => { e.stopPropagation(); setBulkUploadOpen(true); }}
+                    >
+                      <Upload className="h-3.5 w-3.5 mr-1.5" />
+                      Anexar em lote (e-mail/WhatsApp)
+                    </Button>
+                  </CardHeader>
                 <CollapsibleContent>
                   <CardContent className="space-y-2">
                     {docRequests.map((doc) => {
