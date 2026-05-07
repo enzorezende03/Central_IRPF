@@ -217,6 +217,14 @@ export default function Demandas() {
                 <SelectItem value="baixa">Baixa</SelectItem>
               </SelectContent>
             </Select>
+            {role === "admin" && (
+              <Button
+                variant={showDeleted ? "default" : "outline"}
+                onClick={() => setShowDeleted((v) => !v)}
+              >
+                {showDeleted ? "Mostrando excluídas" : "Ver excluídas"}
+              </Button>
+            )}
             {(search || tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all") && (
               <Button
                 variant="outline"
