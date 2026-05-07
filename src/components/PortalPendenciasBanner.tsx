@@ -46,7 +46,9 @@ export function PortalPendenciasBanner({ caseId }: { caseId: string }) {
       return (data as unknown as Pendencia[]) ?? [];
     },
     enabled: !!caseId,
-    refetchInterval: 30000,
+    staleTime: 60_000,
+    refetchInterval: 2 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   if (pendencias.length === 0) return null;

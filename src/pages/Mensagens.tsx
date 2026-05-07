@@ -99,7 +99,9 @@ export default function Mensagens() {
   const { data: threads = [], isLoading } = useQuery({
     queryKey: ["message-threads"],
     queryFn: fetchMessageThreads,
-    refetchInterval: 30000,
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   // Keep a map of caseId -> clientName for realtime alerts
