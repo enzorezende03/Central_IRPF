@@ -132,11 +132,9 @@ export function useFinalizedCasesInRange(start: string | undefined, end: string 
   return useQuery({
     queryKey: ["irpf_realized_in_range", start, end],
     enabled: !!start && !!end,
-    // Always refetch fresh — counts must reflect newly finalized cases
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchOnMount: "always",
-    refetchInterval: 60_000, // also poll once a minute while the page is open
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    refetchInterval: 5 * 60_000, // poll every 5 minutes while the page is open
     queryFn: async () => {
       // include the end day fully
       const endDate = new Date(`${end}T00:00:00`);
