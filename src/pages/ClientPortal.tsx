@@ -831,10 +831,15 @@ function PreviewApprovalCard({
         preview_feedback: null,
         preview_approved_at: new Date().toISOString(),
       } as any).eq("id", deliverable.id);
+      // Atualiza status da demanda para "Prévia Aprovada" — sinaliza ao time
+      // que a declaração está liberada para transmissão.
+      await supabase.from("irpf_cases").update({
+        status: "previa_aprovada",
+      } as any).eq("id", caseId);
       await supabase.from("case_timeline").insert({
         case_id: caseId,
         event_type: "Prévia aprovada",
-        description: "Cliente aprovou a prévia da declaração",
+        description: "Cliente aprovou a prévia da declaração — liberada para transmissão",
         visible_to_client: true,
         created_by: "Cliente",
       });
