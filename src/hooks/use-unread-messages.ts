@@ -38,10 +38,32 @@ export function useUnreadMessages() {
       }
 
       const caseIds = Array.from(byCase.keys());
+
+      // Discard threads where the office already replied AFTER the latest unread
+      // client message — they're effectively answered, just not flagged read.
+      const { data: officeReplies } = await supabase
+        .from("case_messages")
+        .select("case_id, created_at")
+        .eq("sender", "office")
+        .in("case_id", caseIds)
+        .order("created_at", { ascending: false });
+
+      const lastOfficeByCase = new Map<string, string>();
+      for (const r of officeReplies ?? []) {
+        if (!lastOfficeByCase.has(r.case_id)) lastOfficeByCase.set(r.case_id, r.created_at);
+      }
+      for (const [caseId, info] of byCase) {
+        const lastReply = lastOfficeByCase.get(caseId);
+        if (lastReply && lastReply > info.lastMsg.created_at) byCase.delete(caseId);
+      }
+
+      const filteredCaseIds = Array.from(byCase.keys());
+      if (filteredCaseIds.length === 0) return [];
+
       const { data: cases } = await supabase
         .from("irpf_cases")
         .select("id, clients(full_name)")
-        .in("id", caseIds);
+        .in("id", filteredCaseIds);
 
       const result: UnreadConversation[] = [];
       for (const c of cases ?? []) {
