@@ -15,7 +15,8 @@ async function fetchCasesWithClients(mode: DeletedMode = "active"): Promise<Case
   let query = supabase
     .from("irpf_cases")
     .select("*, clients(*), billing(*), final_deliverables(*), internal_checklist(*)")
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(5000);
   if (mode === "active") {
     query = query.is("deleted_at", null);
   } else if (mode === "deleted") {
@@ -33,6 +34,8 @@ export function useCases(includeDeleted: boolean | DeletedMode = false) {
   return useQuery({
     queryKey: ["irpf-cases", { mode }],
     queryFn: () => fetchCasesWithClients(mode),
+    staleTime: 2 * 60_000, // dedupe across Dashboard / Demandas / Cobranca / Kanban
+    gcTime: 10 * 60_000,
   });
 }
 
@@ -43,7 +46,7 @@ export function useCase(id: string | undefined) {
       if (!id) return null;
       const { data, error } = await supabase
         .from("irpf_cases")
-.select("*, clients(*), billing(*), final_deliverables(*), internal_checklist(*)")
+        .select("*, clients(*), billing(*), final_deliverables(*), internal_checklist(*)")
         .eq("id", id)
         .single();
       if (error) throw error;

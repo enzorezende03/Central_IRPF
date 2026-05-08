@@ -26,16 +26,29 @@ interface MessageThread {
 }
 
 async function fetchMessageThreads(): Promise<MessageThread[]> {
-  const { data: cases, error: casesError } = await supabase
-    .from("irpf_cases")
-    .select("id, clients(full_name)");
-  if (casesError) throw casesError;
+  // Only consider messages from the last 90 days — older threads aren't actionable.
+  const since = new Date();
+  since.setDate(since.getDate() - 90);
 
   const { data: messages, error: msgsError } = await supabase
     .from("case_messages")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("id, case_id, sender, message, created_at, read_at")
+    .gte("created_at", since.toISOString())
+    .order("created_at", { ascending: false })
+    .limit(2000);
   if (msgsError) throw msgsError;
+
+  // Only fetch clients for the cases that actually have recent messages.
+  const caseIds = Array.from(new Set((messages || []).map((m) => m.case_id)));
+  let cases: Array<{ id: string; clients: any }> = [];
+  if (caseIds.length > 0) {
+    const { data, error: casesError } = await supabase
+      .from("irpf_cases")
+      .select("id, clients(full_name)")
+      .in("id", caseIds);
+    if (casesError) throw casesError;
+    cases = (data as any) ?? [];
+  }
 
   const caseMap = new Map<string, string>();
   for (const c of cases || []) {
