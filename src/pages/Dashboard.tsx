@@ -4,7 +4,7 @@ import { formatCPF } from "@/lib/format-utils";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   ArrowRight, Filter,
-  FileText, Bell, Send, Ban,
+  FileText, Bell, Send, Ban, FileWarning, ShieldAlert,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -132,7 +132,9 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <StatCard label="Total de Demandas" value={total} icon={Users} color="text-primary" onClick={() => goToDemandasWithFilter("total")} />
               <StatCard label="Aguardando Cliente" value={byStatus("aguardando_cliente")} icon={Clock} color="text-warning" onClick={() => goToDemandasWithFilter("aguardando_cliente")} />
+              <StatCard label="Documentos Parciais" value={byStatus("documentos_parciais")} icon={FileWarning} color="text-amber-500" onClick={() => goToDemandasWithFilter("documentos_parciais")} />
               <StatCard label="Docs em Análise" value={byStatus("documentos_em_analise")} icon={FileText} color="text-blue-500" onClick={() => goToDemandasWithFilter("documentos_em_analise")} />
+              <StatCard label="Impedidas" value={byStatus("impedida")} icon={ShieldAlert} color="text-rose-500" onClick={() => goToDemandasWithFilter("impedida")} />
               <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => goToDemandasWithFilter("em_andamento")} />
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => goToDemandasWithFilter("pendencia")} />
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => goToDemandasWithFilter("previa_enviada")} />
