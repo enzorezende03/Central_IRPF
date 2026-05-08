@@ -44,22 +44,28 @@ export default function Clientes() {
   const { data: allClients = [], isLoading: loadingClients } = useQuery({
     queryKey: ["all-clients"],
     queryFn: async () => {
-      const { data } = await supabase.from("clients").select("*").order("full_name");
+      const { data } = await supabase
+        .from("clients")
+        .select("*")
+        .order("full_name")
+        .limit(5000);
       return data ?? [];
     },
+    staleTime: 2 * 60_000,
   });
 
   // Fetch case counts per client
   const { data: caseCounts = {} } = useQuery({
     queryKey: ["client-case-counts"],
     queryFn: async () => {
-      const { data } = await supabase.from("irpf_cases").select("client_id");
+      const { data } = await supabase.from("irpf_cases").select("client_id").limit(10000);
       const counts: Record<string, number> = {};
       (data ?? []).forEach((c) => {
         counts[c.client_id] = (counts[c.client_id] || 0) + 1;
       });
       return counts;
     },
+    staleTime: 2 * 60_000,
   });
 
   const toggleActive = useMutation({
