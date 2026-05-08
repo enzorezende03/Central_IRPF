@@ -32,7 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Avoid re-fetching profile/role/permissions on every TOKEN_REFRESHED event
+  // for the same user (otherwise we hammer the DB on each token rotation).
+  const fetchedForUserRef = useRef<string | null>(null);
+
   const fetchUserData = async (userId: string) => {
+    if (fetchedForUserRef.current === userId) return;
+    fetchedForUserRef.current = userId;
     const [roleRes, profileRes, permsRes] = await Promise.all([
       supabase.from("user_roles" as any).select("role").eq("user_id", userId).maybeSingle(),
       supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
@@ -57,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false);
           }, 0);
         } else {
+          fetchedForUserRef.current = null;
           setRole(null);
           setProfileName(null);
           setPermissions([]);
@@ -80,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    fetchedForUserRef.current = null;
     setSession(null);
     setUser(null);
     setRole(null);
