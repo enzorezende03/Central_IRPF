@@ -60,6 +60,7 @@ export default function Dashboard() {
   const total = filtered.filter((c) => c.status !== "dispensada").length;
   const byStatus = (s: CaseStatus) => filtered.filter((c) => c.status === s).length;
   const previaEnviada = filtered.filter((c) => c.status === "previa_enviada").length;
+  const previaAprovada = filtered.filter((c) => c.status === "previa_aprovada").length;
 
   // Navegar para Demandas com o filtro do card
   const goToDemandasWithFilter = (key: string) => {
