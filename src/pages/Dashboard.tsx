@@ -136,6 +136,7 @@ export default function Dashboard() {
               <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => goToDemandasWithFilter("em_andamento")} />
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => goToDemandasWithFilter("pendencia")} />
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => goToDemandasWithFilter("previa_enviada")} />
+              <StatCard label="Prévias Aprovadas" value={previaAprovada} icon={CheckCircle} color="text-emerald-500" onClick={() => goToDemandasWithFilter("previa_aprovada")} />
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => goToDemandasWithFilter("finalizado")} />
               <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} />
             </div>
