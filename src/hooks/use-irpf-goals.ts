@@ -20,6 +20,7 @@ export interface WeeklyGoal {
   week_start: string;
   week_end: string;
   goal_count: number;
+  realized_snapshot: number | null;
 }
 
 export function useSeasons() {
