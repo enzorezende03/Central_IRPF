@@ -638,6 +638,7 @@ export type Database = {
           created_at: string
           goal_count: number
           id: string
+          realized_snapshot: number | null
           season_id: string
           updated_at: string
           week_end: string
@@ -648,6 +649,7 @@ export type Database = {
           created_at?: string
           goal_count?: number
           id?: string
+          realized_snapshot?: number | null
           season_id: string
           updated_at?: string
           week_end: string
@@ -658,6 +660,7 @@ export type Database = {
           created_at?: string
           goal_count?: number
           id?: string
+          realized_snapshot?: number | null
           season_id?: string
           updated_at?: string
           week_end?: string
