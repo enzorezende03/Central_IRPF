@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   useSeasons, useWeeklyGoals, useUpsertSeason, useDeleteSeason,
   useReplaceWeeklyGoals, useUpdateWeeklyGoal, useFinalizedCasesInRange,
+  useSnapshotWeeklyRealized,
 } from "@/hooks/use-irpf-goals";
 import {
   generateWeeks, distributeGoals, parseISODate, formatBR, formatBRFull,
