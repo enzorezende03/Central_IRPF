@@ -439,10 +439,18 @@ function PlanContent({ season }: { season: any }) {
                 <Input className="pl-7 h-9" placeholder="Buscar cliente..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               <Select value={respFilter} onValueChange={setRespFilter}>
-                <SelectTrigger className="w-[160px] h-9"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-[170px] h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos resp.</SelectItem>
+                  <SelectItem value="Sem responsável">Sem responsável</SelectItem>
                   {responsibles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={assignTo} onValueChange={setAssignTo}>
+                <SelectTrigger className="w-[190px] h-9"><SelectValue placeholder="Atribuir a..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="keep">Manter responsável</SelectItem>
+                  {responsibles.map((r) => <SelectItem key={r} value={r}>Atribuir a {r}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button size="sm" onClick={handleAddSelected} disabled={selectedAvail.size === 0 || add.isPending}>
