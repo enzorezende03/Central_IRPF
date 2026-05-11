@@ -239,6 +239,7 @@ function PlanContent({ season }: { season: any }) {
   // ─── Available list with search ─────────────────────────
   const [search, setSearch] = useState("");
   const [respFilter, setRespFilter] = useState<string>("all");
+  const [assignTo, setAssignTo] = useState<string>("keep");
   const [selectedAvail, setSelectedAvail] = useState<Set<string>>(new Set());
   const filteredAvail = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -259,18 +260,39 @@ function PlanContent({ season }: { season: any }) {
 
   const handleAddSelected = async () => {
     if (!week) return;
-    const items = filteredAvail
-      .filter((c) => selectedAvail.has(c.id))
-      .map((c) => ({
-        season_id: season.id,
-        week_number: week.week_number,
-        case_id: c.id,
-        responsible: c.internal_owner,
-      }));
-    if (items.length === 0) {
+    const picked = filteredAvail.filter((c) => selectedAvail.has(c.id));
+    if (picked.length === 0) {
       toast({ title: "Selecione pelo menos uma demanda" });
       return;
     }
+    const overrideOwner = assignTo !== "keep" ? assignTo : null;
+
+    // If an owner override was chosen, update internal_owner on cases that
+    // either don't have one or have a different owner — that collaborator
+    // becomes the responsible for the demand.
+    if (overrideOwner) {
+      const idsToUpdate = picked
+        .filter((c) => (c.internal_owner ?? null) !== overrideOwner)
+        .map((c) => c.id);
+      if (idsToUpdate.length > 0) {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { error } = await supabase
+          .from("irpf_cases")
+          .update({ internal_owner: overrideOwner })
+          .in("id", idsToUpdate);
+        if (error) {
+          toast({ title: "Erro ao atribuir responsável", description: error.message, variant: "destructive" });
+          return;
+        }
+      }
+    }
+
+    const items = picked.map((c) => ({
+      season_id: season.id,
+      week_number: week.week_number,
+      case_id: c.id,
+      responsible: overrideOwner ?? c.internal_owner,
+    }));
     await add.mutateAsync(items);
     setSelectedAvail(new Set());
   };
