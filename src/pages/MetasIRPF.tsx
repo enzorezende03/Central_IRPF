@@ -200,13 +200,27 @@ function EmptyState({ onCreate }: { onCreate: (y: number) => void }) {
 
 /* ─────────────────────────────  OVERVIEW  ───────────────────────────── */
 
+function computeLiveRealized(
+  week: { week_number: number; week_start: string; week_end: string },
+  finalized: any[]
+): number {
+  const ws = parseISODate(week.week_start);
+  const we = parseISODate(week.week_end);
+  const isFirst = week.week_number === 1;
+  return finalized.filter((f) => {
+    const d = new Date(f.completed_at ?? f.updated_at);
+    const upper = d < addDays(we, 1);
+    const lower = isFirst ? true : d >= ws;
+    return upper && lower;
+  }).length;
+}
+
 function OverviewBlock({ season }: { season: any }) {
   const { data: weeks = [] } = useWeeklyGoals(season.id);
   const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  const snapshot = useSnapshotWeeklyRealized();
 
   const totalPlanned = season.total_planned || 0;
-  const totalFinalized = finalized.length;
-  const percentDone = totalPlanned > 0 ? (totalFinalized / totalPlanned) * 100 : 0;
 
   // Normalize "today" to local midnight so day math is consistent with
   // start_date / deadline_date (which are date-only ISO strings).
@@ -228,20 +242,31 @@ function OverviewBlock({ season }: { season: any }) {
   const totalGoal = weeks.reduce((s, w) => s + (w.goal_count || 0), 0);
 
   // Per-week realized.
-  // Week 1 absorbs everything done BEFORE or DURING its window (includes pre-season
-  // work). Subsequent weeks count only items completed within their own range.
+  // - Closed weeks (week_end < today) use the persisted snapshot if available;
+  //   otherwise we compute once and persist so the value freezes.
+  // - The current/future weeks compute live.
   const realizedPerWeek = weeks.map((w) => {
-    const ws = parseISODate(w.week_start);
     const we = parseISODate(w.week_end);
-    const isFirst = w.week_number === 1;
-    const count = finalized.filter((f) => {
-      const d = new Date((f as any).completed_at ?? f.updated_at);
-      const upper = d < addDays(we, 1);
-      const lower = isFirst ? true : d >= ws;
-      return upper && lower;
-    }).length;
-    return { ...w, realized: count };
+    const isClosed = today > we; // week ended yesterday or earlier
+    const live = computeLiveRealized(w, finalized);
+    const realized = isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
+    return { ...w, realized };
   });
+
+  // Auto-snapshot any closed week that hasn't been frozen yet.
+  useEffect(() => {
+    if (!finalized.length && weeks.length === 0) return;
+    const pending = weeks
+      .filter((w) => today > parseISODate(w.week_end) && (w.realized_snapshot == null))
+      .map((w) => ({ id: w.id, realized: computeLiveRealized(w, finalized) }));
+    if (pending.length > 0 && !snapshot.isPending) {
+      snapshot.mutate(pending);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weeks, finalized]);
+
+  const totalFinalized = realizedPerWeek.reduce((s, w) => s + w.realized, 0);
+  const percentDone = totalPlanned > 0 ? (totalFinalized / totalPlanned) * 100 : 0;
 
   // Cumulative chart data
   let goalAcc = 0;
