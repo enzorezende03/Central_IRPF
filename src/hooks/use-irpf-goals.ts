@@ -122,6 +122,31 @@ export function useUpdateWeeklyGoal() {
 }
 
 /**
+ * Snapshot the realized count of one or more weekly goals so the value is
+ * "frozen" and won't change as new cases get backdated, status flips, etc.
+ */
+export function useSnapshotWeeklyRealized() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; realized: number }[]) => {
+      if (items.length === 0) return;
+      // batch update one by one (small N, runs at most once per page open)
+      for (const it of items) {
+        const { error } = await supabase
+          .from("irpf_weekly_goals" as any)
+          .update({ realized_snapshot: it.realized })
+          .eq("id", it.id)
+          .is("realized_snapshot", null); // only fill if still empty
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["irpf_weekly_goals"] });
+    },
+  });
+}
+
+/**
  * Fetches cases that count toward the season goal: finalized OR with preview sent.
  * Uses updated_at as the proxy for "completion date".
  *
