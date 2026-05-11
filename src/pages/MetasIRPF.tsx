@@ -763,13 +763,9 @@ function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean })
                   {weeks.map((w) => {
                     const ws = parseISODate(w.week_start);
                     const we = parseISODate(w.week_end);
-                    const isFirst = w.week_number === 1;
-                    const realized = finalized.filter((f) => {
-                      const d = new Date((f as any).completed_at ?? f.updated_at);
-                      const upper = d < addDays(we, 1);
-                      const lower = isFirst ? true : d >= ws;
-                      return upper && lower;
-                    }).length;
+                    const isClosed = today > we;
+                    const live = computeLiveRealized(w, finalized);
+                    const realized = isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
                     const currentGoal = edits[w.id] ?? w.goal_count;
                     const diff = realized - currentGoal;
                     const pct = currentGoal > 0 ? (realized / currentGoal) * 100 : 0;
