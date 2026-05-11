@@ -145,7 +145,7 @@ export function useFinalizedCasesInRange(start: string | undefined, end: string 
       const { data, error } = await supabase
         .from("irpf_cases")
         .select("id, status, updated_at, created_at, completed_at")
-        .in("status", ["finalizado", "previa_enviada"])
+        .in("status", ["finalizado", "previa_enviada", "previa_aprovada"])
         .lt("completed_at", endIso)
         .limit(10000);
       if (error) throw error;
