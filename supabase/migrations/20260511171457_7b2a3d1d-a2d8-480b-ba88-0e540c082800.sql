@@ -1,0 +1,1 @@
+ALTER TABLE public.irpf_weekly_goals ADD COLUMN IF NOT EXISTS realized_snapshot integer;
