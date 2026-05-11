@@ -138,6 +138,15 @@ export default function Demandas() {
     return list;
   }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir]);
 
+  // Quantos resultados existem considerando apenas a busca (ignorando filtros), para detectar quando filtros estão ocultando matches
+  const searchOnlyMatches = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return 0;
+    return cases.filter((c) => (c.clients?.full_name?.toLowerCase() ?? "").includes(q)).length;
+  }, [cases, search]);
+
+  const hasActiveFilters = tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all";
+
   const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
   const paginatedData = useMemo(() => {
     if (pageSize === 0) return filtered;
@@ -345,9 +354,31 @@ export default function Demandas() {
                   {filtered.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={showDeleted ? 11 : 10} className="text-center py-10 text-muted-foreground">
-                        {cases.length === 0
-                          ? "Nenhuma demanda cadastrada ainda."
-                          : "Nenhuma demanda encontrada com os filtros aplicados."}
+                        {cases.length === 0 ? (
+                          "Nenhuma demanda cadastrada ainda."
+                        ) : search && searchOnlyMatches > 0 && hasActiveFilters ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <span>
+                              {searchOnlyMatches} demanda{searchOnlyMatches !== 1 ? "s" : ""} encontrada{searchOnlyMatches !== 1 ? "s" : ""} para "{search}", mas oculta{searchOnlyMatches !== 1 ? "s" : ""} pelos filtros ativos.
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setTagFilter("all");
+                                setOwnerFilter("all");
+                                setInternalStatusFilter("all");
+                                setProcuracaoFilter("all");
+                                setPriorityFilter("all");
+                                setClientStatusFilter("all");
+                              }}
+                            >
+                              Limpar filtros e ver resultados
+                            </Button>
+                          </div>
+                        ) : (
+                          "Nenhuma demanda encontrada com os filtros aplicados."
+                        )}
                       </TableCell>
                     </TableRow>
                   )}
