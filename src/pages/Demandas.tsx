@@ -354,9 +354,31 @@ export default function Demandas() {
                   {filtered.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={showDeleted ? 11 : 10} className="text-center py-10 text-muted-foreground">
-                        {cases.length === 0
-                          ? "Nenhuma demanda cadastrada ainda."
-                          : "Nenhuma demanda encontrada com os filtros aplicados."}
+                        {cases.length === 0 ? (
+                          "Nenhuma demanda cadastrada ainda."
+                        ) : search && searchOnlyMatches > 0 && hasActiveFilters ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <span>
+                              {searchOnlyMatches} demanda{searchOnlyMatches !== 1 ? "s" : ""} encontrada{searchOnlyMatches !== 1 ? "s" : ""} para "{search}", mas oculta{searchOnlyMatches !== 1 ? "s" : ""} pelos filtros ativos.
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setTagFilter("all");
+                                setOwnerFilter("all");
+                                setInternalStatusFilter("all");
+                                setProcuracaoFilter("all");
+                                setPriorityFilter("all");
+                                setClientStatusFilter("all");
+                              }}
+                            >
+                              Limpar filtros e ver resultados
+                            </Button>
+                          </div>
+                        ) : (
+                          "Nenhuma demanda encontrada com os filtros aplicados."
+                        )}
                       </TableCell>
                     </TableRow>
                   )}
