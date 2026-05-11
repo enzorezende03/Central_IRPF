@@ -138,6 +138,15 @@ export default function Demandas() {
     return list;
   }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir]);
 
+  // Quantos resultados existem considerando apenas a busca (ignorando filtros), para detectar quando filtros estão ocultando matches
+  const searchOnlyMatches = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return 0;
+    return cases.filter((c) => (c.clients?.full_name?.toLowerCase() ?? "").includes(q)).length;
+  }, [cases, search]);
+
+  const hasActiveFilters = tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all";
+
   const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
   const paginatedData = useMemo(() => {
     if (pageSize === 0) return filtered;
