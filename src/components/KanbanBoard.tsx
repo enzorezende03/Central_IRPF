@@ -149,7 +149,11 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
           <div className="p-2 space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto">
             {(grouped[status] ?? []).map((c, i) => {
               const billing = c.billing?.[0];
-              const planInfo = c.status === "finalizado" ? undefined : planByCase.get(c.id);
+              const planInfo = (c.status === "finalizado" || c.status === "previa_aprovada") ? undefined : (() => {
+                const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
+                if (fd?.preview_file_url) return undefined;
+                return planByCase.get(c.id);
+              })();
               return (
                 <motion.div
                   key={c.id}
