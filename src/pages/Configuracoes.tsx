@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useCapacities, useUpsertCapacity, DEFAULT_WEEKLY_CAPACITY } from "@/hooks/use-weekly-capacity";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { InternalLayout } from "@/components/InternalLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -240,6 +241,8 @@ export default function Configuracoes() {
         )}
 
         {isAdmin && <AccessProfilesCard />}
+
+        {isAdmin && <WeeklyCapacityCard />}
 
         <OfficeSettingsCard />
 
@@ -1436,5 +1439,154 @@ function ResetPasswordButton({ email, name }: { email: string; name: string }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+function WeeklyCapacityCard() {
+  const { data: caps = [], isLoading } = useCapacities();
+  const upsert = useUpsertCapacity();
+
+  // Build list of all known responsibles: from existing capacities + irpf_cases.internal_owner
+  const { data: ownersFromCases = [] } = useQuery({
+    queryKey: ["distinct-internal-owners"],
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("irpf_cases")
+        .select("internal_owner")
+        .not("internal_owner", "is", null)
+        .limit(5000);
+      if (error) throw error;
+      const s = new Set<string>();
+      (data ?? []).forEach((r: any) => r.internal_owner && s.add(r.internal_owner));
+      return Array.from(s).sort();
+    },
+  });
+
+  const allResponsibles = useMemo(() => {
+    const s = new Set<string>(ownersFromCases);
+    caps.forEach((c) => s.add(c.responsible));
+    return Array.from(s).sort();
+  }, [caps, ownersFromCases]);
+
+  const [newResp, setNewResp] = useState("");
+  const [newCap, setNewCap] = useState<string>("10");
+
+  const capByResp = useMemo(() => {
+    const m = new Map<string, number>();
+    caps.forEach((c) => m.set(c.responsible, c.capacity));
+    return m;
+  }, [caps]);
+
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <ListChecks className="h-4 w-4 text-primary" /> Capacidade Semanal
+        </CardTitle>
+        <CardDescription>
+          Limite de demandas por responsável a cada semana no Planejamento. Padrão: {DEFAULT_WEEKLY_CAPACITY}.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : (
+          <div className="overflow-x-auto">
+            <Table className="min-w-[480px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Responsável</TableHead>
+                  <TableHead className="w-32">Capacidade</TableHead>
+                  <TableHead className="w-28 text-right">Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allResponsibles.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
+                      Nenhum responsável cadastrado ainda.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {allResponsibles.map((resp) => {
+                  const current = capByResp.get(resp) ?? DEFAULT_WEEKLY_CAPACITY;
+                  const draft = drafts[resp] ?? String(current);
+                  const isDirty = draft !== String(current);
+                  return (
+                    <TableRow key={resp}>
+                      <TableCell className="font-medium whitespace-nowrap">{resp}</TableCell>
+                      <TableCell>
+                        <Input
+                          type="number" min={0}
+                          value={draft}
+                          onChange={(e) => setDrafts((p) => ({ ...p, [resp]: e.target.value }))}
+                          className="h-8 w-24"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm" variant={isDirty ? "default" : "ghost"}
+                          disabled={!isDirty || upsert.isPending}
+                          onClick={async () => {
+                            const v = parseInt(draft, 10);
+                            if (!Number.isFinite(v) || v < 0) {
+                              toast.error("Capacidade inválida");
+                              return;
+                            }
+                            await upsert.mutateAsync({ responsible: resp, capacity: v });
+                            setDrafts((p) => { const n = { ...p }; delete n[resp]; return n; });
+                          }}
+                        >
+                          Salvar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        <div className="border-t pt-4 flex items-end gap-2 flex-wrap">
+          <div className="flex-1 min-w-[180px]">
+            <Label className="text-xs">Adicionar responsável</Label>
+            <Input
+              placeholder="Nome do responsável"
+              value={newResp}
+              onChange={(e) => setNewResp(e.target.value)}
+              className="h-9 mt-1"
+            />
+          </div>
+          <div className="w-28">
+            <Label className="text-xs">Capacidade</Label>
+            <Input
+              type="number" min={0}
+              value={newCap}
+              onChange={(e) => setNewCap(e.target.value)}
+              className="h-9 mt-1"
+            />
+          </div>
+          <Button
+            size="sm"
+            disabled={upsert.isPending || !newResp.trim()}
+            onClick={async () => {
+              const v = parseInt(newCap, 10);
+              if (!newResp.trim() || !Number.isFinite(v) || v < 0) {
+                toast.error("Preencha responsável e capacidade válida");
+                return;
+              }
+              await upsert.mutateAsync({ responsible: newResp.trim(), capacity: v });
+              setNewResp(""); setNewCap("10");
+            }}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

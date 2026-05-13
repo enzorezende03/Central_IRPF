@@ -1,26 +1,84 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { InternalLayout } from "@/components/InternalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  CalendarCheck, Sparkles, Plus, Trash2, ExternalLink, Search, Lock, Users,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  CalendarCheck, Plus, X, ExternalLink, Search, Lock, AlertTriangle, ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  useSeasons, useWeeklyGoals, useFinalizedCasesInRange,
-} from "@/hooks/use-irpf-goals";
+import { useSeasons, useWeeklyGoals } from "@/hooks/use-irpf-goals";
 import {
   useSeasonPlan, useAddToPlan, useRemoveFromPlan, useEligibleCases,
-  getReferenceDate, type EligibleCase,
+  useMovePlanWeek, getReferenceDate, type EligibleCase,
 } from "@/hooks/use-weekly-plan";
+import {
+  useCapacities, getCapacityFor, DEFAULT_WEEKLY_CAPACITY,
+} from "@/hooks/use-weekly-capacity";
 import { parseISODate, addDays, formatBR } from "@/lib/goals-utils";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+const COMPLETED_STATUSES = new Set(["finalizado", "previa_enviada", "previa_aprovada"]);
+const CARRYOVER_EXCLUDED = new Set(["finalizado", "previa_enviada", "previa_aprovada", "dispensada"]);
+const QUEUE_STATUSES = new Set(["documentos_em_analise", "em_andamento"]);
+
+const STATUS_LABELS: Record<string, string> = {
+  aguardando_cliente: "Aguardando Cliente",
+  documentos_parciais: "Documentos Parciais",
+  documentos_em_analise: "Documentos em Análise",
+  em_andamento: "Em Andamento",
+  pendencia: "Pendência",
+  previa_enviada: "Prévia Enviada",
+  previa_aprovada: "Prévia Aprovada",
+  finalizado: "Finalizado",
+  impedida: "Impedida",
+  dispensada: "Dispensada",
+  reaberta: "Reaberta",
+  solicitacao_documentacao: "Solicitação de Documentação",
+  procuracao: "Procuração",
+};
+
+interface CaseLite {
+  id: string;
+  status: string;
+  internal_owner: string | null;
+  priority: string | null;
+  client_name: string | null;
+}
+
+function useCasesByIds(ids: string[]) {
+  const key = useMemo(() => [...ids].sort().join(","), [ids]);
+  return useQuery({
+    queryKey: ["planning_cases_by_ids", key],
+    enabled: ids.length > 0,
+    staleTime: 15_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("irpf_cases")
+        .select("id, status, internal_owner, priority, clients(full_name)")
+        .in("id", ids);
+      if (error) throw error;
+      return ((data || []) as any[]).map<CaseLite>((c) => ({
+        id: c.id,
+        status: c.status,
+        internal_owner: c.internal_owner,
+        priority: c.priority,
+        client_name: c.clients?.full_name ?? null,
+      }));
+    },
+  });
+}
 
 export default function PlanejamentoSemanal() {
   const { hasPermission, loading: authLoading } = useAuth();
@@ -60,7 +118,7 @@ export default function PlanejamentoSemanal() {
 
   return (
     <InternalLayout>
-      <div className="container mx-auto py-6 px-4 space-y-6 max-w-[1400px]">
+      <div className="container mx-auto py-6 px-4 space-y-5 max-w-[1500px]">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 grid place-items-center shadow-lg shadow-primary/20">
@@ -68,7 +126,9 @@ export default function PlanejamentoSemanal() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Planejamento Semanal</h1>
-              <p className="text-sm text-muted-foreground">Atribua quais IRs serão realizados em cada semana da temporada</p>
+              <p className="text-sm text-muted-foreground">
+                Distribua e acompanhe as demandas da semana por responsável
+              </p>
             </div>
           </div>
           {seasons.length > 0 && (
@@ -98,19 +158,21 @@ export default function PlanejamentoSemanal() {
 }
 
 function PlanContent({ season }: { season: any }) {
+  const qc = useQueryClient();
   const { data: weeks = [] } = useWeeklyGoals(season.id);
   const { data: plan = [] } = useSeasonPlan(season.id);
-  const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
   const { data: eligible = [] } = useEligibleCases();
+  const { data: capacities = [] } = useCapacities();
 
   const add = useAddToPlan();
   const remove = useRemoveFromPlan();
+  const move = useMovePlanWeek();
 
-  // Pick current week as default
   const today = useMemo(() => {
     const n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), n.getDate());
   }, []);
+
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   useEffect(() => {
     if (weeks.length === 0) { setSelectedWeek(null); return; }
@@ -124,197 +186,167 @@ function PlanContent({ season }: { season: any }) {
   }, [weeks, today, selectedWeek]);
 
   const week = weeks.find((w) => w.week_number === selectedWeek) ?? null;
-  const weekStart = week ? parseISODate(week.week_start) : null;
-  const weekEnd = week ? parseISODate(week.week_end) : null;
+  const prevWeek = weeks.find((w) => w.week_number === (selectedWeek ?? 0) - 1) ?? null;
 
-  // Map: case_id -> plan item (whole season)
+  // Plan items
   const planByCase = useMemo(() => {
     const m = new Map<string, typeof plan[number]>();
     plan.forEach((p) => m.set(p.case_id, p));
     return m;
   }, [plan]);
 
-  // Plan items in selected week
   const weekPlan = useMemo(
     () => plan.filter((p) => p.week_number === selectedWeek),
     [plan, selectedWeek]
   );
+  const prevWeekPlan = useMemo(
+    () => (prevWeek ? plan.filter((p) => p.week_number === prevWeek.week_number) : []),
+    [plan, prevWeek]
+  );
 
-  // Eligible cases (without already-planned anywhere) sorted by reference date asc
-  const sortedEligible = useMemo(() => {
-    return [...eligible]
-      .filter((c) => !planByCase.has(c.id))
-      .sort((a, b) => getReferenceDate(a).localeCompare(getReferenceDate(b)));
-  }, [eligible, planByCase]);
-
-  // Realized by responsible in selected week (week 1 absorbs pre-season)
-  const realizedThisWeek = useMemo(() => {
-    if (!weekStart || !weekEnd) return [] as typeof finalized;
-    const isFirst = selectedWeek === 1;
-    return finalized.filter((f) => {
-      const d = new Date((f as any).completed_at ?? f.updated_at);
-      const upper = d < addDays(weekEnd, 1);
-      const lower = isFirst ? true : d >= weekStart;
-      return upper && lower;
+  // Fetch live status for all cases referenced in plan (current + previous week)
+  const planCaseIds = useMemo(
+    () => Array.from(new Set([...weekPlan, ...prevWeekPlan].map((p) => p.case_id))),
+    [weekPlan, prevWeekPlan]
+  );
+  const { data: planCases = [] } = useCasesByIds(planCaseIds);
+  const caseById = useMemo(() => {
+    const m = new Map<string, CaseLite>();
+    planCases.forEach((c) => m.set(c.id, c));
+    eligible.forEach((c) => {
+      if (!m.has(c.id)) {
+        m.set(c.id, {
+          id: c.id, status: c.status, internal_owner: c.internal_owner,
+          priority: null, client_name: c.client_name,
+        });
+      }
     });
-  }, [finalized, weekStart, weekEnd, selectedWeek]);
+    return m;
+  }, [planCases, eligible]);
 
-  // ─── Summary ─────────────────────────────────────────────
-  const meta = week?.goal_count ?? 0;
-  const planejado = weekPlan.length;
-  const realizado = realizedThisWeek.length;
-  const saldo = realizado - meta;
+  // Realtime: invalidate on irpf_cases status changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("planning-cases")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "irpf_cases" }, () => {
+        qc.invalidateQueries({ queryKey: ["planning_cases_by_ids"] });
+        qc.invalidateQueries({ queryKey: ["irpf_eligible_cases"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
 
-  // Per-responsible breakdown
+  // Carryover (previous week, not completed, not ignored)
+  const [ignored, setIgnored] = useState<Set<string>>(() => {
+    try {
+      const raw = sessionStorage.getItem("planning.ignoredCarryover");
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  const persistIgnored = (next: Set<string>) => {
+    setIgnored(next);
+    try { sessionStorage.setItem("planning.ignoredCarryover", JSON.stringify([...next])); } catch {}
+  };
+  const carryover = useMemo(() => {
+    return prevWeekPlan.filter((p) => {
+      if (ignored.has(p.id)) return false;
+      const c = caseById.get(p.case_id);
+      if (!c) return false;
+      return !CARRYOVER_EXCLUDED.has(c.status);
+    });
+  }, [prevWeekPlan, caseById, ignored]);
+
+  // Available queue
+  const [search, setSearch] = useState("");
+  const [respFilter, setRespFilter] = useState<string>("all");
   const responsibles = useMemo(() => {
     const set = new Set<string>();
+    capacities.forEach((c) => set.add(c.responsible));
     eligible.forEach((c) => c.internal_owner && set.add(c.internal_owner));
     weekPlan.forEach((p) => p.responsible && set.add(p.responsible));
     return Array.from(set).sort();
-  }, [eligible, weekPlan]);
+  }, [capacities, eligible, weekPlan]);
 
-  const perResponsible = useMemo(() => {
-    const respList = responsibles.length > 0 ? responsibles : ["Sem responsável"];
-    const metaShare = respList.length > 0 ? Math.round(meta / respList.length) : 0;
-    return respList.map((r) => {
-      const planned = weekPlan.filter((p) => (p.responsible ?? "Sem responsável") === r).length;
-      const realized = realizedThisWeek.filter((c: any) => {
-        // need internal_owner, fetch from eligible list (may not include finalized cases)
-        // we don't have it here; use a separate map below.
-        return false;
-      }).length;
-      return { responsible: r, meta: metaShare, planned, realized };
-    });
-  }, [responsibles, weekPlan, realizedThisWeek, meta]);
-
-  // We need internal_owner for finalized too — fetch from eligible+plan can miss them.
-  // Build a quick lookup using both eligible and the plan's responsible.
-  // For realized counting we need the case's owner; finalized rows only have id+status+timestamps.
-  // Use a small auxiliary fetch via plan/eligible lookup; finalized cases not in those won't be attributable.
-  const ownerByCase = useMemo(() => {
-    const m = new Map<string, string>();
-    eligible.forEach((c) => c.internal_owner && m.set(c.id, c.internal_owner));
-    plan.forEach((p) => p.responsible && m.set(p.case_id, p.responsible));
-    return m;
-  }, [eligible, plan]);
-
-  const perResponsibleFixed = useMemo(() => {
-    const respList = responsibles.length > 0 ? responsibles : ["Sem responsável"];
-    const metaShare = respList.length > 0 ? Math.round(meta / respList.length) : 0;
-    return respList.map((r) => {
-      const planned = weekPlan.filter((p) => (p.responsible ?? "Sem responsável") === r).length;
-      const realized = realizedThisWeek.filter((c: any) => (ownerByCase.get(c.id) ?? "Sem responsável") === r).length;
-      return { responsible: r, meta: metaShare, planned, realized };
-    });
-  }, [responsibles, weekPlan, realizedThisWeek, meta, ownerByCase]);
-
-  // ─── Suggestions ─────────────────────────────────────────
-  // Apenas clientes que já enviaram toda a documentação (status "documentos_em_analise"),
-  // ordenados pelos que enviaram há mais tempo.
-  const [suggestionLimit, setSuggestionLimit] = useState(10);
-  const suggestions = sortedEligible
-    .filter((c) => c.status === "documentos_em_analise")
-    .slice(0, suggestionLimit);
-  const handleAddSuggestionsBulk = async () => {
-    if (!week) return;
-    await add.mutateAsync(
-      suggestions.map((c) => ({
-        season_id: season.id,
-        week_number: week.week_number,
-        case_id: c.id,
-        responsible: c.internal_owner,
-      }))
-    );
-  };
-  const handleAddOne = async (c: EligibleCase) => {
-    if (!week) return;
-    await add.mutateAsync([{
-      season_id: season.id,
-      week_number: week.week_number,
-      case_id: c.id,
-      responsible: c.internal_owner,
-    }]);
-  };
-
-  // ─── Available list with search ─────────────────────────
-  const [search, setSearch] = useState("");
-  const [respFilter, setRespFilter] = useState<string>("all");
-  const [assignTo, setAssignTo] = useState<string>("keep");
-  const [selectedAvail, setSelectedAvail] = useState<Set<string>>(new Set());
-  const filteredAvail = useMemo(() => {
+  const queue = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return sortedEligible.filter((c) => {
-      const matchSearch = !q || (c.client_name ?? "").toLowerCase().includes(q);
-      const matchResp = respFilter === "all" || (c.internal_owner ?? "Sem responsável") === respFilter;
-      return matchSearch && matchResp;
+    return [...eligible]
+      .filter((c) => !planByCase.has(c.id))
+      .filter((c) => QUEUE_STATUSES.has(c.status))
+      .filter((c) => !q || (c.client_name ?? "").toLowerCase().includes(q))
+      .filter((c) => respFilter === "all" || (c.internal_owner ?? "Sem responsável") === respFilter)
+      .sort((a, b) => getReferenceDate(a).localeCompare(getReferenceDate(b)));
+  }, [eligible, planByCase, search, respFilter]);
+
+  // Grade groups
+  const gradeGroups = useMemo(() => {
+    const set = new Set<string>(responsibles);
+    weekPlan.forEach((p) => set.add(p.responsible ?? "Sem responsável"));
+    if (set.size === 0) set.add("Sem responsável");
+    return Array.from(set).sort();
+  }, [responsibles, weekPlan]);
+
+  const planByOwner = useMemo(() => {
+    const m = new Map<string, typeof weekPlan>();
+    weekPlan.forEach((p) => {
+      const k = p.responsible ?? "Sem responsável";
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(p);
     });
-  }, [sortedEligible, search, respFilter]);
-
-  const toggleSel = (id: string) => {
-    setSelectedAvail((p) => {
-      const n = new Set(p);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  };
-
-  const handleAddSelected = async () => {
-    if (!week) return;
-    const picked = filteredAvail.filter((c) => selectedAvail.has(c.id));
-    if (picked.length === 0) {
-      toast({ title: "Selecione pelo menos uma demanda" });
-      return;
-    }
-    const overrideOwner = assignTo !== "keep" ? assignTo : null;
-
-    // If an owner override was chosen, update internal_owner on cases that
-    // either don't have one or have a different owner — that collaborator
-    // becomes the responsible for the demand.
-    if (overrideOwner) {
-      const idsToUpdate = picked
-        .filter((c) => (c.internal_owner ?? null) !== overrideOwner)
-        .map((c) => c.id);
-      if (idsToUpdate.length > 0) {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const { error } = await supabase
-          .from("irpf_cases")
-          .update({ internal_owner: overrideOwner })
-          .in("id", idsToUpdate);
-        if (error) {
-          toast({ title: "Erro ao atribuir responsável", description: error.message, variant: "destructive" });
-          return;
-        }
-      }
-    }
-
-    const items = picked.map((c) => ({
-      season_id: season.id,
-      week_number: week.week_number,
-      case_id: c.id,
-      responsible: overrideOwner ?? c.internal_owner,
-    }));
-    await add.mutateAsync(items);
-    setSelectedAvail(new Set());
-  };
-
-  // Lookup for plan items details
-  const caseInfo = useMemo(() => {
-    const m = new Map<string, EligibleCase>();
-    eligible.forEach((c) => m.set(c.id, c));
     return m;
-  }, [eligible]);
+  }, [weekPlan]);
+
+  // Summary
+  const planejadas = weekPlan.length;
+  const concluidas = useMemo(
+    () => weekPlan.filter((p) => COMPLETED_STATUSES.has(caseById.get(p.case_id)?.status ?? "")).length,
+    [weekPlan, caseById]
+  );
+  const emAberto = planejadas - concluidas;
 
   function daysSince(iso: string) {
     const d = new Date(iso);
-    const ms = today.getTime() - d.getTime();
-    return Math.max(0, Math.floor(ms / 86400000));
+    return Math.max(0, Math.floor((today.getTime() - d.getTime()) / 86400000));
   }
+
+  const handleAdd = async (c: EligibleCase, overrideOwner?: string | null) => {
+    if (!week) return;
+    const owner = overrideOwner ?? c.internal_owner;
+    // capacity check
+    if (owner) {
+      const planned = (planByOwner.get(owner)?.length ?? 0);
+      const cap = getCapacityFor(owner, capacities);
+      if (planned + 1 > cap) {
+        toast({
+          title: "Capacidade excedida",
+          description: `${owner} já tem ${planned} demandas planejadas (capacidade ${cap}).`,
+        });
+      }
+    }
+    if (overrideOwner && (c.internal_owner ?? null) !== overrideOwner) {
+      const { error } = await supabase
+        .from("irpf_cases")
+        .update({ internal_owner: overrideOwner })
+        .eq("id", c.id);
+      if (error) {
+        toast({ title: "Erro ao atribuir", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+    await add.mutateAsync([{
+      season_id: season.id, week_number: week.week_number, case_id: c.id, responsible: owner,
+    }]);
+  };
+
+  const handleMoveCarryover = async (planId: string) => {
+    if (!week) return;
+    await move.mutateAsync({ id: planId, week_number: week.week_number });
+  };
 
   if (weeks.length === 0) {
     return (
       <Card className="border-dashed">
         <CardContent className="py-12 text-center text-sm text-muted-foreground">
-          Nenhuma semana configurada para esta temporada. Vá em <strong>Metas IRPF</strong> e gere as semanas primeiro.
+          Nenhuma semana configurada. Vá em <strong>Metas IRPF</strong> e gere as semanas primeiro.
         </CardContent>
       </Card>
     );
@@ -322,256 +354,245 @@ function PlanContent({ season }: { season: any }) {
 
   return (
     <>
-      {/* Week selector */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground">Semana:</span>
-        <Select value={selectedWeek?.toString() ?? ""} onValueChange={(v) => setSelectedWeek(Number(v))}>
-          <SelectTrigger className="w-[260px]"><SelectValue placeholder="Semana" /></SelectTrigger>
-          <SelectContent>
-            {weeks.map((w) => (
-              <SelectItem key={w.id} value={w.week_number.toString()}>
-                S{w.week_number} — {formatBR(parseISODate(w.week_start))} a {formatBR(parseISODate(w.week_end))}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Week selector + Summary */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">Semana:</span>
+          <Select value={selectedWeek?.toString() ?? ""} onValueChange={(v) => setSelectedWeek(Number(v))}>
+            <SelectTrigger className="w-[280px]"><SelectValue placeholder="Semana" /></SelectTrigger>
+            <SelectContent>
+              {weeks.map((w) => (
+                <SelectItem key={w.id} value={w.week_number.toString()}>
+                  S{w.week_number} — {formatBR(parseISODate(w.week_start))} a {formatBR(parseISODate(w.week_end))}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-5 text-sm bg-muted/40 border rounded-lg px-4 py-2">
+          <span><span className="text-muted-foreground">Planejadas esta semana:</span> <strong>{planejadas}</strong></span>
+          <span className="text-muted-foreground">|</span>
+          <span><span className="text-muted-foreground">Concluídas:</span> <strong className="text-emerald-600 dark:text-emerald-400">{concluidas}</strong></span>
+          <span className="text-muted-foreground">|</span>
+          <span><span className="text-muted-foreground">Em aberto:</span> <strong className="text-blue-600 dark:text-blue-400">{emAberto}</strong></span>
+        </div>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiBox label="Meta da semana" value={meta} accent="text-blue-600 dark:text-blue-400" />
-        <KpiBox label="Planejado" value={planejado} accent="text-primary" />
-        <KpiBox label="Realizado" value={realizado} accent="text-emerald-600 dark:text-emerald-400" />
-        <KpiBox label="Saldo (real - meta)" value={(saldo > 0 ? "+" : "") + saldo} accent={saldo >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"} />
-      </div>
-
-      {/* Per responsible */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Users className="h-4 w-4" /> Por responsável
-          </CardTitle>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Meta da semana distribuída igualmente entre os responsáveis ativos.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table className="min-w-[640px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead className="text-center w-24">Meta</TableHead>
-                  <TableHead className="text-center w-28">Planejado</TableHead>
-                  <TableHead className="text-center w-28">Realizado</TableHead>
-                  <TableHead className="text-center w-28">Saldo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {perResponsibleFixed.map((r) => {
-                  const saldo = r.realized - r.meta;
-                  return (
-                    <TableRow key={r.responsible}>
-                      <TableCell className="font-medium whitespace-nowrap">{r.responsible}</TableCell>
-                      <TableCell className="text-center">{r.meta}</TableCell>
-                      <TableCell className="text-center font-semibold">{r.planned}</TableCell>
-                      <TableCell className="text-center font-semibold">{r.realized}</TableCell>
-                      <TableCell className={`text-center font-semibold ${saldo >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {saldo > 0 ? `+${saldo}` : saldo}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Two columns: planned + available */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Planned for selected week */}
+      {/* Two columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] gap-4">
+        {/* Queue */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Planejadas — S{selectedWeek}</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Fila de disponíveis</CardTitle>
             <p className="text-xs text-muted-foreground">
-              {weekPlan.length} {weekPlan.length === 1 ? "demanda" : "demandas"} no plano
+              Documentação completa, ainda não planejadas. Mais antigas primeiro.
             </p>
-          </CardHeader>
-          <CardContent>
-            {weekPlan.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">Nenhuma demanda planejada.</p>
-            ) : (
-              <div className="space-y-1.5">
-                {weekPlan.map((p) => {
-                  const c = caseInfo.get(p.case_id);
-                  return (
-                    <div key={p.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 border">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">
-                          {c?.client_name ?? "Demanda"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {p.responsible ?? "Sem responsável"}
-                        </div>
-                      </div>
-                      <Link to={`/demandas/${p.case_id}`}>
-                        <Button size="icon" variant="ghost" className="h-7 w-7"><ExternalLink className="h-3.5 w-3.5" /></Button>
-                      </Link>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => remove.mutate(p.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Available */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Disponíveis</CardTitle>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <div className="relative flex-1 min-w-[180px]">
+            <div className="flex flex-col gap-2 mt-2">
+              <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input className="pl-7 h-9" placeholder="Buscar cliente..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               <Select value={respFilter} onValueChange={setRespFilter}>
-                <SelectTrigger className="w-[170px] h-9"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos resp.</SelectItem>
+                  <SelectItem value="all">Todos os responsáveis</SelectItem>
                   <SelectItem value="Sem responsável">Sem responsável</SelectItem>
                   {responsibles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select value={assignTo} onValueChange={setAssignTo}>
-                <SelectTrigger className="w-[190px] h-9"><SelectValue placeholder="Atribuir a..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="keep">Manter responsável</SelectItem>
-                  {responsibles.map((r) => <SelectItem key={r} value={r}>Atribuir a {r}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Button size="sm" onClick={handleAddSelected} disabled={selectedAvail.size === 0 || add.isPending}>
-                <Plus className="h-4 w-4 mr-1.5" /> Adicionar ({selectedAvail.size})
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
-            {filteredAvail.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">Nenhuma demanda disponível.</p>
+            {queue.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhuma demanda disponível.
+              </p>
             ) : (
-              <div className="space-y-1 max-h-[480px] overflow-y-auto pr-1">
-                {filteredAvail.slice(0, 200).map((c) => {
+              <div className="space-y-1.5 max-h-[640px] overflow-y-auto pr-1">
+                {queue.slice(0, 200).map((c) => {
                   const ref = getReferenceDate(c);
                   const days = daysSince(ref);
                   const hasDocs = !!(c.docs_received_at || c.earliest_doc_at);
                   return (
-                    <label key={c.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 border cursor-pointer">
-                      <Checkbox checked={selectedAvail.has(c.id)} onCheckedChange={() => toggleSel(c.id)} />
+                    <div key={c.id} className="flex items-start gap-2 p-2.5 rounded-md border hover:border-primary/50 hover:bg-muted/40 transition-colors">
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{c.client_name ?? "—"}</div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {c.internal_owner ?? "Sem responsável"} · {hasDocs ? `há ${days}d` : "sem docs"}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <Badge variant="secondary" className="text-[10px]">{STATUS_LABELS[c.status] ?? c.status}</Badge>
+                          {hasDocs && (
+                            <Badge variant={days >= 14 ? "destructive" : days >= 7 ? "default" : "outline"} className="text-[10px]">
+                              {days}d com docs
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1 truncate">
+                          {c.internal_owner ?? "Sem responsável"}
                         </div>
                       </div>
-                    </label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0">
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2" align="end">
+                          <p className="text-xs text-muted-foreground px-1.5 pb-1.5">Atribuir a</p>
+                          <div className="space-y-0.5 max-h-60 overflow-y-auto">
+                            {c.internal_owner && (
+                              <button
+                                className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted"
+                                onClick={() => handleAdd(c)}
+                              >
+                                <span className="font-medium">{c.internal_owner}</span> <span className="text-muted-foreground">(atual)</span>
+                              </button>
+                            )}
+                            {responsibles.filter((r) => r !== c.internal_owner).map((r) => (
+                              <button
+                                key={r}
+                                className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted"
+                                onClick={() => handleAdd(c, r)}
+                              >
+                                {r}
+                              </button>
+                            ))}
+                            {!c.internal_owner && (
+                              <button
+                                className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted text-muted-foreground"
+                                onClick={() => handleAdd(c)}
+                              >
+                                Sem responsável
+                              </button>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   );
                 })}
-                {filteredAvail.length > 200 && (
-                  <p className="text-[11px] text-muted-foreground text-center pt-2">Refine a busca para ver mais resultados.</p>
+                {queue.length > 200 && (
+                  <p className="text-[11px] text-muted-foreground text-center pt-2">
+                    Refine a busca para ver mais resultados.
+                  </p>
                 )}
               </div>
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* Suggestions */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap">
-          <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" /> Sugestões
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Ordenadas pela data em que o cliente enviou a documentação (mais antigos primeiro).
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Select value={suggestionLimit.toString()} onValueChange={(v) => setSuggestionLimit(Number(v))}>
-              <SelectTrigger className="w-[120px] h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {[5, 10, 15, 20, 30].map((n) => <SelectItem key={n} value={n.toString()}>{n} primeiros</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button size="sm" onClick={handleAddSuggestionsBulk} disabled={suggestions.length === 0 || add.isPending}>
-              <Plus className="h-4 w-4 mr-1.5" /> Adicionar todos
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {suggestions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Sem sugestões pendentes.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="min-w-[820px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead className="whitespace-nowrap">Docs enviados</TableHead>
-                    <TableHead className="text-right w-32">Ação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {suggestions.map((c) => {
-                    const ref = getReferenceDate(c);
-                    const days = daysSince(ref);
-                    const hasDocs = !!(c.docs_received_at || c.earliest_doc_at);
-                    return (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          <Link to={`/demandas/${c.id}`} className="hover:underline">
-                            {c.client_name ?? "—"}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">{c.internal_owner ?? <span className="text-muted-foreground">Sem responsável</span>}</TableCell>
-                        <TableCell className="whitespace-nowrap text-sm">
-                          {hasDocs ? (
-                            <Badge variant={days >= 14 ? "destructive" : days >= 7 ? "default" : "secondary"}>
-                              há {days} {days === 1 ? "dia" : "dias"}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">sem documentos</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant="outline" onClick={() => handleAddOne(c)} disabled={add.isPending}>
-                            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+        {/* Grade */}
+        <div className="space-y-4">
+          {/* Carryover */}
+          {carryover.length > 0 && (
+            <Card className="border-dashed border-amber-500/60 bg-amber-50/40 dark:bg-amber-950/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2 text-amber-900 dark:text-amber-200">
+                  <AlertTriangle className="h-4 w-4" />
+                  Da semana anterior ({carryover.length})
+                </CardTitle>
+                <p className="text-xs text-amber-800/80 dark:text-amber-200/70">
+                  Demandas que ficaram em aberto na S{prevWeek?.week_number}.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {carryover.map((p) => {
+                  const c = caseById.get(p.case_id);
+                  return (
+                    <div key={p.id} className="flex items-center gap-2 p-2 rounded-md border bg-background">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{c?.client_name ?? "—"}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {p.responsible ?? "Sem responsável"} · {STATUS_LABELS[c?.status ?? ""] ?? c?.status ?? "—"}
+                        </div>
+                      </div>
+                      <Button size="sm" variant="default" className="h-7" onClick={() => handleMoveCarryover(p.id)}>
+                        <ArrowRight className="h-3.5 w-3.5 mr-1" /> Mover
+                      </Button>
+                      <Button
+                        size="sm" variant="ghost" className="h-7 text-muted-foreground"
+                        onClick={() => persistIgnored(new Set([...ignored, p.id]))}
+                      >
+                        Ignorar
+                      </Button>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
-    </>
-  );
-}
 
-function KpiBox({ label, value, accent }: { label: string; value: string | number; accent: string }) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="text-xs text-muted-foreground">{label}</div>
-        <div className={`text-2xl font-bold mt-1 ${accent}`}>{value}</div>
-      </CardContent>
-    </Card>
+          {/* Grade by responsible */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {gradeGroups.map((resp) => {
+              const items = planByOwner.get(resp) ?? [];
+              const cap = getCapacityFor(resp, capacities);
+              const pct = cap > 0 ? Math.round((items.length / cap) * 100) : 0;
+              const barColor =
+                pct > 100 ? "bg-red-500"
+                : pct >= 80 ? "bg-amber-500"
+                : "bg-emerald-500";
+              return (
+                <Card key={resp} className="flex flex-col">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <CardTitle className="text-sm truncate">{resp}</CardTitle>
+                      <span className={cn(
+                        "text-xs font-semibold whitespace-nowrap",
+                        pct > 100 ? "text-red-600" : pct >= 80 ? "text-amber-600" : "text-muted-foreground"
+                      )}>
+                        {items.length}/{cap}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mt-1">
+                      <div className={cn("h-full transition-all", barColor)} style={{ width: `${Math.min(100, pct)}%` }} />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 space-y-1.5 pt-1">
+                    {items.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-4">Sem demandas planejadas.</p>
+                    ) : (
+                      items.map((p) => {
+                        const c = caseById.get(p.case_id);
+                        const status = c?.status ?? "";
+                        const dotColor =
+                          COMPLETED_STATUSES.has(status) ? "bg-emerald-500"
+                          : "bg-blue-500";
+                        return (
+                          <div key={p.id} className="flex items-center gap-2 p-2 rounded-md border hover:bg-muted/40 transition-colors">
+                            <span className={cn("h-2 w-2 rounded-full shrink-0", dotColor)} />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">{c?.client_name ?? "—"}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">
+                                {STATUS_LABELS[status] ?? status ?? "—"}
+                              </div>
+                            </div>
+                            <Link to={`/demandas/${p.case_id}`}>
+                              <Button size="icon" variant="ghost" className="h-6 w-6">
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </Link>
+                            <Button
+                              size="icon" variant="ghost"
+                              className="h-6 w-6 text-destructive"
+                              onClick={() => remove.mutate(p.id)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          {capacities.length === 0 && (
+            <p className="text-[11px] text-muted-foreground text-center">
+              Capacidade padrão de {DEFAULT_WEEKLY_CAPACITY} por responsável. Configure em Configurações &gt; Capacidade Semanal.
+            </p>
+          )}
+        </div>
+      </div>
+    </>
   );
 }

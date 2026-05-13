@@ -73,7 +73,29 @@ export function useRemoveFromPlan() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["irpf_weekly_plan_season"] });
+      qc.invalidateQueries({ queryKey: ["irpf_weekly_plan_all"] });
     },
+  });
+}
+
+export function useMovePlanWeek() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; week_number: number; responsible?: string | null }) => {
+      const patch: any = { week_number: input.week_number, updated_at: new Date().toISOString() };
+      if (input.responsible !== undefined) patch.responsible = input.responsible;
+      const { error } = await supabase
+        .from("irpf_weekly_plan" as any)
+        .update(patch)
+        .eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["irpf_weekly_plan_season"] });
+      qc.invalidateQueries({ queryKey: ["irpf_weekly_plan_all"] });
+      toast({ title: "Demanda movida" });
+    },
+    onError: (e: any) => toast({ title: "Erro ao mover", description: e.message, variant: "destructive" }),
   });
 }
 
