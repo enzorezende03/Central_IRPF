@@ -216,8 +216,8 @@ function PlanContent({ season }: { season: any }) {
 
   // Fetch live status for all cases referenced in plan (current + previous week)
   const planCaseIds = useMemo(
-    () => Array.from(new Set([...weekPlan, ...prevWeekPlan].map((p) => p.case_id))),
-    [weekPlan, prevWeekPlan]
+    () => Array.from(new Set([...weekPlanRaw, ...prevWeekPlan].map((p) => p.case_id))),
+    [weekPlanRaw, prevWeekPlan]
   );
   const { data: planCases = [] } = useCasesByIds(planCaseIds);
   const caseById = useMemo(() => {
