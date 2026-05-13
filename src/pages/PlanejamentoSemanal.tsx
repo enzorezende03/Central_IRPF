@@ -188,6 +188,16 @@ function PlanContent({ season }: { season: any }) {
   const week = weeks.find((w) => w.week_number === selectedWeek) ?? null;
   const prevWeek = weeks.find((w) => w.week_number === (selectedWeek ?? 0) - 1) ?? null;
 
+  const currentWeekNumber = useMemo(() => {
+    const w = weeks.find((w) => {
+      const ws = parseISODate(w.week_start);
+      const we = addDays(parseISODate(w.week_end), 1);
+      return today >= ws && today < we;
+    });
+    return w?.week_number ?? null;
+  }, [weeks, today]);
+  const isPastWeek = currentWeekNumber != null && selectedWeek != null && selectedWeek < currentWeekNumber;
+
   // Plan items
   const planByCase = useMemo(() => {
     const m = new Map<string, typeof plan[number]>();
@@ -195,7 +205,7 @@ function PlanContent({ season }: { season: any }) {
     return m;
   }, [plan]);
 
-  const weekPlan = useMemo(
+  const weekPlanRaw = useMemo(
     () => plan.filter((p) => p.week_number === selectedWeek),
     [plan, selectedWeek]
   );
