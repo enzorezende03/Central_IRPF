@@ -241,6 +241,8 @@ export default function Configuracoes() {
 
         {isAdmin && <AccessProfilesCard />}
 
+        {isAdmin && <WeeklyCapacityCard />}
+
         <OfficeSettingsCard />
 
         <DocumentChecklistCard />
