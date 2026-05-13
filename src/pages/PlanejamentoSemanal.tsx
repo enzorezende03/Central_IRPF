@@ -29,8 +29,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const COMPLETED_STATUSES = new Set(["finalizado", "previa_enviada", "previa_aprovada"]);
-const CARRYOVER_EXCLUDED = new Set(["finalizado", "previa_enviada", "previa_aprovada", "dispensada"]);
+const COMPLETED_STATUSES = new Set(["finalizado", "previa_enviada", "previa_aprovada", "dispensada"]);
+const CARRYOVER_EXCLUDED = COMPLETED_STATUSES;
 const QUEUE_STATUSES = new Set(["documentos_em_analise", "em_andamento"]);
 
 const STATUS_LABELS: Record<string, string> = {
@@ -188,6 +188,16 @@ function PlanContent({ season }: { season: any }) {
   const week = weeks.find((w) => w.week_number === selectedWeek) ?? null;
   const prevWeek = weeks.find((w) => w.week_number === (selectedWeek ?? 0) - 1) ?? null;
 
+  const currentWeekNumber = useMemo(() => {
+    const w = weeks.find((w) => {
+      const ws = parseISODate(w.week_start);
+      const we = addDays(parseISODate(w.week_end), 1);
+      return today >= ws && today < we;
+    });
+    return w?.week_number ?? null;
+  }, [weeks, today]);
+  const isPastWeek = currentWeekNumber != null && selectedWeek != null && selectedWeek < currentWeekNumber;
+
   // Plan items
   const planByCase = useMemo(() => {
     const m = new Map<string, typeof plan[number]>();
@@ -195,7 +205,7 @@ function PlanContent({ season }: { season: any }) {
     return m;
   }, [plan]);
 
-  const weekPlan = useMemo(
+  const weekPlanRaw = useMemo(
     () => plan.filter((p) => p.week_number === selectedWeek),
     [plan, selectedWeek]
   );
@@ -206,8 +216,8 @@ function PlanContent({ season }: { season: any }) {
 
   // Fetch live status for all cases referenced in plan (current + previous week)
   const planCaseIds = useMemo(
-    () => Array.from(new Set([...weekPlan, ...prevWeekPlan].map((p) => p.case_id))),
-    [weekPlan, prevWeekPlan]
+    () => Array.from(new Set([...weekPlanRaw, ...prevWeekPlan].map((p) => p.case_id))),
+    [weekPlanRaw, prevWeekPlan]
   );
   const { data: planCases = [] } = useCasesByIds(planCaseIds);
   const caseById = useMemo(() => {
@@ -223,6 +233,12 @@ function PlanContent({ season }: { season: any }) {
     });
     return m;
   }, [planCases, eligible]);
+
+  // Filter out completed items when viewing past weeks (don't pollute archive view)
+  const weekPlan = useMemo(() => {
+    if (!isPastWeek) return weekPlanRaw;
+    return weekPlanRaw.filter((p) => !COMPLETED_STATUSES.has(caseById.get(p.case_id)?.status ?? ""));
+  }, [weekPlanRaw, isPastWeek, caseById]);
 
   // Realtime: invalidate on irpf_cases status changes
   useEffect(() => {
@@ -553,14 +569,24 @@ function PlanContent({ season }: { season: any }) {
                       items.map((p) => {
                         const c = caseById.get(p.case_id);
                         const status = c?.status ?? "";
-                        const dotColor =
-                          COMPLETED_STATUSES.has(status) ? "bg-emerald-500"
-                          : "bg-blue-500";
+                        const isCompleted = COMPLETED_STATUSES.has(status);
+                        const dotColor = isCompleted ? "bg-emerald-500" : "bg-blue-500";
                         return (
-                          <div key={p.id} className="flex items-center gap-2 p-2 rounded-md border hover:bg-muted/40 transition-colors">
+                          <div
+                            key={p.id}
+                            className={cn(
+                              "flex items-center gap-2 p-2 rounded-md border transition-colors",
+                              isCompleted ? "opacity-60 bg-muted/30" : "hover:bg-muted/40"
+                            )}
+                          >
                             <span className={cn("h-2 w-2 rounded-full shrink-0", dotColor)} />
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium truncate">{c?.client_name ?? "—"}</div>
+                              <div className={cn(
+                                "text-sm font-medium truncate",
+                                isCompleted && "line-through text-muted-foreground"
+                              )}>
+                                {c?.client_name ?? "—"}
+                              </div>
                               <div className="text-[11px] text-muted-foreground truncate">
                                 {STATUS_LABELS[status] ?? status ?? "—"}
                               </div>
@@ -570,13 +596,15 @@ function PlanContent({ season }: { season: any }) {
                                 <ExternalLink className="h-3 w-3" />
                               </Button>
                             </Link>
-                            <Button
-                              size="icon" variant="ghost"
-                              className="h-6 w-6 text-destructive"
-                              onClick={() => remove.mutate(p.id)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
+                            {!isCompleted && (
+                              <Button
+                                size="icon" variant="ghost"
+                                className="h-6 w-6 text-destructive"
+                                onClick={() => remove.mutate(p.id)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
                           </div>
                         );
                       })
