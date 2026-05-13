@@ -920,6 +920,30 @@ export type Database = {
           },
         ]
       }
+      weekly_capacity: {
+        Row: {
+          capacity: number
+          created_at: string
+          id: string
+          responsible: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          responsible: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          responsible?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

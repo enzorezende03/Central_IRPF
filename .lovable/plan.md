@@ -1,34 +1,88 @@
-## Anexo em lote no checklist documental
+## Redesign /planejamento — Central IRPF
 
-Adicionar um botão **"Anexar em lote"** no cabeçalho do card "Checklist Documental Interno" da página de demanda do cliente, permitindo subir vários arquivos de uma vez (recebidos por e-mail/WhatsApp) e marcar múltiplos itens pendentes como recebidos em uma única operação.
+Reformular a tela de Planejamento Semanal em duas colunas (fila + grade por responsável), com capacidade, carryover e atualização em tempo real.
 
-### Como vai funcionar (UX)
+### 1. Banco de dados (migração)
 
-1. No cabeçalho do checklist (ao lado do "Baixar Todos") aparece um botão **"Anexar em lote"** (ícone Paperclip).
-2. Ao clicar, abre um diálogo com duas etapas:
-   - **Etapa 1 — Selecionar arquivos**: drag-and-drop ou seletor múltiplo. Mostra a lista dos arquivos com nome e tamanho, validando tipo/tamanho (regras já existentes em `upload-utils`).
-   - **Etapa 2 — Vincular aos itens pendentes**: para cada arquivo, um `Select` lista os itens do checklist que ainda estão `pendente` ou `rejeitado` (mais opção "Avulso — não vincular a item"). 
-     - Botão de atalho **"Auto-vincular por nome"** tenta casar nome do arquivo com o título do item (match aproximado, sem sobrescrever escolhas manuais).
-     - Vários arquivos podem ser vinculados ao mesmo item (ex: 3 páginas do mesmo informe).
-3. Botão **"Enviar tudo"**: para cada arquivo faz upload no bucket `documentos_clientes`, insere em `uploaded_documents` (com `uploaded_by: 'office'` e `document_request_id` se vinculado) e, ao final, atualiza o status dos itens vinculados para `enviado` (que é o estado que habilita o botão "Aprovar"). Cada item recebe um evento na timeline ("Documento recebido fora do portal — anexado pela equipe").
-4. Toast com resumo ("8 arquivos enviados, 5 itens marcados como recebidos") e refresh do card.
+Adicionar capacidade semanal por responsável. Como `internal_owner` é um texto livre (não FK em users), criar tabela própria:
 
-### Decisão sobre dar baixa nos pendentes
+```sql
+CREATE TABLE public.weekly_capacity (
+  id uuid PK default gen_random_uuid(),
+  responsible text NOT NULL UNIQUE,
+  capacity int NOT NULL DEFAULT 10,
+  updated_at timestamptz default now()
+);
+-- RLS: auth pode ler tudo; só admin gerencia.
+```
 
-Os arquivos vinculados deixam o item em **"enviado"** (não "aprovado") — assim a equipe ainda passa pela conferência manual antes de aprovar, igual quando o cliente envia pelo portal. Isso preserva o fluxo de QA e os triggers existentes de progresso/status.
+Sem alterar triggers existentes.
 
-> Alternativa que NÃO vou aplicar (a menos que você prefira): pular direto para "aprovado". Mais rápido, mas remove a etapa de revisão.
+### 2. Hooks novos / ajustes
 
-### Detalhes técnicos
+- `use-weekly-capacity.ts` — `useCapacities()`, `useUpsertCapacity()` (admin).
+- Estender `use-weekly-plan.ts`:
+  - `useMovePlanWeek(planId, week_number)` — para carryover "Mover para esta semana".
+  - Hook realtime que invalida `irpf-cases` quando há mudança de status (canal postgres_changes em `irpf_cases`).
 
-- Novo componente `BulkUploadDialog.tsx` em `src/components/`.
-- Renderizado no header do checklist em `ClientDetail.tsx` (perto da linha 760), só aparece se houver pelo menos 1 item pendente/rejeitado.
-- Reusa `validateFile`, `buildStoragePath`, `uploadFileToBucket` de `src/lib/upload-utils.ts`.
-- Inserts em `uploaded_documents` e update em `document_requests.status='enviado'` agrupados; invalida as queries `doc-requests`, `uploaded-docs` e `case-timeline` ao final.
-- Auto-vinculação: normaliza (lowercase, sem acentos) tanto o nome do arquivo quanto o `title` do item e usa `includes` em qualquer direção para sugerir o match.
-- Sem mudanças de schema, sem migração.
+### 3. Página `PlanejamentoSemanal.tsx` — novo layout
 
-### Arquivos alterados
+Estrutura:
 
-- `src/components/BulkUploadDialog.tsx` (novo)
-- `src/pages/ClientDetail.tsx` (adicionar botão e abrir o diálogo)
+```text
+[Header + selector temporada + selector semana]
+[Resumo: Planejadas X | Concluídas Y | Em aberto Z]
+[Bloco "Da semana anterior" (âmbar) — só se houver remanescentes]
+[ Fila disponíveis (esq) | Grade por responsável (dir) ]
+```
+
+**Coluna esquerda — Fila**
+- Lista `eligible` filtrado para status `documentos_em_analise` ou `em_andamento`, não planejados na semana atual.
+- Ordenado por `getReferenceDate` (asc).
+- Filtros: responsável (select) + busca por nome/tag.
+- Card: nome, status badge, "X dias com docs completos", badge de prioridade.
+- Botão `+` para abrir mini-popover escolhendo o responsável da grade (ou já atribui ao `internal_owner`).
+
+**Coluna direita — Grade**
+- Agrupada por responsável (união de `weekly_capacity` + responsáveis com plano nesta semana + `internal_owner`s ativos).
+- Header de cada grupo: nome, contador `planejadas/capacidade`, barra linear (verde <80%, âmbar 80-100%, vermelho >100%).
+- Cards: nome do cliente, status (live), bolinha de cor:
+  - azul: em andamento/planejada
+  - verde: `finalizado` | `previa_enviada` | `previa_aprovada`
+  - vermelho: registro pertence a semana anterior à atual e não concluído (no contexto do bloco carryover)
+- X para remover do plano.
+- Ao adicionar, se exceder capacidade → toast inline "X já tem N demandas planejadas" (não bloqueia).
+
+**Bloco carryover (topo da coluna direita)**
+- Busca `plan` da semana ISO (atual − 1) com case status ∉ {finalizado, previa_enviada, previa_aprovada, dispensada}.
+- Cada item: nome + responsável + 2 botões: "Mover para esta semana" (UPDATE week_number) e "Ignorar" (oculta localmente, sessionStorage).
+
+**Resumo numérico (topo)**
+- Planejadas = `weekPlan.length`
+- Concluídas = casos do `weekPlan` cujo status atual ∈ {finalizado, previa_enviada, previa_aprovada}
+- Em aberto = Planejadas − Concluídas
+
+### 4. Realtime
+
+`useEffect` na página subscreve canal `planning-cases` em `postgres_changes` event=UPDATE schema=public table=irpf_cases → `queryClient.invalidateQueries(['irpf_eligible_cases'])` e `['irpf-cases']`.
+
+### 5. Configurações
+
+Em `src/pages/Configuracoes.tsx`, adicionar seção "Capacidade semanal por responsável" (admin only): tabela com responsável + input numérico + salvar (upsert em `weekly_capacity`). Lista responsáveis vindos de `internal_owner` distinto + linhas existentes.
+
+### 6. Não mudar
+- Badge `Planejada · Sx` no Kanban (KanbanBoard.tsx).
+- Botão atalho do Kanban (`AddToWeekDialog`).
+- Triggers de status, `irpf_season_config`, `irpf_weekly_goals`.
+
+### Arquivos
+- migration `weekly_capacity`
+- novo `src/hooks/use-weekly-capacity.ts`
+- update `src/hooks/use-weekly-plan.ts` (hook move + função)
+- reescrever `src/pages/PlanejamentoSemanal.tsx`
+- editar `src/pages/Configuracoes.tsx` (seção capacidade)
+
+### Notas técnicas
+- Drag-and-drop fica fora da v1 — adicionar via clique + popover de responsável (mais rápido de entregar e suficiente). DnD pode entrar depois.
+- Responsável "Sem responsável" também aparece como coluna na grade quando há planejadas sem owner.
+- Toast de capacidade usa `useToast` existente.
