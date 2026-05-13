@@ -234,6 +234,12 @@ function PlanContent({ season }: { season: any }) {
     return m;
   }, [planCases, eligible]);
 
+  // Filter out completed items when viewing past weeks (don't pollute archive view)
+  const weekPlan = useMemo(() => {
+    if (!isPastWeek) return weekPlanRaw;
+    return weekPlanRaw.filter((p) => !COMPLETED_STATUSES.has(caseById.get(p.case_id)?.status ?? ""));
+  }, [weekPlanRaw, isPastWeek, caseById]);
+
   // Realtime: invalidate on irpf_cases status changes
   useEffect(() => {
     const channel = supabase
