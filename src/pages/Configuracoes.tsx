@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useCapacities, useUpsertCapacity, DEFAULT_WEEKLY_CAPACITY } from "@/hooks/use-weekly-capacity";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { InternalLayout } from "@/components/InternalLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
