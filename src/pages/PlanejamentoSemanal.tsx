@@ -29,7 +29,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const COMPLETED_STATUSES = new Set(["finalizado", "previa_enviada", "previa_aprovada", "dispensada"]);
+// Prévia Aprovada NÃO é status de conclusão para o planejamento — equipe ainda precisa transmitir.
+const COMPLETED_STATUSES = new Set(["finalizado", "previa_enviada", "dispensada"]);
 const CARRYOVER_EXCLUDED = COMPLETED_STATUSES;
 const QUEUE_STATUSES = new Set(["documentos_em_analise", "em_andamento"]);
 
