@@ -48,11 +48,13 @@ function fmtDate(d: string) {
 import { getPortalUrl, getWhatsAppMessage, getPendingDocsMessage, logTimelineEvent, getPaymentGuideMessage, buildWhatsAppLink, buildMailtoLink } from "@/lib/portal-utils";
 import { PendenciasCard } from "@/components/PendenciasCard";
 import { BulkUploadDialog } from "@/components/BulkUploadDialog";
+import { useAuth } from "@/hooks/use-auth";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const { profileName } = useAuth();
 
   // ── Fetch case with client ──
   const { data: caseData, isLoading } = useQuery({
@@ -202,13 +204,17 @@ export default function ClientDetail() {
 
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
+  const [notesMode, setNotesMode] = useState<"view" | "edit" | "append">("view");
+  const [appendDraft, setAppendDraft] = useState("");
   const [showImpedirDialog, setShowImpedirDialog] = useState(false);
   const [impedirJustificativa, setImpedirJustificativa] = useState("");
   const [showDispensarDialog, setShowDispensarDialog] = useState(false);
   const [dispensarJustificativa, setDispensarJustificativa] = useState("");
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
-  const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
+  const savedNotes = caseData?.internal_notes ?? "";
+  const notesValue = internalNotes ?? savedNotes;
+  const hasSavedNotes = savedNotes.trim().length > 0;
 
   // ── Mutations ──
   const invalidateAll = () => {
@@ -222,15 +228,18 @@ export default function ClientDetail() {
   };
 
   const saveNotes = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (newValue: string) => {
       const { error } = await supabase
         .from("irpf_cases")
-        .update({ internal_notes: notesValue })
+        .update({ internal_notes: newValue })
         .eq("id", id!);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Notas salvas!");
+      setInternalNotes(null);
+      setAppendDraft("");
+      setNotesMode("view");
       invalidateAll();
     },
     onError: () => toast.error("Erro ao salvar notas"),
@@ -814,22 +823,137 @@ export default function ClientDetail() {
                 <CardDescription>Visível apenas para a equipe</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Textarea
-                  value={notesValue}
-                  onChange={(e) => setInternalNotes(e.target.value)}
-                  placeholder="Adicionar observações internas..."
-                  rows={4}
-                  className="text-sm"
-                />
-                <Button
-                  size="sm"
-                  className="w-full"
-                  onClick={() => saveNotes.mutate()}
-                  disabled={saveNotes.isPending}
-                >
-                  <Save className="h-3.5 w-3.5 mr-1.5" />
-                  {saveNotes.isPending ? "Salvando..." : "Salvar Notas"}
-                </Button>
+                {notesMode === "view" && hasSavedNotes && (
+                  <>
+                    <div className="rounded-md border bg-muted/30 p-3 text-sm whitespace-pre-wrap break-words">
+                      {savedNotes}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setInternalNotes(savedNotes);
+                          setNotesMode("edit");
+                        }}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Atualizar
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setAppendDraft("");
+                          setNotesMode("append");
+                        }}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1.5" /> Nova observação
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {notesMode === "view" && !hasSavedNotes && (
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setInternalNotes("");
+                      setNotesMode("edit");
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Adicionar observação
+                  </Button>
+                )}
+
+                {notesMode === "edit" && (
+                  <>
+                    <Textarea
+                      value={notesValue}
+                      onChange={(e) => setInternalNotes(e.target.value)}
+                      placeholder="Adicionar observações internas..."
+                      rows={5}
+                      className="text-sm"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="flex-1"
+                        onClick={() => {
+                          setInternalNotes(null);
+                          setNotesMode("view");
+                        }}
+                        disabled={saveNotes.isPending}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => saveNotes.mutate(notesValue)}
+                        disabled={saveNotes.isPending}
+                      >
+                        <Save className="h-3.5 w-3.5 mr-1.5" />
+                        {saveNotes.isPending ? "Salvando..." : "Salvar"}
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {notesMode === "append" && (
+                  <>
+                    {hasSavedNotes && (
+                      <div className="rounded-md border bg-muted/20 p-2 text-xs text-muted-foreground whitespace-pre-wrap max-h-32 overflow-auto">
+                        {savedNotes}
+                      </div>
+                    )}
+                    <Textarea
+                      value={appendDraft}
+                      onChange={(e) => setAppendDraft(e.target.value)}
+                      placeholder="Nova observação a ser adicionada..."
+                      rows={4}
+                      className="text-sm"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="flex-1"
+                        onClick={() => {
+                          setAppendDraft("");
+                          setNotesMode("view");
+                        }}
+                        disabled={saveNotes.isPending}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          const text = appendDraft.trim();
+                          if (!text) {
+                            toast.error("Escreva a observação.");
+                            return;
+                          }
+                          const stamp = format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR });
+                          const author = profileName || "Equipe";
+                          const entry = `[${stamp} • ${author}]\n${text}`;
+                          const merged = hasSavedNotes ? `${savedNotes}\n\n${entry}` : entry;
+                          saveNotes.mutate(merged);
+                        }}
+                        disabled={saveNotes.isPending}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1.5" />
+                        {saveNotes.isPending ? "Salvando..." : "Adicionar"}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
