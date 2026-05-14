@@ -45,7 +45,7 @@ function fmtDate(d: string) {
   return format(new Date(d), "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
 
-import { getPortalUrl, getWhatsAppMessage, getPendingDocsMessage, logTimelineEvent } from "@/lib/portal-utils";
+import { getPortalUrl, getWhatsAppMessage, getPendingDocsMessage, logTimelineEvent, getPaymentGuideMessage, buildWhatsAppLink, buildMailtoLink } from "@/lib/portal-utils";
 import { PendenciasCard } from "@/components/PendenciasCard";
 import { BulkUploadDialog } from "@/components/BulkUploadDialog";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
@@ -674,10 +674,19 @@ export default function ClientDetail() {
                 <CardDescription>Link da guia de pagamento para o cliente</CardDescription>
               </CardHeader>
               <CardContent>
-                <GuideCard caseId={id!} deliverable={deliverable} onRefresh={() => {
-                  queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
-                  queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
-                }} />
+                <GuideCard
+                  caseId={id!}
+                  deliverable={deliverable}
+                  clientName={client?.full_name ?? "Cliente"}
+                  clientPhone={client?.phone ?? null}
+                  clientEmail={client?.email ?? null}
+                  portalSlugOrToken={linkId}
+                  onRefresh={() => {
+                    queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                  }}
+                />
+
               </CardContent>
             </Card>
           </div>
@@ -1601,7 +1610,7 @@ type PaymentQuota = {
   notes: string | null;
 };
 
-function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
+function GuideCard({ caseId, deliverable, clientName, clientPhone, clientEmail, portalSlugOrToken, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; clientName: string; clientPhone: string | null; clientEmail: string | null; portalSlugOrToken: string; onRefresh: () => void }) {
   const del = deliverable as any;
   const [hasGuide, setHasGuide] = useState<boolean>(del?.has_guide ?? false);
   const [paymentType, setPaymentType] = useState<"cota_unica" | "cotas">(
@@ -1742,6 +1751,10 @@ function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliver
                   caseId={caseId}
                   isSingle={paymentType === "cota_unica"}
                   totalQuotas={quotas.length}
+                  clientName={clientName}
+                  clientPhone={clientPhone}
+                  clientEmail={clientEmail}
+                  portalSlugOrToken={portalSlugOrToken}
                   onChanged={loadQuotas}
                 />
               ))}
@@ -1758,17 +1771,37 @@ function QuotaRow({
   caseId,
   isSingle,
   totalQuotas,
+  clientName,
+  clientPhone,
+  clientEmail,
+  portalSlugOrToken,
   onChanged,
 }: {
   quota: PaymentQuota;
   caseId: string;
   isSingle: boolean;
   totalQuotas: number;
+  clientName: string;
+  clientPhone: string | null;
+  clientEmail: string | null;
+  portalSlugOrToken: string;
   onChanged: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const [dueDate, setDueDate] = useState(quota.due_date ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const message = getPaymentGuideMessage({
+    clientName,
+    slugOrToken: portalSlugOrToken,
+    isSingle,
+    quotaNumber: quota.quota_number,
+    totalQuotas,
+    dueDate: quota.due_date,
+  });
+  const subject = isSingle
+    ? "Sua guia DARF do Imposto de Renda"
+    : `Guia DARF — Cota ${quota.quota_number}/${totalQuotas} do Imposto de Renda`;
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1900,6 +1933,62 @@ function QuotaRow({
           <><Send className="h-3 w-3 mr-1" /> Marcar como enviada ao cliente</>
         )}
       </Button>
+
+      {quota.file_url && (
+        <div className="space-y-1.5 pt-1 border-t">
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Mensagem para o cliente</Label>
+          <Textarea
+            value={message}
+            readOnly
+            rows={4}
+            className="text-xs resize-none"
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <div className="grid grid-cols-3 gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              onClick={() => {
+                navigator.clipboard.writeText(message);
+                toast.success("Mensagem copiada!");
+              }}
+            >
+              <Copy className="h-3 w-3 mr-1" /> Copiar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              asChild
+            >
+              <a
+                href={buildWhatsAppLink(clientPhone, message)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="h-3 w-3 mr-1" /> WhatsApp
+              </a>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              asChild
+            >
+              <a href={buildMailtoLink(clientEmail, subject, message)}>
+                <Mail className="h-3 w-3 mr-1" /> E-mail
+              </a>
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            Lembre de anexar o arquivo da guia ao enviar pelo WhatsApp ou e-mail.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
