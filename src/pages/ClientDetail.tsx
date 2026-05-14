@@ -48,6 +48,7 @@ function fmtDate(d: string) {
 import { getPortalUrl, getWhatsAppMessage, getPendingDocsMessage, logTimelineEvent, getPaymentGuideMessage, buildWhatsAppLink, buildMailtoLink } from "@/lib/portal-utils";
 import { PendenciasCard } from "@/components/PendenciasCard";
 import { BulkUploadDialog } from "@/components/BulkUploadDialog";
+import { useAuth } from "@/hooks/use-auth";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 
 export default function ClientDetail() {
