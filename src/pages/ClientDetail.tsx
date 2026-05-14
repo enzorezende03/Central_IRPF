@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { formatCPF, formatPhone } from "@/lib/format-utils";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import {
@@ -1583,47 +1583,105 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
 }
 
 // ── Guide (DARF) Card ──
-import { Link2, ExternalLink as ExternalLinkIcon } from "lucide-react";
+import { ExternalLink as ExternalLinkIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+
+
+type PaymentQuota = {
+  id: string;
+  case_id: string;
+  quota_number: number;
+  due_date: string | null;
+  file_url: string | null;
+  file_name: string | null;
+  sent_to_client: boolean;
+  sent_at: string | null;
+  notes: string | null;
+};
 
 function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
   const del = deliverable as any;
   const [hasGuide, setHasGuide] = useState<boolean>(del?.has_guide ?? false);
-  const [guideUrl, setGuideUrl] = useState<string>(del?.guide_url ?? "");
-  const [saving, setSaving] = useState(false);
+  const [paymentType, setPaymentType] = useState<"cota_unica" | "cotas">(
+    (del?.guide_payment_type as "cota_unica" | "cotas") ?? "cota_unica"
+  );
+  const [quotaCount, setQuotaCount] = useState<number>(del?.guide_quota_count ?? 2);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [quotas, setQuotas] = useState<PaymentQuota[]>([]);
+  const [loadingQuotas, setLoadingQuotas] = useState(false);
+
+  const loadQuotas = useCallback(async () => {
+    setLoadingQuotas(true);
+    const { data } = await supabase
+      .from("payment_quotas" as any)
+      .select("*")
+      .eq("case_id", caseId)
+      .order("quota_number", { ascending: true });
+    setQuotas((data as any) ?? []);
+    setLoadingQuotas(false);
+  }, [caseId]);
+
+  useEffect(() => { loadQuotas(); }, [loadQuotas]);
+
+  const ensureDeliverable = async (patch: Record<string, any>) => {
+    if (deliverable) {
+      await supabase.from("final_deliverables").update(patch as any).eq("id", deliverable.id);
+    } else {
+      await supabase.from("final_deliverables").insert({ case_id: caseId, ...patch } as any);
+    }
+  };
+
+  const ensureQuotas = async (count: number) => {
+    const { data: existing } = await supabase
+      .from("payment_quotas" as any)
+      .select("id, quota_number")
+      .eq("case_id", caseId);
+    const existingNums = new Set(((existing as any[]) ?? []).map((q) => q.quota_number));
+    const toInsert: any[] = [];
+    for (let i = 1; i <= count; i++) {
+      if (!existingNums.has(i)) toInsert.push({ case_id: caseId, quota_number: i });
+    }
+    if (toInsert.length > 0) {
+      await supabase.from("payment_quotas" as any).insert(toInsert);
+    }
+    // Remove extras above count
+    await supabase
+      .from("payment_quotas" as any)
+      .delete()
+      .eq("case_id", caseId)
+      .gt("quota_number", count);
+    await loadQuotas();
+  };
 
   const toggleGuide = async (checked: boolean) => {
     setHasGuide(checked);
-    if (deliverable) {
-      await supabase.from("final_deliverables").update({ has_guide: checked } as any).eq("id", deliverable.id);
-    } else {
-      await supabase.from("final_deliverables").insert({ case_id: caseId, has_guide: checked } as any);
-    }
-    if (!checked) {
-      setGuideUrl("");
-      if (deliverable) {
-        await supabase.from("final_deliverables").update({ guide_url: null } as any).eq("id", deliverable.id);
-      }
+    await ensureDeliverable({ has_guide: checked });
+    if (checked) {
+      await ensureQuotas(paymentType === "cota_unica" ? 1 : quotaCount);
     }
     onRefresh();
   };
 
-  const saveGuideUrl = async () => {
-    if (!guideUrl.trim()) { toast.error("Informe o link da guia."); return; }
-    setSaving(true);
+  const saveConfig = async () => {
+    setSavingConfig(true);
     try {
-      if (deliverable) {
-        await supabase.from("final_deliverables").update({ guide_url: guideUrl.trim() } as any).eq("id", deliverable.id);
-      } else {
-        await supabase.from("final_deliverables").insert({ case_id: caseId, has_guide: true, guide_url: guideUrl.trim() } as any);
-      }
-      await logTimelineEvent(caseId, "Guia DARF enviada", "Link da guia de pagamento adicionado", true);
-      toast.success("Link da guia salvo!");
+      const count = paymentType === "cota_unica" ? 1 : Math.max(2, Math.min(8, quotaCount));
+      await ensureDeliverable({
+        has_guide: true,
+        guide_payment_type: paymentType,
+        guide_quota_count: count,
+      });
+      await ensureQuotas(count);
+      toast.success("Configuração salva!");
       onRefresh();
-    } catch { toast.error("Erro ao salvar."); } finally { setSaving(false); }
+    } catch {
+      toast.error("Erro ao salvar configuração.");
+    } finally {
+      setSavingConfig(false);
+    }
   };
-
-  const [gclickChecked, setGclickChecked] = useState(false);
 
   return (
     <div className="space-y-3">
@@ -1631,37 +1689,217 @@ function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliver
         <label className="text-sm font-medium">Possui guia de pagamento?</label>
         <Switch checked={hasGuide} onCheckedChange={toggleGuide} />
       </div>
+
       {hasGuide && (
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <Input
-              value={guideUrl}
-              onChange={(e) => setGuideUrl(e.target.value)}
-              placeholder="Cole o link da guia DARF..."
-              className="text-sm"
-            />
-            <Button size="sm" disabled={saving || !guideUrl.trim()} onClick={saveGuideUrl}>
-              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Save className="h-3.5 w-3.5 mr-1" /> Salvar</>}
+        <>
+          <div className="space-y-2 rounded-md border p-3 bg-muted/30">
+            <Label className="text-xs font-medium text-muted-foreground">Forma de pagamento</Label>
+            <RadioGroup
+              value={paymentType}
+              onValueChange={(v) => setPaymentType(v as "cota_unica" | "cotas")}
+              className="flex flex-col gap-1.5"
+            >
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <RadioGroupItem value="cota_unica" id="pt-unica" />
+                <span>Cota única</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <RadioGroupItem value="cotas" id="pt-cotas" />
+                <span>Parcelado em cotas</span>
+              </label>
+            </RadioGroup>
+
+            {paymentType === "cotas" && (
+              <div className="flex items-center gap-2 pt-1">
+                <Label className="text-xs">Quantidade de cotas:</Label>
+                <Input
+                  type="number"
+                  min={2}
+                  max={8}
+                  value={quotaCount}
+                  onChange={(e) => setQuotaCount(parseInt(e.target.value) || 2)}
+                  className="h-8 w-20 text-sm"
+                />
+              </div>
+            )}
+
+            <Button size="sm" className="w-full mt-2" onClick={saveConfig} disabled={savingConfig}>
+              {savingConfig ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Save className="h-3.5 w-3.5 mr-1" /> Aplicar configuração</>}
             </Button>
           </div>
-          {del?.guide_url && (
-            <a
-              href={del.guide_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-            >
-              <ExternalLinkIcon className="h-3 w-3" />
-              Abrir guia de pagamento
-            </a>
-          )}
+
+          {loadingQuotas ? (
+            <Skeleton className="h-20 w-full" />
+          ) : quotas.length > 0 ? (
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {paymentType === "cota_unica" ? "Guia DARF" : "Controle de cotas"}
+              </Label>
+              {quotas.map((q) => (
+                <QuotaRow
+                  key={q.id}
+                  quota={q}
+                  caseId={caseId}
+                  isSingle={paymentType === "cota_unica"}
+                  totalQuotas={quotas.length}
+                  onChanged={loadQuotas}
+                />
+              ))}
+            </div>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+function QuotaRow({
+  quota,
+  caseId,
+  isSingle,
+  totalQuotas,
+  onChanged,
+}: {
+  quota: PaymentQuota;
+  caseId: string;
+  isSingle: boolean;
+  totalQuotas: number;
+  onChanged: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [dueDate, setDueDate] = useState(quota.due_date ?? "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const err = validateFile(file);
+    if (err) { toast.error(err); return; }
+    setUploading(true);
+    try {
+      const path = buildStoragePath(caseId, file.name, `guias/cota-${quota.quota_number}`);
+      const url = await uploadFileToBucket("documentos_clientes", path, file);
+      await supabase.from("payment_quotas" as any).update({
+        file_url: url, file_name: file.name,
+      }).eq("id", quota.id);
+      toast.success(`Guia da cota ${quota.quota_number} anexada!`);
+      onChanged();
+    } catch {
+      toast.error("Erro ao enviar arquivo.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeFile = async () => {
+    await supabase.from("payment_quotas" as any).update({
+      file_url: null, file_name: null, sent_to_client: false, sent_at: null,
+    }).eq("id", quota.id);
+    onChanged();
+  };
+
+  const saveDueDate = async (value: string) => {
+    setDueDate(value);
+    await supabase.from("payment_quotas" as any).update({ due_date: value || null }).eq("id", quota.id);
+    onChanged();
+  };
+
+  const toggleSent = async () => {
+    if (!quota.file_url) { toast.error("Anexe a guia antes de marcar como enviada."); return; }
+    const newSent = !quota.sent_to_client;
+    await supabase.from("payment_quotas" as any).update({
+      sent_to_client: newSent,
+      sent_at: newSent ? new Date().toISOString() : null,
+    }).eq("id", quota.id);
+    if (newSent) {
+      await logTimelineEvent(
+        caseId,
+        "Guia enviada",
+        isSingle
+          ? "Guia DARF enviada ao cliente"
+          : `Cota ${quota.quota_number}/${totalQuotas} enviada ao cliente`,
+        true,
+      );
+    }
+    onChanged();
+  };
+
+  return (
+    <div className="rounded-md border p-2.5 space-y-2 bg-card">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">
+          {isSingle ? "Guia única" : `Cota ${quota.quota_number} / ${totalQuotas}`}
+        </span>
+        {quota.sent_to_client ? (
+          <Badge variant="default" className="text-[10px]">Enviada</Badge>
+        ) : quota.file_url ? (
+          <Badge variant="secondary" className="text-[10px]">Pronta</Badge>
+        ) : (
+          <Badge variant="outline" className="text-[10px]">Pendente</Badge>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Label className="text-xs text-muted-foreground shrink-0">Vencimento:</Label>
+        <Input
+          type="date"
+          value={dueDate}
+          onChange={(e) => saveDueDate(e.target.value)}
+          className="h-8 text-xs"
+        />
+      </div>
+
+      {quota.file_url ? (
+        <div className="flex items-center gap-2 p-1.5 border rounded bg-muted/40">
+          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+          <a
+            href={quota.file_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-primary hover:underline truncate flex-1"
+          >
+            {quota.file_name ?? "Guia anexada"}
+          </a>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={removeFile}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ) : (
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={getAcceptString()}
+            className="hidden"
+            onChange={handleUpload}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full h-8 text-xs"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1.5" /> Anexar guia</>}
+          </Button>
         </div>
       )}
-      <Separator className="my-2" />
-      <label className="flex items-center gap-2.5 py-1 cursor-pointer text-sm">
-        <Checkbox checked={gclickChecked} onCheckedChange={(v) => setGclickChecked(!!v)} />
-        <span>Criar tarefa no G-Click em caso de pagamento do imposto por quotas</span>
-      </label>
+
+      <Button
+        size="sm"
+        variant={quota.sent_to_client ? "outline" : "default"}
+        className="w-full h-7 text-xs"
+        onClick={toggleSent}
+        disabled={!quota.file_url}
+      >
+        {quota.sent_to_client ? (
+          <><CheckCircle className="h-3 w-3 mr-1" /> Enviada {quota.sent_at ? `em ${format(new Date(quota.sent_at), "dd/MM/yyyy")}` : ""} — desfazer</>
+        ) : (
+          <><Send className="h-3 w-3 mr-1" /> Marcar como enviada ao cliente</>
+        )}
+      </Button>
     </div>
   );
 }
