@@ -265,6 +265,22 @@ export default function ClientPortal() {
     );
   }
 
+  if (caseData.status === "dispensada") {
+    return (
+      <PortalShell>
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
+            <h1 className="text-xl font-bold mb-2">Link indisponível</h1>
+            <p className="text-sm text-muted-foreground">
+              Este atendimento não está mais ativo. Por favor, entre em contato com o escritório para mais informações.
+            </p>
+          </CardContent>
+        </Card>
+      </PortalShell>
+    );
+  }
+
   const client = caseData.clients as Tables<"clients"> | null;
   const hasPreview = !!(deliverable as any)?.preview_file_url;
   const allDocsHandled = docRequests.length > 0 && docRequests.every((d) => d.status !== "pendente" && d.status !== "rejeitado");
