@@ -1933,6 +1933,62 @@ function QuotaRow({
           <><Send className="h-3 w-3 mr-1" /> Marcar como enviada ao cliente</>
         )}
       </Button>
+
+      {quota.file_url && (
+        <div className="space-y-1.5 pt-1 border-t">
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Mensagem para o cliente</Label>
+          <Textarea
+            value={message}
+            readOnly
+            rows={4}
+            className="text-xs resize-none"
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <div className="grid grid-cols-3 gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              onClick={() => {
+                navigator.clipboard.writeText(message);
+                toast.success("Mensagem copiada!");
+              }}
+            >
+              <Copy className="h-3 w-3 mr-1" /> Copiar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              asChild
+            >
+              <a
+                href={buildWhatsAppLink(clientPhone, message)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="h-3 w-3 mr-1" /> WhatsApp
+              </a>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              asChild
+            >
+              <a href={buildMailtoLink(clientEmail, subject, message)}>
+                <Mail className="h-3 w-3 mr-1" /> E-mail
+              </a>
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            Lembre de anexar o arquivo da guia ao enviar pelo WhatsApp ou e-mail.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
