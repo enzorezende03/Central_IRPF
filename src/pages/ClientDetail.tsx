@@ -8,7 +8,7 @@ import {
   ArrowLeft, Copy, MessageCircle, CheckCircle, Circle, FileText, Clock,
   User, Mail, Phone, DollarSign, ExternalLink, Upload, Send, Eye,
   AlertCircle, Calendar, CreditCard, Save, RefreshCw, Download, Loader2, Trash2,
-  Plus, X, ListChecks,
+  Plus, X, ListChecks, Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -1487,6 +1487,45 @@ function PreviewCard({
           )}
         </div>
       )}
+
+      {del?.preview_file_url && pStatus !== "aprovado" && deliverable && (
+        <div className="rounded-md border border-dashed p-2.5 bg-muted/30 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            O cliente confirmou aprovação por outro canal (ex.: WhatsApp)? Aprove
+            internamente para liberar o envio da Declaração e Recibo.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs w-full"
+            onClick={async () => {
+              if (!confirm("Confirmar aprovação interna da prévia? Isso liberará a etapa de Declaração/Recibo.")) return;
+              try {
+                await supabase
+                  .from("final_deliverables")
+                  .update({
+                    preview_status: "aprovado",
+                    preview_approved_at: new Date().toISOString(),
+                    preview_feedback: null,
+                  } as any)
+                  .eq("id", deliverable.id);
+                await logTimelineEvent(
+                  caseId,
+                  "Prévia aprovada internamente",
+                  "Aprovação registrada manualmente pela equipe (cliente confirmou por canal externo).",
+                  true
+                );
+                toast.success("Prévia aprovada internamente!");
+                onRefresh();
+              } catch {
+                toast.error("Erro ao aprovar internamente.");
+              }
+            }}
+          >
+            <CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Aprovar internamente
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1566,6 +1605,21 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
   };
 
   const hasAnyFile = deliverable?.irpf_file_url || deliverable?.receipt_file_url || fileUrl("rec_file_url") || fileUrl("dec_file_url");
+
+  const previewApproved = (deliverable as any)?.preview_status === "aprovado";
+
+  if (!previewApproved) {
+    return (
+      <div className="rounded-md border border-dashed p-4 bg-muted/30 text-center space-y-1">
+        <Lock className="h-5 w-5 mx-auto text-muted-foreground" />
+        <p className="text-sm font-medium">Etapa bloqueada</p>
+        <p className="text-xs text-muted-foreground">
+          Disponível somente após a <span className="font-medium">aprovação da prévia</span> pelo cliente
+          (ou aprovação interna pela equipe).
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -1691,6 +1745,21 @@ function GuideCard({ caseId, deliverable, clientName, clientPhone, clientEmail, 
       setSavingConfig(false);
     }
   };
+
+  const previewApproved = (deliverable as any)?.preview_status === "aprovado";
+
+  if (!previewApproved) {
+    return (
+      <div className="rounded-md border border-dashed p-4 bg-muted/30 text-center space-y-1">
+        <Lock className="h-5 w-5 mx-auto text-muted-foreground" />
+        <p className="text-sm font-medium">Etapa bloqueada</p>
+        <p className="text-xs text-muted-foreground">
+          Disponível somente após a <span className="font-medium">aprovação da prévia</span> pelo cliente
+          (ou aprovação interna pela equipe).
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
