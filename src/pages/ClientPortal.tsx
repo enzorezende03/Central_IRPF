@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useRef, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import {
   FileText, Upload, CheckCircle, Circle, AlertTriangle, Download,
   MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
@@ -619,26 +619,19 @@ export default function ClientPortal() {
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">Perguntas do Escritório</CardTitle>
-                      <CardDescription className="text-xs">Responda as perguntas abaixo para auxiliar na sua declaração.</CardDescription>
+                      <CardDescription className="text-xs">Responda as perguntas abaixo e clique em "Enviar respostas" no final.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {questions.map((q) => {
-                        const answer = answers.find((a) => a.question_id === q.id);
-                        const template = formTemplates.find((t) => t.question === q.question);
-                        return (
-                          <QuestionRow
-                            key={q.id}
-                            question={q}
-                            answer={answer ?? null}
-                            caseId={caseId!}
-                            template={template ?? null}
-                            onSuccess={() => {
-                              queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
-                              queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
-                            }}
-                          />
-                        );
-                      })}
+                      <BatchAnswersForm
+                        caseId={caseId!}
+                        questions={questions}
+                        answers={answers}
+                        formTemplates={formTemplates}
+                        onSuccess={() => {
+                          queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
+                          queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
+                        }}
+                      />
                     </CardContent>
                   </Card>
                 )}
@@ -1482,25 +1475,28 @@ function UploadedFileRow({
   );
 }
 
-function QuestionRow({
-  question,
-  answer,
-  caseId,
-  template,
-  onSuccess,
-}: {
+export type QuestionDraft =
+  | { kind: "empty" }
+  | { kind: "incomplete"; reason: string }
+  | {
+      kind: "ready";
+      questionId: string;
+      buildAnswer: () => Promise<string>;
+    };
+
+const QuestionRow = React.forwardRef<{ getDraft: () => QuestionDraft }, {
   question: Tables<"case_questions">;
   answer: Tables<"case_answers"> | null;
   caseId: string;
   template: Tables<"form_question_templates"> | null;
-  onSuccess: () => void;
-}) {
+}>(function QuestionRow({ question, answer, caseId, template }, ref) {
   const [text, setText] = useState("");
-  const [saving, setSaving] = useState(false);
   const [conditionalText, setConditionalText] = useState("");
   const [conditionalFile, setConditionalFile] = useState<File | null>(null);
-  const [uploadingConditional, setUploadingConditional] = useState(false);
   const conditionalFileRef = useRef<HTMLInputElement>(null);
+  const [spouseData, setSpouseData] = useState({
+    nome: "", cpf: "", dataNascimento: "", novoEstadoCivil: "",
+  });
 
   const hasConditional = template?.has_conditional ?? false;
   const conditionalLabel = template?.conditional_label ?? "";
@@ -1508,85 +1504,53 @@ function QuestionRow({
   const templateOptions = (template?.options as Array<{ label: string; value: string }>) ?? [];
   const isSelect = template?.answer_type === "select";
 
-  // For yes_no with conditional: show extra field when "Sim" is selected
   const showConditionalField = hasConditional && text === "Sim";
-  // For select with conditional: show when specific option triggers it (e.g. conta_bancaria)
   const showSelectConditional = isSelect && hasConditional && text === "conta_bancaria";
 
-  const handleSave = async () => {
-    if (!text.trim()) {
-      toast.error("Digite uma resposta.");
-      return;
-    }
-
-    // Build full answer including conditional data
-    let fullAnswer = text;
-    if (showConditionalField && conditionalType === "spouse_data") {
-      const parts = [text];
-      if (spouseData.novoEstadoCivil) parts.push(`Estado civil: ${spouseData.novoEstadoCivil}`);
-      if (spouseData.nome) parts.push(`Cônjuge: ${spouseData.nome}`);
-      if (spouseData.cpf) parts.push(`CPF: ${spouseData.cpf}`);
-      if (spouseData.dataNascimento) parts.push(`Nascimento: ${new Date(spouseData.dataNascimento).toLocaleDateString("pt-BR")}`);
-      fullAnswer = parts.join(" — ");
-    } else if (showConditionalField && conditionalType === "file") {
-      // File is handled separately, just save the main answer
-    } else if (showConditionalField && conditionalText.trim()) {
-      fullAnswer = `${text} — ${conditionalLabel}: ${conditionalText.trim()}`;
-    } else if (showSelectConditional && conditionalText.trim()) {
-      const selectedLabel = templateOptions.find(o => o.value === text)?.label ?? text;
-      fullAnswer = `${selectedLabel} — ${conditionalLabel}: ${conditionalText.trim()}`;
-    } else if (isSelect) {
-      const selectedLabel = templateOptions.find(o => o.value === text)?.label ?? text;
-      fullAnswer = selectedLabel;
-    }
-
-    setSaving(true);
-    try {
-      // Upload conditional file if needed
-      if (showConditionalField && conditionalType === "file" && conditionalFile) {
-        setUploadingConditional(true);
-        const validationError = validateFile(conditionalFile);
-        if (validationError) {
-          toast.error(validationError);
-          setSaving(false);
-          setUploadingConditional(false);
-          return;
-        }
-        const filePath = buildStoragePath(caseId, conditionalFile.name, "formulario");
-        const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, conditionalFile);
-        fullAnswer = `${text} — Arquivo: ${conditionalFile.name} (${fileUrl})`;
-        setUploadingConditional(false);
+  React.useImperativeHandle(ref, () => ({
+    getDraft: (): QuestionDraft => {
+      if (answer) return { kind: "empty" };
+      if (!text.trim()) {
+        return question.is_required
+          ? { kind: "incomplete", reason: `"${question.question}" é obrigatória.` }
+          : { kind: "empty" };
       }
-
-      const { error } = await supabase.from("case_answers").insert({
-        case_id: caseId,
-        question_id: question.id,
-        answer_text: fullAnswer.trim(),
-      });
-      if (error) throw error;
-      toast.success("Resposta enviada com sucesso!");
-      setText("");
-      setConditionalText("");
-      setConditionalFile(null);
-      onSuccess();
-    } catch {
-      toast.error("Erro ao enviar resposta. Tente novamente.");
-    } finally {
-      setSaving(false);
-      setUploadingConditional(false);
-    }
-  };
-
-  const [spouseData, setSpouseData] = useState({
-    nome: "", cpf: "", dataNascimento: "", novoEstadoCivil: "",
-  });
+      return {
+        kind: "ready",
+        questionId: question.id,
+        buildAnswer: async () => {
+          let fullAnswer = text;
+          if (showConditionalField && conditionalType === "spouse_data") {
+            const parts = [text];
+            if (spouseData.novoEstadoCivil) parts.push(`Estado civil: ${spouseData.novoEstadoCivil}`);
+            if (spouseData.nome) parts.push(`Cônjuge: ${spouseData.nome}`);
+            if (spouseData.cpf) parts.push(`CPF: ${spouseData.cpf}`);
+            if (spouseData.dataNascimento) parts.push(`Nascimento: ${new Date(spouseData.dataNascimento).toLocaleDateString("pt-BR")}`);
+            fullAnswer = parts.join(" — ");
+          } else if (showConditionalField && conditionalType === "file" && conditionalFile) {
+            const validationError = validateFile(conditionalFile);
+            if (validationError) throw new Error(validationError);
+            const filePath = buildStoragePath(caseId, conditionalFile.name, "formulario");
+            const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, conditionalFile);
+            fullAnswer = `${text} — Arquivo: ${conditionalFile.name} (${fileUrl})`;
+          } else if (showConditionalField && conditionalText.trim()) {
+            fullAnswer = `${text} — ${conditionalLabel}: ${conditionalText.trim()}`;
+          } else if (showSelectConditional && conditionalText.trim()) {
+            const selectedLabel = templateOptions.find(o => o.value === text)?.label ?? text;
+            fullAnswer = `${selectedLabel} — ${conditionalLabel}: ${conditionalText.trim()}`;
+          } else if (isSelect) {
+            const selectedLabel = templateOptions.find(o => o.value === text)?.label ?? text;
+            fullAnswer = selectedLabel;
+          }
+          return fullAnswer.trim();
+        },
+      };
+    },
+  }), [answer, text, conditionalText, conditionalFile, spouseData, hasConditional, conditionalType, conditionalLabel, isSelect, templateOptions, showConditionalField, showSelectConditional, question.id, question.is_required, question.question, caseId]);
 
   const renderConditionalField = () => {
     if (!hasConditional) return null;
-
-    // For yes_no questions: show when "Sim"
     if (question.answer_type === "yes_no" && text !== "Sim") return null;
-    // For select questions: show when trigger value selected
     if (isSelect && !showSelectConditional) return null;
 
     if (conditionalType === "spouse_data") {
@@ -1596,39 +1560,19 @@ function QuestionRow({
           <div className="space-y-2">
             <div>
               <label className="text-xs text-muted-foreground">Novo estado civil</label>
-              <Input
-                placeholder="Ex: Casado(a), Divorciado(a), Viúvo(a)..."
-                value={spouseData.novoEstadoCivil}
-                onChange={(e) => setSpouseData(prev => ({ ...prev, novoEstadoCivil: e.target.value }))}
-                className="text-sm"
-              />
+              <Input placeholder="Ex: Casado(a), Divorciado(a), Viúvo(a)..." value={spouseData.novoEstadoCivil} onChange={(e) => setSpouseData(prev => ({ ...prev, novoEstadoCivil: e.target.value }))} className="text-sm" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Nome completo do cônjuge</label>
-              <Input
-                placeholder="Nome completo"
-                value={spouseData.nome}
-                onChange={(e) => setSpouseData(prev => ({ ...prev, nome: e.target.value }))}
-                className="text-sm"
-              />
+              <Input placeholder="Nome completo" value={spouseData.nome} onChange={(e) => setSpouseData(prev => ({ ...prev, nome: e.target.value }))} className="text-sm" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">CPF do cônjuge</label>
-              <Input
-                placeholder="000.000.000-00"
-                value={spouseData.cpf}
-                onChange={(e) => setSpouseData(prev => ({ ...prev, cpf: e.target.value }))}
-                className="text-sm"
-              />
+              <Input placeholder="000.000.000-00" value={spouseData.cpf} onChange={(e) => setSpouseData(prev => ({ ...prev, cpf: e.target.value }))} className="text-sm" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Data de nascimento do cônjuge</label>
-              <Input
-                type="date"
-                value={spouseData.dataNascimento}
-                onChange={(e) => setSpouseData(prev => ({ ...prev, dataNascimento: e.target.value }))}
-                className="text-sm"
-              />
+              <Input type="date" value={spouseData.dataNascimento} onChange={(e) => setSpouseData(prev => ({ ...prev, dataNascimento: e.target.value }))} className="text-sm" />
             </div>
           </div>
         </div>
@@ -1640,57 +1584,19 @@ function QuestionRow({
         <p className="text-sm font-medium text-primary">{conditionalLabel}</p>
         {conditionalType === "file" ? (
           <div>
-            <input
-              ref={conditionalFileRef}
-              type="file"
-              className="hidden"
-              accept={getAcceptString()}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) {
-                  const err = validateFile(f);
-                  if (err) { toast.error(err); return; }
-                  setConditionalFile(f);
-                }
-              }}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={() => conditionalFileRef.current?.click()}
-            >
+            <input ref={conditionalFileRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => { const f = e.target.files?.[0]; if (f) { const err = validateFile(f); if (err) { toast.error(err); return; } setConditionalFile(f); } }} />
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => conditionalFileRef.current?.click()}>
               <Upload className="h-3.5 w-3.5 mr-1" />
               {conditionalFile ? conditionalFile.name : "Selecionar arquivo"}
             </Button>
-            <p className="text-[9px] text-muted-foreground mt-1">
-              Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
-            </p>
+            <p className="text-[9px] text-muted-foreground mt-1">Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}</p>
           </div>
         ) : conditionalType === "address" ? (
-          <Textarea
-            placeholder="Rua, número, bairro, cidade, estado, CEP..."
-            value={conditionalText}
-            onChange={(e) => setConditionalText(e.target.value)}
-            rows={3}
-            className="text-sm"
-          />
+          <Textarea placeholder="Rua, número, bairro, cidade, estado, CEP..." value={conditionalText} onChange={(e) => setConditionalText(e.target.value)} rows={3} className="text-sm" />
         ) : conditionalType === "bank_details" ? (
-          <Textarea
-            placeholder="Banco, agência, conta, tipo de conta..."
-            value={conditionalText}
-            onChange={(e) => setConditionalText(e.target.value)}
-            rows={3}
-            className="text-sm"
-          />
+          <Textarea placeholder="Banco, agência, conta, tipo de conta..." value={conditionalText} onChange={(e) => setConditionalText(e.target.value)} rows={3} className="text-sm" />
         ) : (
-          <Textarea
-            placeholder="Digite aqui..."
-            value={conditionalText}
-            onChange={(e) => setConditionalText(e.target.value)}
-            rows={2}
-            className="text-sm"
-          />
+          <Textarea placeholder="Digite aqui..." value={conditionalText} onChange={(e) => setConditionalText(e.target.value)} rows={2} className="text-sm" />
         )}
       </div>
     );
@@ -1723,78 +1629,123 @@ function QuestionRow({
           {isSelect && templateOptions.length > 0 ? (
             <div className="flex flex-col gap-2">
               {templateOptions.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setText(opt.value)}
-                  className={`justify-start text-left whitespace-normal h-auto py-2 ${text === opt.value ? "border-primary bg-primary/10" : ""}`}
-                >
+                <Button key={opt.value} variant="outline" size="sm" onClick={() => setText(opt.value)} className={`justify-start text-left whitespace-normal h-auto py-2 ${text === opt.value ? "border-primary bg-primary/10" : ""}`}>
                   {opt.label}
                 </Button>
               ))}
             </div>
           ) : question.answer_type === "yes_no" ? (
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => { setText("Sim"); setConditionalText(""); setConditionalFile(null); }}
-                className={text === "Sim" ? "border-primary bg-primary/10" : ""}
-              >
-                Sim
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => { setText("Não"); setConditionalText(""); setConditionalFile(null); }}
-                className={text === "Não" ? "border-primary bg-primary/10" : ""}
-              >
-                Não
-              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setText("Sim"); setConditionalText(""); setConditionalFile(null); }} className={text === "Sim" ? "border-primary bg-primary/10" : ""}>Sim</Button>
+              <Button variant="outline" size="sm" onClick={() => { setText("Não"); setConditionalText(""); setConditionalFile(null); }} className={text === "Não" ? "border-primary bg-primary/10" : ""}>Não</Button>
             </div>
           ) : question.answer_type === "number" ? (
-            <Input
-              type="number"
-              placeholder="Digite o valor..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="text-sm"
-            />
+            <Input type="number" placeholder="Digite o valor..." value={text} onChange={(e) => setText(e.target.value)} className="text-sm" />
           ) : question.answer_type === "date" ? (
-            <Input
-              type="date"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="text-sm"
-            />
+            <Input type="date" value={text} onChange={(e) => setText(e.target.value)} className="text-sm" />
           ) : (
-            <Textarea
-              placeholder="Digite sua resposta..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={2}
-              className="text-sm"
-            />
+            <Textarea placeholder="Digite sua resposta..." value={text} onChange={(e) => setText(e.target.value)} rows={2} className="text-sm" />
           )}
-
           {renderConditionalField()}
+        </div>
+      )}
+    </div>
+  );
+});
 
+// ── Batch Answers Form ──
+function BatchAnswersForm({
+  caseId,
+  questions,
+  answers,
+  formTemplates,
+  onSuccess,
+}: {
+  caseId: string;
+  questions: Tables<"case_questions">[];
+  answers: Tables<"case_answers">[];
+  formTemplates: Tables<"form_question_templates">[];
+  onSuccess: () => void;
+}) {
+  const refs = useRef<Record<string, { getDraft: () => QuestionDraft } | null>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const unanswered = questions.filter((q) => !answers.find((a) => a.question_id === q.id));
+
+  const handleSubmitAll = async () => {
+    const drafts: { questionId: string; buildAnswer: () => Promise<string> }[] = [];
+    const incompleteReasons: string[] = [];
+    for (const q of unanswered) {
+      const r = refs.current[q.id];
+      if (!r) continue;
+      const d = r.getDraft();
+      if (d.kind === "ready") drafts.push({ questionId: d.questionId, buildAnswer: d.buildAnswer });
+      else if (d.kind === "incomplete") incompleteReasons.push(d.reason);
+    }
+
+    if (incompleteReasons.length > 0) {
+      toast.error(incompleteReasons[0]);
+      return;
+    }
+    if (drafts.length === 0) {
+      toast.error("Responda ao menos uma pergunta antes de enviar.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = await Promise.all(
+        drafts.map(async (d) => ({
+          case_id: caseId,
+          question_id: d.questionId,
+          answer_text: await d.buildAnswer(),
+        }))
+      );
+      const { error } = await supabase.from("case_answers").insert(payload);
+      if (error) throw error;
+      toast.success(`${payload.length} resposta(s) enviada(s)!`);
+      onSuccess();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Erro ao enviar respostas.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      {questions.map((q) => {
+        const answer = answers.find((a) => a.question_id === q.id);
+        const template = formTemplates.find((t) => t.question === q.question);
+        return (
+          <QuestionRow
+            key={q.id}
+            ref={(el) => { refs.current[q.id] = el; }}
+            question={q}
+            answer={answer ?? null}
+            caseId={caseId}
+            template={template ?? null}
+          />
+        );
+      })}
+      {unanswered.length > 0 && (
+        <div className="sticky bottom-2 pt-2">
           <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving || !text.trim()}
-            className="w-full sm:w-auto"
+            className="w-full"
+            size="lg"
+            disabled={submitting}
+            onClick={handleSubmitAll}
           >
-            {saving || uploadingConditional ? (
-              <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
+            {submitting ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando respostas...</>
             ) : (
-              <><Send className="h-3.5 w-3.5 mr-1" /> Enviar Resposta</>
+              <><Send className="h-4 w-4 mr-2" /> Enviar respostas ({unanswered.length} pendente{unanswered.length > 1 ? "s" : ""})</>
             )}
           </Button>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
