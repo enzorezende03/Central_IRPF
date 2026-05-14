@@ -108,6 +108,33 @@ export interface EligibleCase {
   earliest_doc_at: string | null; // min uploaded_at
   client_name: string | null;
   client_cpf: string | null;
+  priority: string | null;
+  client_tags: string[];
+}
+
+/** Returns a Set of case_ids that have a "procuração" document_request enviado/aprovado. */
+export function useProcuracaoFlags(caseIds: string[]) {
+  const key = [...caseIds].sort().join(",");
+  return useQuery({
+    queryKey: ["procuracao_flags", key],
+    enabled: caseIds.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("document_requests")
+        .select("case_id, title, category, status")
+        .in("case_id", caseIds)
+        .in("status", ["enviado", "aprovado"]);
+      if (error) throw error;
+      const set = new Set<string>();
+      for (const d of (data || []) as any[]) {
+        const t = (d.title || "").toLowerCase();
+        const c = (d.category || "").toLowerCase();
+        if (c.includes("procura") || t.includes("procura")) set.add(d.case_id);
+      }
+      return set;
+    },
+  });
 }
 
 /** Eligible cases (not finalized/dispensada), enriched with the earliest doc upload date. */
