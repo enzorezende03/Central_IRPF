@@ -394,6 +394,8 @@ export type Database = {
         Row: {
           case_id: string
           dec_file_url: string | null
+          guide_payment_type: string | null
+          guide_quota_count: number | null
           guide_url: string | null
           has_guide: boolean
           id: string
@@ -410,6 +412,8 @@ export type Database = {
         Insert: {
           case_id: string
           dec_file_url?: string | null
+          guide_payment_type?: string | null
+          guide_quota_count?: number | null
           guide_url?: string | null
           has_guide?: boolean
           id?: string
@@ -426,6 +430,8 @@ export type Database = {
         Update: {
           case_id?: string
           dec_file_url?: string | null
+          guide_payment_type?: string | null
+          guide_quota_count?: number | null
           guide_url?: string | null
           has_guide?: boolean
           id?: string
@@ -790,6 +796,48 @@ export type Database = {
           number?: string
           phone?: string
           state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_quotas: {
+        Row: {
+          case_id: string
+          created_at: string
+          due_date: string | null
+          file_name: string | null
+          file_url: string | null
+          id: string
+          notes: string | null
+          quota_number: number
+          sent_at: string | null
+          sent_to_client: boolean
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          due_date?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          quota_number: number
+          sent_at?: string | null
+          sent_to_client?: boolean
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          due_date?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          quota_number?: number
+          sent_at?: string | null
+          sent_to_client?: boolean
           updated_at?: string
         }
         Relationships: []
