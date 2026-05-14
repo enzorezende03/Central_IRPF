@@ -1838,3 +1838,266 @@ function PortalReplyBox({ caseId, onSent }: { caseId: string; onSent: () => void
     </div>
   );
 }
+
+// ── Bulk actions for documents (mark "Não tenho" + batch upload) ──
+function PortalBulkActions({
+  caseId,
+  clientId,
+  docRequests,
+  onSuccess,
+}: {
+  caseId: string;
+  clientId?: string;
+  docRequests: Tables<"document_requests">[];
+  onSuccess: () => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [marking, setMarking] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [batchFiles, setBatchFiles] = useState<{ file: File; docId: string }[]>([]);
+  const [expanded, setExpanded] = useState(false);
+
+  const pending = docRequests.filter(
+    (d) => d.status !== "aprovado" && d.category !== "nao_possui"
+  );
+  if (pending.length === 0) return null;
+
+  const allSelected = pending.length > 0 && pending.every((d) => selectedIds.has(d.id));
+
+  const toggle = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const toggleAll = () =>
+    setSelectedIds(allSelected ? new Set() : new Set(pending.map((d) => d.id)));
+
+  const handleMarkNotHave = async () => {
+    if (selectedIds.size === 0) return;
+    setMarking(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const titles = pending.filter((d) => ids.includes(d.id)).map((d) => d.title);
+      const { error } = await supabase
+        .from("document_requests")
+        .update({ status: "enviado" as DocumentStatus, category: "nao_possui" })
+        .in("id", ids);
+      if (error) throw error;
+      await supabase.from("case_timeline").insert({
+        case_id: caseId,
+        event_type: "Documentos marcados como não possui (lote)",
+        description: `Cliente informou que não possui: ${titles.join(", ")}`,
+        visible_to_client: true,
+        created_by: "Cliente",
+      });
+      toast.success(`${ids.length} documento(s) marcados como "Não tenho".`);
+      setSelectedIds(new Set());
+      onSuccess();
+    } catch {
+      toast.error("Erro ao marcar documentos.");
+    } finally {
+      setMarking(false);
+    }
+  };
+
+  const handleStageBatch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const newItems: { file: File; docId: string }[] = [];
+    const defaultDocId = pending[0]?.id ?? "";
+    for (const file of Array.from(files)) {
+      const err = validateFile(file);
+      if (err) {
+        toast.error(err);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+      newItems.push({ file, docId: defaultDocId });
+    }
+    setBatchFiles((prev) => [...prev, ...newItems]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSendBatch = async () => {
+    if (batchFiles.length === 0) return;
+    if (batchFiles.some((b) => !b.docId)) {
+      toast.error("Selecione o documento de destino para cada arquivo.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const docsToMarkSent = new Set<string>();
+      for (const { file, docId } of batchFiles) {
+        const filePath = buildStoragePath(caseId, file.name, docId);
+        const fileUrl = await uploadFileToBucket("documentos_clientes", filePath, file);
+        const { error: insertError } = await supabase.from("uploaded_documents").insert({
+          case_id: caseId,
+          document_request_id: docId,
+          client_id: clientId ?? null,
+          file_name: file.name,
+          file_url: fileUrl,
+          file_type: file.type || null,
+          uploaded_by: "client",
+        });
+        if (insertError) throw insertError;
+        docsToMarkSent.add(docId);
+      }
+      for (const docId of docsToMarkSent) {
+        await supabase
+          .from("document_requests")
+          .update({ status: "enviado" as DocumentStatus })
+          .eq("id", docId);
+      }
+      await supabase.from("case_timeline").insert({
+        case_id: caseId,
+        event_type: "Documentos enviados em lote",
+        description: `Cliente enviou ${batchFiles.length} arquivo(s) em lote`,
+        visible_to_client: true,
+        created_by: "Cliente",
+      });
+      toast.success(`${batchFiles.length} arquivo(s) enviados!`);
+      setBatchFiles([]);
+      onSuccess();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao enviar arquivos em lote.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <div>
+          <p className="text-sm font-semibold flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-primary" />
+            Ações em lote
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Envie vários documentos de uma vez ou marque o que você não possui
+          </p>
+        </div>
+        <span className="text-xs text-primary font-medium">{expanded ? "Ocultar" : "Abrir"}</span>
+      </button>
+
+      {expanded && (
+        <>
+          <div className="rounded-md bg-background border p-2 space-y-1.5 max-h-56 overflow-auto">
+            <label className="flex items-center gap-2 text-xs font-medium pb-1.5 border-b">
+              <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
+              Selecionar todos os pendentes ({pending.length})
+            </label>
+            {pending.map((d) => (
+              <label key={d.id} className="flex items-center gap-2 text-xs py-1">
+                <Checkbox
+                  checked={selectedIds.has(d.id)}
+                  onCheckedChange={() => toggle(d.id)}
+                />
+                <span className="flex-1 truncate">{d.title}</span>
+                {d.is_required && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0">Obrig.</Badge>
+                )}
+              </label>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs h-8 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            disabled={marking || selectedIds.size === 0}
+            onClick={handleMarkNotHave}
+          >
+            {marking ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+            ) : (
+              <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+            )}
+            Marcar selecionados como "Não tenho" ({selectedIds.size})
+          </Button>
+
+          <div className="space-y-2 pt-2 border-t">
+            <p className="text-xs font-medium">Anexar arquivos em lote</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              accept={getAcceptString()}
+              onChange={handleStageBatch}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs h-8"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-3.5 w-3.5 mr-1" /> Selecionar arquivos
+            </Button>
+
+            {batchFiles.length > 0 && (
+              <div className="space-y-1.5">
+                {batchFiles.map((b, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[11px] bg-background border rounded px-2 py-1.5">
+                    <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    <span className="flex-1 truncate" title={b.file.name}>{b.file.name}</span>
+                    <Select
+                      value={b.docId}
+                      onValueChange={(v) =>
+                        setBatchFiles((prev) =>
+                          prev.map((it, idx) => (idx === i ? { ...it, docId: v } : it))
+                        )
+                      }
+                    >
+                      <SelectTrigger className="h-7 w-[140px] text-[11px]">
+                        <SelectValue placeholder="Documento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pending.map((d) => (
+                          <SelectItem key={d.id} value={d.id} className="text-xs">
+                            {d.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <button
+                      type="button"
+                      onClick={() => setBatchFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="text-destructive text-xs font-medium px-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <Button
+                  size="sm"
+                  className="w-full text-xs h-8"
+                  disabled={uploading}
+                  onClick={handleSendBatch}
+                >
+                  {uploading ? (
+                    <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Enviando...</>
+                  ) : (
+                    <><Send className="h-3.5 w-3.5 mr-1" /> Enviar {batchFiles.length} arquivo(s)</>
+                  )}
+                </Button>
+              </div>
+            )}
+            <p className="text-[9px] text-muted-foreground text-center">
+              Máx. {MAX_FILE_SIZE_LABEL} · {ALLOWED_EXTENSIONS_LABEL}
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
