@@ -1610,7 +1610,7 @@ type PaymentQuota = {
   notes: string | null;
 };
 
-function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
+function GuideCard({ caseId, deliverable, clientName, clientPhone, clientEmail, portalSlugOrToken, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; clientName: string; clientPhone: string | null; clientEmail: string | null; portalSlugOrToken: string; onRefresh: () => void }) {
   const del = deliverable as any;
   const [hasGuide, setHasGuide] = useState<boolean>(del?.has_guide ?? false);
   const [paymentType, setPaymentType] = useState<"cota_unica" | "cotas">(
