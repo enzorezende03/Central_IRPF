@@ -1413,6 +1413,36 @@ function PreviewCard({
             <a href={del.preview_file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
           </Button>
         )}
+        {del?.preview_file_url && deliverable && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            disabled={uploading}
+            title="Excluir prévia"
+            onClick={async () => {
+              if (!confirm("Excluir a prévia enviada? Esta ação não pode ser desfeita.")) return;
+              try {
+                await supabase
+                  .from("final_deliverables")
+                  .update({
+                    preview_file_url: null,
+                    preview_status: "aguardando_revisao",
+                    preview_feedback: null,
+                    preview_approved_at: null,
+                  } as any)
+                  .eq("id", deliverable.id);
+                await logTimelineEvent(caseId, "Prévia removida", "A prévia anterior foi excluída pela equipe.", false);
+                toast.success("Prévia removida.");
+                onRefresh();
+              } catch {
+                toast.error("Erro ao remover prévia.");
+              }
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <input ref={previewRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
         <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading} onClick={() => previewRef.current?.click()}>
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {del?.preview_file_url ? "Substituir" : "Upload"}</>}
