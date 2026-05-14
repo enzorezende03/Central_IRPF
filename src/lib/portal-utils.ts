@@ -61,3 +61,32 @@ export async function logTimelineEvent(
     created_by: "Escritório",
   });
 }
+
+export function getPaymentGuideMessage(opts: {
+  clientName: string;
+  slugOrToken: string;
+  isSingle: boolean;
+  quotaNumber: number;
+  totalQuotas: number;
+  dueDate?: string | null;
+}) {
+  const link = getPortalUrl(opts.slugOrToken);
+  const firstName = opts.clientName.split(" ")[0];
+  const dueLine = opts.dueDate
+    ? `\nVencimento: ${opts.dueDate.split("-").reverse().join("/")}`
+    : "";
+  if (opts.isSingle) {
+    return `Olá ${firstName}, tudo bem?\n\nSegue em anexo a guia DARF referente ao seu Imposto de Renda para pagamento.${dueLine}\n\nVocê também pode acessá-la pelo seu portal:\n${link}\n\nQualquer dúvida, é só responder esta mensagem. Obrigado!`;
+  }
+  return `Olá ${firstName}, tudo bem?\n\nSegue em anexo a guia DARF da cota ${opts.quotaNumber} de ${opts.totalQuotas} referente ao seu Imposto de Renda.${dueLine}\n\nVocê também pode acessá-la pelo seu portal:\n${link}\n\nAs próximas cotas serão enviadas conforme o vencimento. Qualquer dúvida, é só responder. Obrigado!`;
+}
+
+export function buildWhatsAppLink(phone: string | null | undefined, message: string) {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  const num = digits ? (digits.length <= 11 ? "55" + digits : digits) : "";
+  return `https://wa.me/${num}?text=${encodeURIComponent(message)}`;
+}
+
+export function buildMailtoLink(email: string | null | undefined, subject: string, body: string) {
+  return `mailto:${email ?? ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
