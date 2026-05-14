@@ -806,6 +806,17 @@ export default function ClientDetail() {
               </Card>
             </Collapsible>
 
+            {/* ── Formulário do Cliente ── */}
+            <CaseQuestionsCard
+              caseId={id!}
+              questions={caseQuestions}
+              answers={caseAnswers}
+              onRefresh={() => {
+                queryClient.invalidateQueries({ queryKey: ["case-questions", id] });
+                queryClient.invalidateQueries({ queryKey: ["case-answers", id] });
+              }}
+            />
+
             {/* ── Observações Internas ── */}
             <Card>
               <CardHeader className="pb-3">
