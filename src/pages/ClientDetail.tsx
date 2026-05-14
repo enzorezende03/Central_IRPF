@@ -2512,7 +2512,7 @@ function CaseQuestionsCard({
   if (questions.length === 0) return null;
 
   return (
-    <Collapsible defaultOpen>
+    <Collapsible>
       <Card>
         <CardHeader className="pb-3">
           <CollapsibleTrigger className="w-full text-left">
