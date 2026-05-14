@@ -228,15 +228,18 @@ export default function ClientDetail() {
   };
 
   const saveNotes = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (newValue: string) => {
       const { error } = await supabase
         .from("irpf_cases")
-        .update({ internal_notes: notesValue })
+        .update({ internal_notes: newValue })
         .eq("id", id!);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Notas salvas!");
+      setInternalNotes(null);
+      setAppendDraft("");
+      setNotesMode("view");
       invalidateAll();
     },
     onError: () => toast.error("Erro ao salvar notas"),
