@@ -1606,6 +1606,21 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
 
   const hasAnyFile = deliverable?.irpf_file_url || deliverable?.receipt_file_url || fileUrl("rec_file_url") || fileUrl("dec_file_url");
 
+  const previewApproved = (deliverable as any)?.preview_status === "aprovado";
+
+  if (!previewApproved) {
+    return (
+      <div className="rounded-md border border-dashed p-4 bg-muted/30 text-center space-y-1">
+        <Lock className="h-5 w-5 mx-auto text-muted-foreground" />
+        <p className="text-sm font-medium">Etapa bloqueada</p>
+        <p className="text-xs text-muted-foreground">
+          Disponível somente após a <span className="font-medium">aprovação da prévia</span> pelo cliente
+          (ou aprovação interna pela equipe).
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {renderRow("irpf", irpfRef)}
