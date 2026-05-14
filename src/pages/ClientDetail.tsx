@@ -1623,7 +1623,7 @@ function GuideCard({ caseId, deliverable, onRefresh }: { caseId: string; deliver
     setLoadingQuotas(false);
   }, [caseId]);
 
-  useState(() => { loadQuotas(); return undefined as any; });
+  useEffect(() => { loadQuotas(); }, [loadQuotas]);
 
   const ensureDeliverable = async (patch: Record<string, any>) => {
     if (deliverable) {
