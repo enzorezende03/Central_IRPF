@@ -54,6 +54,7 @@ import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MA
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const { profileName } = useAuth();
 
   // ── Fetch case with client ──
   const { data: caseData, isLoading } = useQuery({
