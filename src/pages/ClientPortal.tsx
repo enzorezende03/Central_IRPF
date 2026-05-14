@@ -619,26 +619,19 @@ export default function ClientPortal() {
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">Perguntas do Escritório</CardTitle>
-                      <CardDescription className="text-xs">Responda as perguntas abaixo para auxiliar na sua declaração.</CardDescription>
+                      <CardDescription className="text-xs">Responda as perguntas abaixo e clique em "Enviar respostas" no final.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {questions.map((q) => {
-                        const answer = answers.find((a) => a.question_id === q.id);
-                        const template = formTemplates.find((t) => t.question === q.question);
-                        return (
-                          <QuestionRow
-                            key={q.id}
-                            question={q}
-                            answer={answer ?? null}
-                            caseId={caseId!}
-                            template={template ?? null}
-                            onSuccess={() => {
-                              queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
-                              queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
-                            }}
-                          />
-                        );
-                      })}
+                      <BatchAnswersForm
+                        caseId={caseId!}
+                        questions={questions}
+                        answers={answers}
+                        formTemplates={formTemplates}
+                        onSuccess={() => {
+                          queryClient.invalidateQueries({ queryKey: ["portal-answers", caseId] });
+                          queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
+                        }}
+                      />
                     </CardContent>
                   </Card>
                 )}
