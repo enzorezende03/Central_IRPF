@@ -145,7 +145,7 @@ export function useEligibleCases() {
     queryFn: async () => {
       const { data: cases, error } = await supabase
         .from("irpf_cases")
-        .select("id, internal_owner, status, docs_received_at, created_at, clients(full_name, cpf)")
+        .select("id, internal_owner, status, priority, docs_received_at, created_at, clients(full_name, cpf, tags)")
         .not("status", "in", "(finalizado,dispensada)")
         .limit(5000);
       if (error) throw error;
@@ -176,6 +176,8 @@ export function useEligibleCases() {
         earliest_doc_at: earliestByCase.get(c.id) ?? null,
         client_name: c.clients?.full_name ?? null,
         client_cpf: c.clients?.cpf ?? null,
+        priority: c.priority ?? null,
+        client_tags: Array.isArray(c.clients?.tags) ? c.clients.tags : [],
       }));
     },
   });
