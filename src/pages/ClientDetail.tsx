@@ -674,10 +674,19 @@ export default function ClientDetail() {
                 <CardDescription>Link da guia de pagamento para o cliente</CardDescription>
               </CardHeader>
               <CardContent>
-                <GuideCard caseId={id!} deliverable={deliverable} onRefresh={() => {
-                  queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
-                  queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
-                }} />
+                <GuideCard
+                  caseId={id!}
+                  deliverable={deliverable}
+                  clientName={client?.full_name ?? "Cliente"}
+                  clientPhone={client?.phone ?? null}
+                  clientEmail={client?.email ?? null}
+                  portalSlugOrToken={linkId}
+                  onRefresh={() => {
+                    queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                  }}
+                />
+
               </CardContent>
             </Card>
           </div>
