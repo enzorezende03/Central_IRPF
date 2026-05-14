@@ -417,6 +417,35 @@ export default function ClientPortal() {
                   </CardContent>
                 </Card>
 
+                {/* Nova mensagem do escritório */}
+                {msgBadge > 0 && (
+                  <Card className="border-primary/40 bg-primary/5">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-2.5">
+                        <MessageSquare className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-primary">
+                            {msgBadge === 1 ? "Nova mensagem do escritório" : `${msgBadge} novas mensagens do escritório`}
+                          </p>
+                          {officeMessages[officeMessages.length - 1]?.message && (
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                              {officeMessages[officeMessages.length - 1].message}
+                            </p>
+                          )}
+                          <Button
+                            size="sm"
+                            className="mt-2 text-xs h-7"
+                            onClick={() => setActiveTab("mensagens")}
+                          >
+                            <MessageSquare className="h-3 w-3 mr-1" />
+                            Ver mensagens
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Documentos Parciais Banner */}
                 {isDocsParciais && !isImpedida && (
                   <Card className="border-amber-300 dark:border-amber-700">
