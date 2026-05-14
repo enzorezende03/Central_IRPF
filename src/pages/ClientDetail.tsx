@@ -204,13 +204,17 @@ export default function ClientDetail() {
 
   // ── Local state ──
   const [internalNotes, setInternalNotes] = useState<string | null>(null);
+  const [notesMode, setNotesMode] = useState<"view" | "edit" | "append">("view");
+  const [appendDraft, setAppendDraft] = useState("");
   const [showImpedirDialog, setShowImpedirDialog] = useState(false);
   const [impedirJustificativa, setImpedirJustificativa] = useState("");
   const [showDispensarDialog, setShowDispensarDialog] = useState(false);
   const [dispensarJustificativa, setDispensarJustificativa] = useState("");
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
-  const notesValue = internalNotes ?? caseData?.internal_notes ?? "";
+  const savedNotes = caseData?.internal_notes ?? "";
+  const notesValue = internalNotes ?? savedNotes;
+  const hasSavedNotes = savedNotes.trim().length > 0;
 
   // ── Mutations ──
   const invalidateAll = () => {
