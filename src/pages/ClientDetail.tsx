@@ -1771,17 +1771,37 @@ function QuotaRow({
   caseId,
   isSingle,
   totalQuotas,
+  clientName,
+  clientPhone,
+  clientEmail,
+  portalSlugOrToken,
   onChanged,
 }: {
   quota: PaymentQuota;
   caseId: string;
   isSingle: boolean;
   totalQuotas: number;
+  clientName: string;
+  clientPhone: string | null;
+  clientEmail: string | null;
+  portalSlugOrToken: string;
   onChanged: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const [dueDate, setDueDate] = useState(quota.due_date ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const message = getPaymentGuideMessage({
+    clientName,
+    slugOrToken: portalSlugOrToken,
+    isSingle,
+    quotaNumber: quota.quota_number,
+    totalQuotas,
+    dueDate: quota.due_date,
+  });
+  const subject = isSingle
+    ? "Sua guia DARF do Imposto de Renda"
+    : `Guia DARF — Cota ${quota.quota_number}/${totalQuotas} do Imposto de Renda`;
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
