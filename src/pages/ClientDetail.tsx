@@ -1746,6 +1746,21 @@ function GuideCard({ caseId, deliverable, clientName, clientPhone, clientEmail, 
     }
   };
 
+  const previewApproved = (deliverable as any)?.preview_status === "aprovado";
+
+  if (!previewApproved) {
+    return (
+      <div className="rounded-md border border-dashed p-4 bg-muted/30 text-center space-y-1">
+        <Lock className="h-5 w-5 mx-auto text-muted-foreground" />
+        <p className="text-sm font-medium">Etapa bloqueada</p>
+        <p className="text-xs text-muted-foreground">
+          Disponível somente após a <span className="font-medium">aprovação da prévia</span> pelo cliente
+          (ou aprovação interna pela equipe).
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
