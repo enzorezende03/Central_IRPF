@@ -6,29 +6,29 @@ export interface Operator {
   full_name: string;
 }
 
-/** Internal users with role 'operacional', joined with profiles for display name. */
+/**
+ * Operadores exibidos no Planejamento.
+ * Fonte: tabela `weekly_capacity` (configurada em Configurações → Capacidade Semanal).
+ * Apenas quem está cadastrado lá aparece na grade do planejamento.
+ */
 export function useOperators() {
   return useQuery({
-    queryKey: ["operators_list"],
+    queryKey: ["operators_list_from_capacity"],
     staleTime: 60_000,
     queryFn: async () => {
-      const { data: roles, error } = await supabase
-        .from("user_roles" as any)
-        .select("user_id, role")
-        .eq("role", "operacional");
+      const { data, error } = await supabase
+        .from("weekly_capacity" as any)
+        .select("responsible");
       if (error) throw error;
-      const ids = ((roles || []) as any[]).map((r) => r.user_id);
-      if (ids.length === 0) return [] as Operator[];
-      const { data: profs, error: pErr } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", ids);
-      if (pErr) throw pErr;
-      return ((profs || []) as any[])
-        .map<Operator>((p) => ({
-          user_id: p.id,
-          full_name: (p.full_name && p.full_name.trim()) || p.email || "Sem nome",
-        }))
+      const names = Array.from(
+        new Set(
+          ((data || []) as any[])
+            .map((r) => (r.responsible || "").trim())
+            .filter(Boolean),
+        ),
+      );
+      return names
+        .map<Operator>((name) => ({ user_id: name, full_name: name }))
         .sort((a, b) => a.full_name.localeCompare(b.full_name));
     },
   });
