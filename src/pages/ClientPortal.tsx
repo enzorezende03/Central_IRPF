@@ -553,20 +553,32 @@ export default function ClientPortal() {
                     {docRequests.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-6">Nenhum documento solicitado no momento.</p>
                     ) : (
-                      docRequests.map((doc) => (
-                        <DocumentRow
-                          key={doc.id}
-                          doc={doc}
+                      <>
+                        <PortalBulkActions
                           caseId={caseId!}
                           clientId={client?.id}
-                          uploadedDocs={uploadedDocs.filter((u) => u.document_request_id === doc.id)}
+                          docRequests={docRequests}
                           onSuccess={() => {
                             queryClient.invalidateQueries({ queryKey: ["portal-uploaded", caseId] });
                             queryClient.invalidateQueries({ queryKey: ["portal-docs", caseId] });
                             queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
                           }}
                         />
-                      ))
+                        {docRequests.map((doc) => (
+                          <DocumentRow
+                            key={doc.id}
+                            doc={doc}
+                            caseId={caseId!}
+                            clientId={client?.id}
+                            uploadedDocs={uploadedDocs.filter((u) => u.document_request_id === doc.id)}
+                            onSuccess={() => {
+                              queryClient.invalidateQueries({ queryKey: ["portal-uploaded", caseId] });
+                              queryClient.invalidateQueries({ queryKey: ["portal-docs", caseId] });
+                              queryClient.invalidateQueries({ queryKey: ["portal-case", caseId] });
+                            }}
+                          />
+                        ))}
+                      </>
                     )}
                   </CardContent>
                 </Card>
