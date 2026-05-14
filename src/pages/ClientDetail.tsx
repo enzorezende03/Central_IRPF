@@ -1751,6 +1751,10 @@ function GuideCard({ caseId, deliverable, clientName, clientPhone, clientEmail, 
                   caseId={caseId}
                   isSingle={paymentType === "cota_unica"}
                   totalQuotas={quotas.length}
+                  clientName={clientName}
+                  clientPhone={clientPhone}
+                  clientEmail={clientEmail}
+                  portalSlugOrToken={portalSlugOrToken}
                   onChanged={loadQuotas}
                 />
               ))}
