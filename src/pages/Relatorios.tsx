@@ -81,14 +81,28 @@ export default function Relatorios() {
     },
   });
 
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ["report-profiles"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .order("full_name");
+      return ((data ?? []) as { full_name: string | null; email: string | null }[])
+        .map((p) => (p.full_name?.trim() || p.email?.trim() || ""))
+        .filter(Boolean);
+    },
+  });
+
   const authors = useMemo(() => {
     const set = new Set<string>();
+    allProfiles.forEach((p) => set.add(p));
     events.forEach((e) => {
       const a = (e.created_by || "Escritório").trim();
-      set.add(a);
+      if (!CLIENT_AUTHORS.has(a)) set.add(a);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [events]);
+  }, [events, allProfiles]);
 
   const eventTypes = useMemo(() => {
     const set = new Set<string>();
