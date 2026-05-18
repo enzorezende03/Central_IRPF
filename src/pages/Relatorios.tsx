@@ -108,11 +108,14 @@ export default function Relatorios() {
     const set = new Set<string>();
     allProfiles.forEach((p) => set.add(p));
     events.forEach((e) => {
-      const a = (e.created_by || "Escritório").trim();
+      const rawAuthor = (e.created_by || "Escritório").trim();
+      const a = GENERIC_OFFICE_AUTHORS.has(rawAuthor)
+        ? (casesMap[e.case_id]?.owner || rawAuthor)
+        : rawAuthor;
       if (!CLIENT_AUTHORS.has(a)) set.add(a);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [events, allProfiles]);
+  }, [events, allProfiles, casesMap]);
 
   const eventTypes = useMemo(() => {
     const set = new Set<string>();
@@ -122,7 +125,10 @@ export default function Relatorios() {
 
   const filtered = useMemo(() => {
     return events.filter((e) => {
-      const author = (e.created_by || "Escritório").trim();
+      const rawAuthor = (e.created_by || "Escritório").trim();
+      const author = GENERIC_OFFICE_AUTHORS.has(rawAuthor)
+        ? (casesMap[e.case_id]?.owner || rawAuthor)
+        : rawAuthor;
       if (authorFilter === "__office__") {
         if (CLIENT_AUTHORS.has(author)) return false;
       } else if (authorFilter !== "__all__" && author !== authorFilter) {
@@ -131,18 +137,21 @@ export default function Relatorios() {
       if (eventFilter !== "__all__" && e.event_type !== eventFilter) return false;
       return true;
     });
-  }, [events, authorFilter, eventFilter]);
+  }, [events, authorFilter, eventFilter, casesMap]);
 
   // Group by author
   const grouped = useMemo(() => {
     const map = new Map<string, TimelineRow[]>();
     filtered.forEach((e) => {
-      const author = (e.created_by || "Escritório").trim();
+      const rawAuthor = (e.created_by || "Escritório").trim();
+      const author = GENERIC_OFFICE_AUTHORS.has(rawAuthor)
+        ? (casesMap[e.case_id]?.owner || rawAuthor)
+        : rawAuthor;
       if (!map.has(author)) map.set(author, []);
       map.get(author)!.push(e);
     });
     return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length);
-  }, [filtered]);
+  }, [filtered, casesMap]);
 
   const totalActions = filtered.length;
   const uniqueCases = new Set(filtered.map((e) => e.case_id)).size;
