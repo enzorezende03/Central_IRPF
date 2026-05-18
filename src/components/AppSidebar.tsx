@@ -31,6 +31,7 @@ const menuItems = [
   { title: "Cobrança", url: "/cobranca", icon: DollarSign, permission: "acesso_cobranca" },
   { title: "Metas IRPF", url: "/metas", icon: Target, permission: "acesso_metas" },
   { title: "Planejamento", url: "/planejamento", icon: CalendarCheck, permission: "acesso_metas" },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "acesso_demandas" },
   { title: "Clientes", url: "/clientes", icon: Users, permission: "acesso_demandas" },
   { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "acesso_configuracao" },
 ];
