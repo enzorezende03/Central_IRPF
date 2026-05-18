@@ -2331,12 +2331,33 @@ function MessagesSection({
             messages.map((msg: any) => (
               <div
                 key={msg.id}
-                className={`p-2.5 rounded-lg text-sm max-w-[85%] ${
+                className={`group relative p-2.5 rounded-lg text-sm max-w-[85%] ${
                   msg.sender === "office"
                     ? "bg-primary/10 ml-auto"
                     : "bg-muted mr-auto"
                 }`}
               >
+                {msg.sender === "office" && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm("Excluir esta mensagem?")) return;
+                      const { error } = await supabase
+                        .from("case_messages" as any)
+                        .delete()
+                        .eq("id", msg.id);
+                      if (error) {
+                        toast.error("Erro ao excluir mensagem.");
+                        return;
+                      }
+                      toast.success("Mensagem excluída.");
+                      onRefresh();
+                    }}
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                    title="Excluir mensagem"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
                 <p className="text-[10px] font-medium text-muted-foreground mb-0.5">
                   {msg.sender === "office" ? "Escritório" : "Cliente"}
                 </p>
