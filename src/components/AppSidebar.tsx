@@ -31,7 +31,7 @@ const menuItems = [
   { title: "Cobrança", url: "/cobranca", icon: DollarSign, permission: "acesso_cobranca" },
   { title: "Metas IRPF", url: "/metas", icon: Target, permission: "acesso_metas" },
   { title: "Planejamento", url: "/planejamento", icon: CalendarCheck, permission: "acesso_metas" },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "acesso_demandas" },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "__admin__" },
   { title: "Clientes", url: "/clientes", icon: Users, permission: "acesso_demandas" },
   { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "acesso_configuracao" },
 ];
@@ -53,7 +53,8 @@ export function AppSidebar() {
   const roleLabel = role === "admin" ? "Administrador" : role === "operacional" ? "Operacional" : role === "financeiro" ? "Financeiro" : "Usuário";
 
   const visibleItems = menuItems.filter((item) =>
-    item.permission === null || hasPermission(item.permission)
+    item.permission === null ||
+    (item.permission === "__admin__" ? role === "admin" : hasPermission(item.permission))
   );
 
   return (
