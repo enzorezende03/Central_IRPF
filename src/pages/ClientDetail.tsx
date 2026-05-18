@@ -1681,6 +1681,39 @@ function PreviewCard({
           </Button>
         </div>
       )}
+
+      {del?.preview_file_url && pStatus === "aprovado" && deliverable && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-xs w-full text-muted-foreground hover:text-destructive"
+          onClick={async () => {
+            if (!confirm("Cancelar a aprovação interna da prévia? Ela voltará para 'Aguardando revisão do cliente'.")) return;
+            try {
+              await supabase
+                .from("final_deliverables")
+                .update({
+                  preview_status: "aguardando_revisao",
+                  preview_approved_at: null,
+                  preview_feedback: null,
+                } as any)
+                .eq("id", deliverable.id);
+              await logTimelineEvent(
+                caseId,
+                "Aprovação da prévia cancelada",
+                "A aprovação interna da prévia foi cancelada pela equipe.",
+                false
+              );
+              toast.success("Aprovação cancelada.");
+              onRefresh();
+            } catch {
+              toast.error("Erro ao cancelar aprovação.");
+            }
+          }}
+        >
+          <X className="h-3.5 w-3.5 mr-1.5" /> Cancelar aprovação
+        </Button>
+      )}
     </div>
   );
 }
