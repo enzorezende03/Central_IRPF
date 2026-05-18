@@ -54,12 +54,28 @@ export async function logTimelineEvent(
   visibleToClient = false,
   createdBy?: string | null,
 ) {
+  let author = (createdBy && createdBy.trim()) || "";
+  if (!author) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", user.id)
+          .maybeSingle();
+        author = profile?.full_name?.trim() || profile?.email || "Escritório";
+      }
+    } catch {
+      // ignore — fallback below
+    }
+  }
   await supabase.from("case_timeline").insert({
     case_id: caseId,
     event_type: eventType,
     description: description ?? null,
     visible_to_client: visibleToClient,
-    created_by: (createdBy && createdBy.trim()) || "Escritório",
+    created_by: author || "Escritório",
   });
 }
 
