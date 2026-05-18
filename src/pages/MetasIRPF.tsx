@@ -217,7 +217,7 @@ function computeLiveRealized(
 
 function OverviewBlock({ season }: { season: any }) {
   const { data: weeks = [] } = useWeeklyGoals(season.id);
-  const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  const { data: finalized = [], isSuccess: finalizedLoaded } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
   const snapshot = useSnapshotWeeklyRealized();
 
   const totalPlanned = season.total_planned || 0;
