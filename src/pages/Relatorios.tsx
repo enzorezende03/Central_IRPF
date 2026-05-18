@@ -71,7 +71,7 @@ export default function Relatorios() {
     [events],
   );
 
-  const { data: casesMap = {} } = useQuery({
+  const { data: casesMap = {}, isLoading: isCasesLoading } = useQuery({
     queryKey: ["timeline-report-cases", caseIds],
     enabled: canView && caseIds.length > 0,
     queryFn: async () => {
@@ -156,6 +156,7 @@ export default function Relatorios() {
   const totalActions = filtered.length;
   const uniqueCases = new Set(filtered.map((e) => e.case_id)).size;
   const uniqueAuthors = grouped.length;
+  const reportLoading = isLoading || (caseIds.length > 0 && isCasesLoading);
 
   const setPreset = (days: number) => {
     const end = new Date();
@@ -167,13 +168,19 @@ export default function Relatorios() {
   const exportCSV = () => {
     const rows = [
       ["Data/Hora", "Colaborador", "Cliente", "Evento", "Descrição"],
-      ...filtered.map((e) => [
-        format(new Date(e.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
-        (e.created_by || "Escritório").trim(),
-        casesMap[e.case_id] ?? "—",
-        e.event_type,
-        (e.description ?? "").replace(/\n/g, " "),
-      ]),
+      ...filtered.map((e) => {
+        const rawAuthor = (e.created_by || "Escritório").trim();
+        const author = GENERIC_OFFICE_AUTHORS.has(rawAuthor)
+          ? (casesMap[e.case_id]?.owner || rawAuthor)
+          : rawAuthor;
+        return [
+          format(new Date(e.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+          author,
+          casesMap[e.case_id]?.clientName ?? "—",
+          e.event_type,
+          (e.description ?? "").replace(/\n/g, " "),
+        ];
+      }),
     ];
     const csv = rows
       .map((r) =>
@@ -188,6 +195,10 @@ export default function Relatorios() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (!authLoading && role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <InternalLayout>
@@ -279,7 +290,7 @@ export default function Relatorios() {
           </Card>
         </div>
 
-        {isLoading ? (
+        {reportLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-24 w-full" />
@@ -334,8 +345,8 @@ export default function Relatorios() {
                                   <td className="py-2 pr-3 whitespace-nowrap text-xs text-muted-foreground">
                                     {format(new Date(e.created_at), "dd/MM HH:mm", { locale: ptBR })}
                                   </td>
-                                  <td className="py-2 pr-3 max-w-[220px] truncate" title={casesMap[e.case_id]}>
-                                    {casesMap[e.case_id] ?? "—"}
+                                  <td className="py-2 pr-3 max-w-[220px] truncate" title={casesMap[e.case_id]?.clientName}>
+                                    {casesMap[e.case_id]?.clientName ?? "—"}
                                   </td>
                                   <td className="py-2 pr-3 whitespace-nowrap">
                                     <Badge variant="secondary" className="text-[10px] font-normal">{e.event_type}</Badge>
