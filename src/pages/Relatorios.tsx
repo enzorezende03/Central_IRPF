@@ -34,6 +34,10 @@ type CaseLite = {
 const CLIENT_AUTHORS = new Set(["Cliente", "sistema", "Equipe"]);
 
 export default function Relatorios() {
+  const { role, loading: authLoading } = useAuth();
+  if (!authLoading && role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
   const today = new Date();
   const [startDate, setStartDate] = useState<string>(format(today, "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState<string>(format(today, "yyyy-MM-dd"));
