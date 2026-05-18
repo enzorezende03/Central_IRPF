@@ -28,24 +28,30 @@ type TimelineRow = {
 
 type CaseLite = {
   id: string;
+  internal_owner: string | null;
   clients: { full_name: string | null } | null;
 };
 
-const CLIENT_AUTHORS = new Set(["Cliente", "sistema", "Equipe"]);
+type CaseReportInfo = {
+  clientName: string;
+  owner: string | null;
+};
+
+const CLIENT_AUTHORS = new Set(["Cliente"]);
+const GENERIC_OFFICE_AUTHORS = new Set(["Escritório", "Equipe", "sistema"]);
 
 export default function Relatorios() {
   const { role, loading: authLoading } = useAuth();
-  if (!authLoading && role !== "admin") {
-    return <Navigate to="/" replace />;
-  }
   const today = new Date();
   const [startDate, setStartDate] = useState<string>(format(today, "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState<string>(format(today, "yyyy-MM-dd"));
   const [authorFilter, setAuthorFilter] = useState<string>("__office__");
   const [eventFilter, setEventFilter] = useState<string>("__all__");
+  const canView = !authLoading && role === "admin";
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["timeline-report", startDate, endDate],
+    enabled: canView,
     queryFn: async () => {
       const from = startOfDay(new Date(startDate + "T00:00:00")).toISOString();
       const to = endOfDay(new Date(endDate + "T00:00:00")).toISOString();
@@ -67,15 +73,18 @@ export default function Relatorios() {
 
   const { data: casesMap = {} } = useQuery({
     queryKey: ["timeline-report-cases", caseIds],
-    enabled: caseIds.length > 0,
+    enabled: canView && caseIds.length > 0,
     queryFn: async () => {
       const { data } = await supabase
         .from("irpf_cases")
-        .select("id, clients(full_name)")
+        .select("id, internal_owner, clients(full_name)")
         .in("id", caseIds);
-      const map: Record<string, string> = {};
+      const map: Record<string, CaseReportInfo> = {};
       (data as CaseLite[] | null)?.forEach((c) => {
-        map[c.id] = c.clients?.full_name ?? "Cliente sem nome";
+        map[c.id] = {
+          clientName: c.clients?.full_name ?? "Cliente sem nome",
+          owner: c.internal_owner?.trim() || null,
+        };
       });
       return map;
     },
@@ -83,6 +92,7 @@ export default function Relatorios() {
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ["report-profiles"],
+    enabled: canView,
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
