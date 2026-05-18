@@ -256,7 +256,7 @@ function OverviewBlock({ season }: { season: any }) {
   // Auto-snapshot any closed week that hasn't been frozen yet.
   // IMPORTANT: only run after the finalized cases query actually returned data,
   // otherwise we'd freeze a "0" while the request is still in-flight.
-  const { isSuccess: finalizedLoaded } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  
   useEffect(() => {
     if (!finalizedLoaded || weeks.length === 0) return;
     const pending = weeks
