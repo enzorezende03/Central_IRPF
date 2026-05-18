@@ -52,13 +52,14 @@ export async function logTimelineEvent(
   eventType: string,
   description?: string,
   visibleToClient = false,
+  createdBy?: string | null,
 ) {
   await supabase.from("case_timeline").insert({
     case_id: caseId,
     event_type: eventType,
     description: description ?? null,
     visible_to_client: visibleToClient,
-    created_by: "Escritório",
+    created_by: (createdBy && createdBy.trim()) || "Escritório",
   });
 }
 
