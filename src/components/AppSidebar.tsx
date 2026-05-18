@@ -53,7 +53,8 @@ export function AppSidebar() {
   const roleLabel = role === "admin" ? "Administrador" : role === "operacional" ? "Operacional" : role === "financeiro" ? "Financeiro" : "Usuário";
 
   const visibleItems = menuItems.filter((item) =>
-    item.permission === null || hasPermission(item.permission)
+    item.permission === null ||
+    (item.permission === "__admin__" ? role === "admin" : hasPermission(item.permission))
   );
 
   return (
