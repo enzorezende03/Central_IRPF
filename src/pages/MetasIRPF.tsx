@@ -217,7 +217,7 @@ function computeLiveRealized(
 
 function OverviewBlock({ season }: { season: any }) {
   const { data: weeks = [] } = useWeeklyGoals(season.id);
-  const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  const { data: finalized = [], isSuccess: finalizedLoaded } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
   const snapshot = useSnapshotWeeklyRealized();
 
   const totalPlanned = season.total_planned || 0;
@@ -254,16 +254,20 @@ function OverviewBlock({ season }: { season: any }) {
   });
 
   // Auto-snapshot any closed week that hasn't been frozen yet.
+  // IMPORTANT: only run after the finalized cases query actually returned data,
+  // otherwise we'd freeze a "0" while the request is still in-flight.
+  
   useEffect(() => {
-    if (!finalized.length && weeks.length === 0) return;
+    if (!finalizedLoaded || weeks.length === 0) return;
     const pending = weeks
       .filter((w) => today > parseISODate(w.week_end) && (w.realized_snapshot == null))
-      .map((w) => ({ id: w.id, realized: computeLiveRealized(w, finalized) }));
+      .map((w) => ({ id: w.id, realized: computeLiveRealized(w, finalized) }))
+      .filter((p) => p.realized > 0); // never freeze a zero — wait for real data
     if (pending.length > 0 && !snapshot.isPending) {
       snapshot.mutate(pending);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeks, finalized]);
+  }, [weeks, finalized, finalizedLoaded]);
 
   const totalFinalized = realizedPerWeek.reduce((s, w) => s + w.realized, 0);
   const percentDone = totalPlanned > 0 ? (totalFinalized / totalPlanned) * 100 : 0;
