@@ -156,7 +156,7 @@ export default function Relatorios() {
   const totalActions = filtered.length;
   const uniqueCases = new Set(filtered.map((e) => e.case_id)).size;
   const uniqueAuthors = grouped.length;
-  const reportLoading = isLoading || (caseIds.length > 0 && isCasesLoading);
+  const reportLoading = authLoading || isLoading || (caseIds.length > 0 && isCasesLoading);
 
   const setPreset = (days: number) => {
     const end = new Date();
@@ -375,7 +375,7 @@ export default function Relatorios() {
 
         <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
           <Calendar className="h-3 w-3 mt-0.5 shrink-0" />
-          Ações registradas antes da atualização aparecem como "Escritório". A partir de agora, o nome do colaborador é gravado automaticamente em cada evento.
+          Eventos gravados como "Escritório", "Equipe" ou "sistema" são atribuídos ao responsável da demanda quando houver responsável definido.
         </p>
       </div>
     </InternalLayout>
