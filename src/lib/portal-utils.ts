@@ -57,14 +57,23 @@ export async function logTimelineEvent(
   let author = (createdBy && createdBy.trim()) || "";
   if (!author) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      let user = session?.user ?? null;
+      if (!user) {
+        const { data } = await supabase.auth.getUser();
+        user = data.user ?? null;
+      }
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name, email")
           .eq("id", user.id)
           .maybeSingle();
-        author = profile?.full_name?.trim() || profile?.email || "Escritório";
+        const metadataName =
+          typeof user.user_metadata?.full_name === "string"
+            ? user.user_metadata.full_name.trim()
+            : "";
+        author = profile?.full_name?.trim() || profile?.email || metadataName || user.email || "Escritório";
       }
     } catch {
       // ignore — fallback below

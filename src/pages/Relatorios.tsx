@@ -28,24 +28,30 @@ type TimelineRow = {
 
 type CaseLite = {
   id: string;
+  internal_owner: string | null;
   clients: { full_name: string | null } | null;
 };
 
-const CLIENT_AUTHORS = new Set(["Cliente", "sistema", "Equipe"]);
+type CaseReportInfo = {
+  clientName: string;
+  owner: string | null;
+};
+
+const CLIENT_AUTHORS = new Set(["Cliente"]);
+const GENERIC_OFFICE_AUTHORS = new Set(["Escritório", "Equipe", "sistema"]);
 
 export default function Relatorios() {
   const { role, loading: authLoading } = useAuth();
-  if (!authLoading && role !== "admin") {
-    return <Navigate to="/" replace />;
-  }
   const today = new Date();
   const [startDate, setStartDate] = useState<string>(format(today, "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState<string>(format(today, "yyyy-MM-dd"));
   const [authorFilter, setAuthorFilter] = useState<string>("__office__");
   const [eventFilter, setEventFilter] = useState<string>("__all__");
+  const canView = !authLoading && role === "admin";
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["timeline-report", startDate, endDate],
+    enabled: canView,
     queryFn: async () => {
       const from = startOfDay(new Date(startDate + "T00:00:00")).toISOString();
       const to = endOfDay(new Date(endDate + "T00:00:00")).toISOString();
@@ -65,17 +71,20 @@ export default function Relatorios() {
     [events],
   );
 
-  const { data: casesMap = {} } = useQuery({
+  const { data: casesMap = {}, isLoading: isCasesLoading } = useQuery({
     queryKey: ["timeline-report-cases", caseIds],
-    enabled: caseIds.length > 0,
+    enabled: canView && caseIds.length > 0,
     queryFn: async () => {
       const { data } = await supabase
         .from("irpf_cases")
-        .select("id, clients(full_name)")
+        .select("id, internal_owner, clients(full_name)")
         .in("id", caseIds);
-      const map: Record<string, string> = {};
+      const map: Record<string, CaseReportInfo> = {};
       (data as CaseLite[] | null)?.forEach((c) => {
-        map[c.id] = c.clients?.full_name ?? "Cliente sem nome";
+        map[c.id] = {
+          clientName: c.clients?.full_name ?? "Cliente sem nome",
+          owner: c.internal_owner?.trim() || null,
+        };
       });
       return map;
     },
@@ -83,6 +92,7 @@ export default function Relatorios() {
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ["report-profiles"],
+    enabled: canView,
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
@@ -98,11 +108,14 @@ export default function Relatorios() {
     const set = new Set<string>();
     allProfiles.forEach((p) => set.add(p));
     events.forEach((e) => {
-      const a = (e.created_by || "Escritório").trim();
+      const rawAuthor = (e.created_by || "Escritório").trim();
+      const a = GENERIC_OFFICE_AUTHORS.has(rawAuthor)
+        ? (casesMap[e.case_id]?.owner || rawAuthor)
+        : rawAuthor;
       if (!CLIENT_AUTHORS.has(a)) set.add(a);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [events, allProfiles]);
+  }, [events, allProfiles, casesMap]);
 
   const eventTypes = useMemo(() => {
     const set = new Set<string>();
@@ -112,7 +125,10 @@ export default function Relatorios() {
 
   const filtered = useMemo(() => {
     return events.filter((e) => {
-      const author = (e.created_by || "Escritório").trim();
+      const rawAuthor = (e.created_by || "Escritório").trim();
+      const author = GENERIC_OFFICE_AUTHORS.has(rawAuthor)
+        ? (casesMap[e.case_id]?.owner || rawAuthor)
+        : rawAuthor;
       if (authorFilter === "__office__") {
         if (CLIENT_AUTHORS.has(author)) return false;
       } else if (authorFilter !== "__all__" && author !== authorFilter) {
@@ -121,22 +137,26 @@ export default function Relatorios() {
       if (eventFilter !== "__all__" && e.event_type !== eventFilter) return false;
       return true;
     });
-  }, [events, authorFilter, eventFilter]);
+  }, [events, authorFilter, eventFilter, casesMap]);
 
   // Group by author
   const grouped = useMemo(() => {
     const map = new Map<string, TimelineRow[]>();
     filtered.forEach((e) => {
-      const author = (e.created_by || "Escritório").trim();
+      const rawAuthor = (e.created_by || "Escritório").trim();
+      const author = GENERIC_OFFICE_AUTHORS.has(rawAuthor)
+        ? (casesMap[e.case_id]?.owner || rawAuthor)
+        : rawAuthor;
       if (!map.has(author)) map.set(author, []);
       map.get(author)!.push(e);
     });
     return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length);
-  }, [filtered]);
+  }, [filtered, casesMap]);
 
   const totalActions = filtered.length;
   const uniqueCases = new Set(filtered.map((e) => e.case_id)).size;
   const uniqueAuthors = grouped.length;
+  const reportLoading = authLoading || isLoading || (caseIds.length > 0 && isCasesLoading);
 
   const setPreset = (days: number) => {
     const end = new Date();
@@ -148,13 +168,19 @@ export default function Relatorios() {
   const exportCSV = () => {
     const rows = [
       ["Data/Hora", "Colaborador", "Cliente", "Evento", "Descrição"],
-      ...filtered.map((e) => [
-        format(new Date(e.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
-        (e.created_by || "Escritório").trim(),
-        casesMap[e.case_id] ?? "—",
-        e.event_type,
-        (e.description ?? "").replace(/\n/g, " "),
-      ]),
+      ...filtered.map((e) => {
+        const rawAuthor = (e.created_by || "Escritório").trim();
+        const author = GENERIC_OFFICE_AUTHORS.has(rawAuthor)
+          ? (casesMap[e.case_id]?.owner || rawAuthor)
+          : rawAuthor;
+        return [
+          format(new Date(e.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+          author,
+          casesMap[e.case_id]?.clientName ?? "—",
+          e.event_type,
+          (e.description ?? "").replace(/\n/g, " "),
+        ];
+      }),
     ];
     const csv = rows
       .map((r) =>
@@ -169,6 +195,10 @@ export default function Relatorios() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (!authLoading && role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <InternalLayout>
@@ -260,7 +290,7 @@ export default function Relatorios() {
           </Card>
         </div>
 
-        {isLoading ? (
+        {reportLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-24 w-full" />
@@ -315,8 +345,8 @@ export default function Relatorios() {
                                   <td className="py-2 pr-3 whitespace-nowrap text-xs text-muted-foreground">
                                     {format(new Date(e.created_at), "dd/MM HH:mm", { locale: ptBR })}
                                   </td>
-                                  <td className="py-2 pr-3 max-w-[220px] truncate" title={casesMap[e.case_id]}>
-                                    {casesMap[e.case_id] ?? "—"}
+                                  <td className="py-2 pr-3 max-w-[220px] truncate" title={casesMap[e.case_id]?.clientName}>
+                                    {casesMap[e.case_id]?.clientName ?? "—"}
                                   </td>
                                   <td className="py-2 pr-3 whitespace-nowrap">
                                     <Badge variant="secondary" className="text-[10px] font-normal">{e.event_type}</Badge>
@@ -345,7 +375,7 @@ export default function Relatorios() {
 
         <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
           <Calendar className="h-3 w-3 mt-0.5 shrink-0" />
-          Ações registradas antes da atualização aparecem como "Escritório". A partir de agora, o nome do colaborador é gravado automaticamente em cada evento.
+          Eventos gravados como "Escritório", "Equipe" ou "sistema" são atribuídos ao responsável da demanda quando houver responsável definido.
         </p>
       </div>
     </InternalLayout>
