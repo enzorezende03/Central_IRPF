@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { consumeSsoToken } from "@/lib/sso-receiver";
 
 interface AuthContextType {
   session: Session | null;
