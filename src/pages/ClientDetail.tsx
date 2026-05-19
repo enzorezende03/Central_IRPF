@@ -499,6 +499,28 @@ export default function ClientDetail() {
           </div>
         )}
 
+        {caseData.status === "impedida" && (() => {
+          const ev = (timeline as any[]).find((t) => t.event_type === "Demanda impedida");
+          const motivo = ev?.description?.replace(/^Motivo:\s*/i, "") ?? "Sem justificativa registrada.";
+          return (
+            <div className="rounded-lg border border-rose-300 bg-rose-50 p-4 text-rose-900">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 mt-0.5 text-rose-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-semibold text-rose-700">Demanda impedida</p>
+                  <p className="text-xs text-rose-600/80 mb-1">
+                    Justificativa registrada{ev?.created_by ? ` por ${ev.created_by}` : ""}
+                    {ev?.created_at ? ` em ${new Date(ev.created_at).toLocaleString("pt-BR")}` : ""}:
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">{motivo}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+
+
         <div className={`${caseData.status === "dispensada" ? "opacity-50 pointer-events-none select-none" : ""}`}>
 
         {/* ── Info Cards ── */}
