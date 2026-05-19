@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { consumeSsoToken } from "@/lib/sso-receiver";
 
 interface AuthContextType {
   session: Session | null;
@@ -72,15 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    (async () => {
+      await consumeSsoToken();
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserData(session.user.id).then(() => setLoading(false));
-      } else {
-        setLoading(false);
+        await fetchUserData(session.user.id);
       }
-    });
+      setLoading(false);
+    })();
 
     return () => subscription.unsubscribe();
   }, []);
