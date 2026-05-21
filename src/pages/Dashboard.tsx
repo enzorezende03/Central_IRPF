@@ -4,7 +4,7 @@ import { formatCPF } from "@/lib/format-utils";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   ArrowRight, Filter,
-  FileText, Bell, Send, Ban, FileWarning, ShieldAlert,
+  FileText, Bell, Send, Ban, FileWarning, ShieldAlert, MessageSquareReply,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
