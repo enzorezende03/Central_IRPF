@@ -315,6 +315,29 @@ export default function Demandas() {
           </div>
         </div>
 
+        {/* Bulk action bar */}
+        {canEdit && selectedIds.size > 0 && (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-accent/40 p-3">
+            <span className="text-sm font-medium">{selectedIds.size} selecionada{selectedIds.size !== 1 ? "s" : ""}</span>
+            <Select value={bulkStatus} onValueChange={setBulkStatus}>
+              <SelectTrigger className="w-56 h-9">
+                <SelectValue placeholder="Alterar status para..." />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={applyBulkStatus} disabled={!bulkStatus || bulkApplying}>
+              {bulkApplying ? "Aplicando..." : "Aplicar"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); }}>
+              <X className="h-4 w-4 mr-1" /> Limpar seleção
+            </Button>
+          </div>
+        )}
+
         {/* Table */}
         {isLoading ? (
           <Skeleton className="h-96 rounded-xl" />
@@ -324,6 +347,22 @@ export default function Demandas() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {canEdit && (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={paginatedData.length > 0 && paginatedData.every((c) => selectedIds.has(c.id))}
+                          onCheckedChange={(v) => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              if (v) paginatedData.forEach((c) => next.add(c.id));
+                              else paginatedData.forEach((c) => next.delete(c.id));
+                              return next;
+                            });
+                          }}
+                          aria-label="Selecionar todas"
+                        />
+                      </TableHead>
+                    )}
                     <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
                       <span className="flex items-center gap-1">
                         Cliente
