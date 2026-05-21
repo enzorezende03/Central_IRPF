@@ -229,6 +229,16 @@ export default function Demandas() {
                 <SelectItem value="baixa">Baixa</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={declarationTypeFilter} onValueChange={setDeclarationTypeFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Tipo de declaração" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tipos</SelectItem>
+                <SelectItem value="simples">Simples</SelectItem>
+                <SelectItem value="completa">Completa</SelectItem>
+              </SelectContent>
+            </Select>
             {role === "admin" && (
               <Button
                 variant={showDeleted ? "default" : "outline"}
@@ -237,7 +247,7 @@ export default function Demandas() {
                 {showDeleted ? "Mostrando excluídas" : "Ver excluídas"}
               </Button>
             )}
-            {(search || tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all") && (
+            {(search || tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all" || declarationTypeFilter !== "all") && (
               <Button
                 variant="outline"
                 onClick={() => {
@@ -248,6 +258,7 @@ export default function Demandas() {
                   setProcuracaoFilter("all");
                   setPriorityFilter("all");
                   setClientStatusFilter("all");
+                  setDeclarationTypeFilter("all");
                 }}
               >
                 Limpar filtros
