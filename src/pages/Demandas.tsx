@@ -48,6 +48,7 @@ export default function Demandas() {
   const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
   const [priorityFilter, setPriorityFilter] = useState<string>(initialPriority);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
+  const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string>(saved.declarationTypeFilter ?? "all");
   const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
@@ -70,14 +71,14 @@ export default function Demandas() {
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
-      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize, showDeleted,
+      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize, showDeleted,
     }));
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize, showDeleted]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize, showDeleted]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize]);
 
   const handleSort = (field: "cliente" | "ano") => {
     if (sortField === field) {
@@ -116,13 +117,14 @@ export default function Demandas() {
         const hasProc = !!procItem?.checked;
         matchProc = procuracaoFilter === "ok" ? hasProc : !hasProc;
       }
+      const matchDeclType = declarationTypeFilter === "all" || (c as any).declaration_type === declarationTypeFilter;
       // Hide dispensadas unless explicitly filtered
       if (c.status === "dispensada" && internalStatusFilter !== "dispensada") return false;
       // Quando filtro por urgentes em aberto, ocultar finalizadas
       if (priorityFilter === "urgente" && (c.status === "finalizado" || c.status === "dispensada")) return false;
       if (c.status === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
       }
-      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc;
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType;
     });
     if (sortField) {
       list.sort((a, b) => {
@@ -136,7 +138,7 @@ export default function Demandas() {
       });
     }
     return list;
-  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir]);
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir]);
 
   // Quantos resultados existem considerando apenas a busca (ignorando filtros), para detectar quando filtros estão ocultando matches
   const searchOnlyMatches = useMemo(() => {
@@ -145,7 +147,7 @@ export default function Demandas() {
     return cases.filter((c) => (c.clients?.full_name?.toLowerCase() ?? "").includes(q)).length;
   }, [cases, search]);
 
-  const hasActiveFilters = tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all";
+  const hasActiveFilters = tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all" || declarationTypeFilter !== "all";
 
   const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
   const paginatedData = useMemo(() => {
@@ -227,6 +229,16 @@ export default function Demandas() {
                 <SelectItem value="baixa">Baixa</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={declarationTypeFilter} onValueChange={setDeclarationTypeFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Tipo de declaração" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tipos</SelectItem>
+                <SelectItem value="simples">Simples</SelectItem>
+                <SelectItem value="completa">Completa</SelectItem>
+              </SelectContent>
+            </Select>
             {role === "admin" && (
               <Button
                 variant={showDeleted ? "default" : "outline"}
@@ -235,7 +247,7 @@ export default function Demandas() {
                 {showDeleted ? "Mostrando excluídas" : "Ver excluídas"}
               </Button>
             )}
-            {(search || tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all") && (
+            {(search || tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all" || declarationTypeFilter !== "all") && (
               <Button
                 variant="outline"
                 onClick={() => {
@@ -246,6 +258,7 @@ export default function Demandas() {
                   setProcuracaoFilter("all");
                   setPriorityFilter("all");
                   setClientStatusFilter("all");
+                  setDeclarationTypeFilter("all");
                 }}
               >
                 Limpar filtros
