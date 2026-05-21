@@ -76,7 +76,7 @@ export default function Demandas() {
     setBulkApplying(true);
     const ids = Array.from(selectedIds);
     const label = STATUS_LABELS[bulkStatus as DemandStatus] ?? bulkStatus;
-    const author = profile?.full_name || user?.email || "Sistema";
+    const author = profileName || user?.email || "Sistema";
     try {
       const { error } = await supabase
         .from("irpf_cases")
