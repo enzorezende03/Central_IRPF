@@ -235,8 +235,9 @@ export function PendenciasCard({
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium line-through opacity-70">{p.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{p.description}</p>
                           {responseText && (
-                            <p className="text-xs text-muted-foreground mt-1 italic whitespace-pre-wrap">
+                            <p className="text-xs text-foreground mt-1.5 italic whitespace-pre-wrap border-l-2 border-primary/40 pl-2">
                               Resposta do cliente: "{responseText}"
                             </p>
                           )}
