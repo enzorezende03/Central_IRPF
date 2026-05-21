@@ -7,15 +7,19 @@ import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBad
 import { CaseActions } from "@/components/CaseActions";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewCaseDialog } from "@/components/NewCaseDialog";
 import { useCases } from "@/hooks/use-cases";
 import { useAuth } from "@/hooks/use-auth";
-import { STATUS_LABELS } from "@/lib/types";
+import { STATUS_LABELS, type DemandStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const DEMANDAS_FILTERS_KEY = "demandas-filters";
 
