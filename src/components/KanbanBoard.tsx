@@ -27,6 +27,7 @@ const COLUMNS: KanbanColumn[] = [
   "previa_enviada",
   "previa_aprovada",
   "pendencia",
+  "pendencia_respondida",
   "finalizado",
 ];
 
@@ -39,6 +40,7 @@ const COLUMN_LABELS: Record<KanbanColumn, string> = {
   previa_enviada: "Prévia Enviada",
   previa_aprovada: "Prévia Aprovada",
   pendencia: STATUS_LABELS.pendencia,
+  pendencia_respondida: STATUS_LABELS.pendencia_respondida,
   finalizado: STATUS_LABELS.finalizado,
 };
 
@@ -51,6 +53,7 @@ const columnColors: Record<KanbanColumn, string> = {
   previa_enviada: "border-t-violet-500",
   previa_aprovada: "border-t-emerald-500",
   pendencia: "border-t-destructive",
+  pendencia_respondida: "border-t-cyan-500",
   finalizado: "border-t-success",
 };
 
@@ -63,6 +66,7 @@ const dotColors: Record<KanbanColumn, string> = {
   previa_enviada: "bg-violet-500",
   previa_aprovada: "bg-emerald-500",
   pendencia: "bg-destructive",
+  pendencia_respondida: "bg-cyan-500",
   finalizado: "bg-success",
 };
 
@@ -84,6 +88,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       previa_enviada: [],
       previa_aprovada: [],
       pendencia: [],
+      pendencia_respondida: [],
       finalizado: [],
     };
     cases.forEach((c) => {

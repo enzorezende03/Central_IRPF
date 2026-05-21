@@ -1030,6 +1030,7 @@ export type Database = {
         | "reaberta"
         | "previa_enviada"
         | "previa_aprovada"
+        | "pendencia_respondida"
       document_status: "pendente" | "enviado" | "aprovado" | "rejeitado"
       preview_status: "aguardando_revisao" | "aprovado" | "ajustes_solicitados"
       uploaded_by_type: "client" | "office"
@@ -1177,6 +1178,7 @@ export const Constants = {
         "reaberta",
         "previa_enviada",
         "previa_aprovada",
+        "pendencia_respondida",
       ],
       document_status: ["pendente", "enviado", "aprovado", "rejeitado"],
       preview_status: ["aguardando_revisao", "aprovado", "ajustes_solicitados"],
