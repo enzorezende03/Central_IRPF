@@ -234,39 +234,27 @@ export default function Demandas() {
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Select value={tagFilter} onValueChange={setTagFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Tag" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as tags</SelectItem>
-                {tags.map((t) => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos responsáveis</SelectItem>
-                {owners.map((o) => (
-                  <SelectItem key={o} value={o}>{o}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={internalStatusFilter} onValueChange={setInternalStatusFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={tags.map((t) => ({ value: t, label: t }))}
+              selected={tagFilter}
+              onChange={setTagFilter}
+              placeholder="Tags"
+              width="w-40"
+            />
+            <MultiSelectFilter
+              options={owners.map((o) => ({ value: o, label: o }))}
+              selected={ownerFilter}
+              onChange={setOwnerFilter}
+              placeholder="Responsáveis"
+              width="w-44"
+            />
+            <MultiSelectFilter
+              options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+              selected={internalStatusFilter}
+              onChange={setInternalStatusFilter}
+              placeholder="Status"
+              width="w-44"
+            />
             <Select value={procuracaoFilter} onValueChange={setProcuracaoFilter}>
               <SelectTrigger className="w-44">
                 <SelectValue placeholder="Procuração" />
@@ -277,28 +265,28 @@ export default function Demandas() {
                 <SelectItem value="missing">Sem procuração</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Prioridade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as prioridades</SelectItem>
-                <SelectItem value="urgente">Urgente</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-                <SelectItem value="media">Média</SelectItem>
-                <SelectItem value="baixa">Baixa</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={declarationTypeFilter} onValueChange={setDeclarationTypeFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Tipo de declaração" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="simples">Simples</SelectItem>
-                <SelectItem value="completa">Completa</SelectItem>
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={[
+                { value: "urgente", label: "Urgente" },
+                { value: "alta", label: "Alta" },
+                { value: "media", label: "Média" },
+                { value: "baixa", label: "Baixa" },
+              ]}
+              selected={priorityFilter}
+              onChange={setPriorityFilter}
+              placeholder="Prioridades"
+              width="w-44"
+            />
+            <MultiSelectFilter
+              options={[
+                { value: "simples", label: "Simples" },
+                { value: "completa", label: "Completa" },
+              ]}
+              selected={declarationTypeFilter}
+              onChange={setDeclarationTypeFilter}
+              placeholder="Tipo de declaração"
+              width="w-44"
+            />
             {role === "admin" && (
               <Button
                 variant={showDeleted ? "default" : "outline"}
@@ -307,18 +295,18 @@ export default function Demandas() {
                 {showDeleted ? "Mostrando excluídas" : "Ver excluídas"}
               </Button>
             )}
-            {(search || tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all" || declarationTypeFilter !== "all") && (
+            {(search || hasActiveFilters) && (
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearch("");
-                  setTagFilter("all");
-                  setOwnerFilter("all");
-                  setInternalStatusFilter("all");
+                  setTagFilter([]);
+                  setOwnerFilter([]);
+                  setInternalStatusFilter([]);
                   setProcuracaoFilter("all");
-                  setPriorityFilter("all");
-                  setClientStatusFilter("all");
-                  setDeclarationTypeFilter("all");
+                  setPriorityFilter([]);
+                  setClientStatusFilter([]);
+                  setDeclarationTypeFilter([]);
                 }}
               >
                 Limpar filtros
