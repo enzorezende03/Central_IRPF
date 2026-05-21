@@ -49,18 +49,32 @@ export default function Demandas() {
   const saved = useMemo(() => loadSavedFilters(), []);
 
   // Query params override saved filters when presentes (vindo do Dashboard)
-  const initialStatus = searchParams.get("status") ?? saved.internalStatusFilter ?? "all";
-  const initialOwner = searchParams.get("owner") ?? saved.ownerFilter ?? "all";
-  const initialPriority = searchParams.get("priority") ?? saved.priorityFilter ?? "all";
+  const initialStatus = searchParams.get("status")
+    ? toArr(searchParams.get("status"))
+    : toArr(saved.internalStatusFilter);
+  const initialOwner = searchParams.get("owner")
+    ? toArr(searchParams.get("owner"))
+    : toArr(saved.ownerFilter);
+  const initialPriority = searchParams.get("priority")
+    ? toArr(searchParams.get("priority"))
+    : toArr(saved.priorityFilter);
 
   const [search, setSearch] = useState(saved.search ?? "");
-  const [tagFilter, setTagFilter] = useState(saved.tagFilter ?? "all");
-  const [ownerFilter, setOwnerFilter] = useState(initialOwner);
-  const [internalStatusFilter, setInternalStatusFilter] = useState(initialStatus);
-  const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
-  const [priorityFilter, setPriorityFilter] = useState<string>(initialPriority);
+  const [tagFilter, setTagFilter] = useState<string[]>(toArr(saved.tagFilter));
+  const [ownerFilter, setOwnerFilter] = useState<string[]>(initialOwner);
+  const [internalStatusFilter, setInternalStatusFilter] = useState<string[]>(initialStatus);
+  const [clientStatusFilter, setClientStatusFilter] = useState<string[]>(toArr(saved.clientStatusFilter));
+  const [priorityFilter, setPriorityFilter] = useState<string[]>(initialPriority);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
-  const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string>(saved.declarationTypeFilter ?? "all");
+  const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string[]>(toArr(saved.declarationTypeFilter));
+  const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
+  const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>("");
+  const [bulkApplying, setBulkApplying] = useState(false);
+  const queryClient = useQueryClient();
   const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
