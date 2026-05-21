@@ -4,7 +4,7 @@ import { formatCPF } from "@/lib/format-utils";
 import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   ArrowRight, Filter,
-  FileText, Bell, Send, Ban, FileWarning, ShieldAlert,
+  FileText, Bell, Send, Ban, FileWarning, ShieldAlert, MessageSquareReply,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -137,6 +137,7 @@ export default function Dashboard() {
               <StatCard label="Impedidas" value={byStatus("impedida")} icon={ShieldAlert} color="text-rose-500" onClick={() => goToDemandasWithFilter("impedida")} />
               <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => goToDemandasWithFilter("em_andamento")} />
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => goToDemandasWithFilter("pendencia")} />
+              <StatCard label="Pendências Respondidas" value={byStatus("pendencia_respondida")} icon={MessageSquareReply} color="text-cyan-600" onClick={() => goToDemandasWithFilter("pendencia_respondida")} />
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => goToDemandasWithFilter("previa_enviada")} />
               <StatCard label="Prévias Aprovadas" value={previaAprovada} icon={CheckCircle} color="text-emerald-500" onClick={() => goToDemandasWithFilter("previa_aprovada")} />
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => goToDemandasWithFilter("finalizado")} />
