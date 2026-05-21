@@ -61,7 +61,7 @@ export default function Demandas() {
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [bulkApplying, setBulkApplying] = useState(false);
   const queryClient = useQueryClient();
-  const { user, profile } = useAuth() as any;
+  const { user, profileName } = useAuth() as any;
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
