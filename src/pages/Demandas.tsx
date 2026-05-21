@@ -390,6 +390,15 @@ export default function Demandas() {
                     const billing = c.billing?.[0];
                     return (
                       <TableRow key={c.id} className={`hover:bg-muted/50 ${billing && billing.billing_status !== "pago" ? "border-l-2 border-l-warning" : ""}`}>
+                        {canEdit && (
+                          <TableCell className="w-10">
+                            <Checkbox
+                              checked={selectedIds.has(c.id)}
+                              onCheckedChange={() => toggleSelect(c.id)}
+                              aria-label="Selecionar demanda"
+                            />
+                          </TableCell>
+                        )}
                         <TableCell className="font-medium">
                           <Link to={`/demandas/${c.id}`} className="hover:text-primary transition-colors">
                             {c.clients?.full_name}
