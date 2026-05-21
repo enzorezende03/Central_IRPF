@@ -199,6 +199,22 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  // ── Fetch payment quotas (DARFs) sent to client ──
+  const { data: paymentQuotas = [] } = useQuery({
+    queryKey: ["portal-payment-quotas", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("payment_quotas" as any)
+        .select("*")
+        .eq("case_id", caseId!)
+        .eq("sent_to_client", true)
+        .not("file_url", "is", null)
+        .order("quota_number", { ascending: true });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!caseId,
+  });
+
   const { data: caseMessages = [] } = useQuery({
     queryKey: ["portal-messages", caseId],
     queryFn: async () => {
@@ -552,6 +568,44 @@ export default function ClientPortal() {
                             </a>
                           </Button>
                         )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Guias DARF enviadas */}
+                {paymentQuotas.length > 0 && (
+                  <Card className="border-primary/40">
+                    <CardContent className="p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <h2 className="text-base font-bold">
+                          {paymentQuotas.length === 1 ? "Guia DARF para Pagamento" : `Guias DARF — ${paymentQuotas.length} cotas`}
+                        </h2>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Baixe sua(s) guia(s) abaixo e efetue o pagamento até o vencimento.
+                      </p>
+                      <div className="space-y-2">
+                        {paymentQuotas.map((q: any) => (
+                          <div key={q.id} className="flex items-center justify-between gap-2 rounded-md border bg-muted/30 p-2.5">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {paymentQuotas.length === 1 ? "Guia DARF" : `Cota ${q.quota_number}`}
+                              </p>
+                              {q.due_date && (
+                                <p className="text-[11px] text-muted-foreground">
+                                  Vencimento: {q.due_date.split("-").reverse().join("/")}
+                                </p>
+                              )}
+                            </div>
+                            <Button size="sm" asChild>
+                              <a href={q.file_url} target="_blank" rel="noopener noreferrer">
+                                <Download className="h-4 w-4 mr-1" /> Baixar
+                              </a>
+                            </Button>
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
