@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewCaseDialog } from "@/components/NewCaseDialog";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { useCases } from "@/hooks/use-cases";
 import { useAuth } from "@/hooks/use-auth";
 import { STATUS_LABELS, type DemandStatus } from "@/lib/types";
@@ -20,6 +21,13 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+
+// Normaliza valores salvos (string antiga "all"/valor único OU array) para string[]
+function toArr(v: any): string[] {
+  if (Array.isArray(v)) return v.filter((x) => x && x !== "all");
+  if (typeof v === "string" && v && v !== "all") return [v];
+  return [];
+}
 
 const DEMANDAS_FILTERS_KEY = "demandas-filters";
 
