@@ -57,6 +57,50 @@ export default function Demandas() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>("");
+  const [bulkApplying, setBulkApplying] = useState(false);
+  const queryClient = useQueryClient();
+  const { user, profile } = useAuth() as any;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const applyBulkStatus = async () => {
+    if (!bulkStatus || selectedIds.size === 0) return;
+    setBulkApplying(true);
+    const ids = Array.from(selectedIds);
+    const label = STATUS_LABELS[bulkStatus as DemandStatus] ?? bulkStatus;
+    const author = profile?.full_name || user?.email || "Sistema";
+    try {
+      const { error } = await supabase
+        .from("irpf_cases")
+        .update({ status: bulkStatus as DemandStatus, updated_at: new Date().toISOString() })
+        .in("id", ids);
+      if (error) throw error;
+      const events = ids.map((case_id) => ({
+        case_id,
+        event_type: "Status alterado em lote",
+        description: `Status alterado para "${label}"`,
+        created_by: author,
+        visible_to_client: false,
+      }));
+      await supabase.from("case_timeline").insert(events);
+      toast({ title: "Status atualizado", description: `${ids.length} demanda(s) atualizada(s) para "${label}".` });
+      setSelectedIds(new Set());
+      setBulkStatus("");
+      queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
+    } catch (e: any) {
+      toast({ title: "Erro ao atualizar", description: e?.message ?? "Falha ao alterar status em lote", variant: "destructive" });
+    } finally {
+      setBulkApplying(false);
+    }
+  };
 
   // Reagir a mudanças nos query params (ex.: clicar em outro card vindo do Dashboard)
   useEffect(() => {
