@@ -199,6 +199,22 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
+  // ── Fetch payment quotas (DARFs) sent to client ──
+  const { data: paymentQuotas = [] } = useQuery({
+    queryKey: ["portal-payment-quotas", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("payment_quotas" as any)
+        .select("*")
+        .eq("case_id", caseId!)
+        .eq("sent_to_client", true)
+        .not("file_url", "is", null)
+        .order("quota_number", { ascending: true });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!caseId,
+  });
+
   const { data: caseMessages = [] } = useQuery({
     queryKey: ["portal-messages", caseId],
     queryFn: async () => {
