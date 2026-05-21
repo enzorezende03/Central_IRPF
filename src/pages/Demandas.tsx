@@ -78,7 +78,7 @@ export default function Demandas() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize]);
 
   const handleSort = (field: "cliente" | "ano") => {
     if (sortField === field) {
