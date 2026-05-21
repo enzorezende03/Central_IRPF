@@ -1463,6 +1463,38 @@ function InternalDocRow({
               <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" asChild>
                 <a href={u.file_url} target="_blank" rel="noopener noreferrer"><Eye className="h-3 w-3" /></a>
               </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0 text-destructive hover:text-destructive"
+                title="Excluir arquivo"
+                onClick={async () => {
+                  if (!confirm(`Excluir o arquivo "${u.file_name}"? Esta ação não pode ser desfeita.`)) return;
+                  try {
+                    const marker = "/storage/v1/object/public/documentos_clientes/";
+                    const idx = u.file_url.indexOf(marker);
+                    if (idx >= 0) {
+                      const path = decodeURIComponent(u.file_url.slice(idx + marker.length));
+                      await supabase.storage.from("documentos_clientes").remove([path]);
+                    }
+                    await supabase.from("uploaded_documents").delete().eq("id", u.id);
+                    const remaining = uploads.filter((x) => x.id !== u.id).length;
+                    if (remaining === 0 && doc.status !== "pendente") {
+                      await supabase
+                        .from("document_requests")
+                        .update({ status: "pendente" as DocumentStatus })
+                        .eq("id", doc.id);
+                    }
+                    await logTimelineEvent(caseId, "Arquivo excluído", `Arquivo "${u.file_name}" removido do checklist (${doc.title})`);
+                    toast.success("Arquivo excluído.");
+                    onRefresh();
+                  } catch {
+                    toast.error("Erro ao excluir arquivo.");
+                  }
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
             </div>
           ))}
         </div>
