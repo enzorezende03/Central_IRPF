@@ -75,14 +75,6 @@ export default function Demandas() {
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [bulkApplying, setBulkApplying] = useState(false);
   const queryClient = useQueryClient();
-  const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
-  const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkStatus, setBulkStatus] = useState<string>("");
-  const [bulkApplying, setBulkApplying] = useState(false);
-  const queryClient = useQueryClient();
   
 
   const toggleSelect = (id: string) => {
