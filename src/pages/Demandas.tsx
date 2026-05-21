@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewCaseDialog } from "@/components/NewCaseDialog";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { useCases } from "@/hooks/use-cases";
 import { useAuth } from "@/hooks/use-auth";
 import { STATUS_LABELS, type DemandStatus } from "@/lib/types";
@@ -20,6 +21,13 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+
+// Normaliza valores salvos (string antiga "all"/valor único OU array) para string[]
+function toArr(v: any): string[] {
+  if (Array.isArray(v)) return v.filter((x) => x && x !== "all");
+  if (typeof v === "string" && v && v !== "all") return [v];
+  return [];
+}
 
 const DEMANDAS_FILTERS_KEY = "demandas-filters";
 
@@ -41,18 +49,24 @@ export default function Demandas() {
   const saved = useMemo(() => loadSavedFilters(), []);
 
   // Query params override saved filters when presentes (vindo do Dashboard)
-  const initialStatus = searchParams.get("status") ?? saved.internalStatusFilter ?? "all";
-  const initialOwner = searchParams.get("owner") ?? saved.ownerFilter ?? "all";
-  const initialPriority = searchParams.get("priority") ?? saved.priorityFilter ?? "all";
+  const initialStatus = searchParams.get("status")
+    ? toArr(searchParams.get("status"))
+    : toArr(saved.internalStatusFilter);
+  const initialOwner = searchParams.get("owner")
+    ? toArr(searchParams.get("owner"))
+    : toArr(saved.ownerFilter);
+  const initialPriority = searchParams.get("priority")
+    ? toArr(searchParams.get("priority"))
+    : toArr(saved.priorityFilter);
 
   const [search, setSearch] = useState(saved.search ?? "");
-  const [tagFilter, setTagFilter] = useState(saved.tagFilter ?? "all");
-  const [ownerFilter, setOwnerFilter] = useState(initialOwner);
-  const [internalStatusFilter, setInternalStatusFilter] = useState(initialStatus);
-  const [clientStatusFilter, setClientStatusFilter] = useState(saved.clientStatusFilter ?? "all");
-  const [priorityFilter, setPriorityFilter] = useState<string>(initialPriority);
+  const [tagFilter, setTagFilter] = useState<string[]>(toArr(saved.tagFilter));
+  const [ownerFilter, setOwnerFilter] = useState<string[]>(initialOwner);
+  const [internalStatusFilter, setInternalStatusFilter] = useState<string[]>(initialStatus);
+  const [clientStatusFilter, setClientStatusFilter] = useState<string[]>(toArr(saved.clientStatusFilter));
+  const [priorityFilter, setPriorityFilter] = useState<string[]>(initialPriority);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
-  const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string>(saved.declarationTypeFilter ?? "all");
+  const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string[]>(toArr(saved.declarationTypeFilter));
   const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
@@ -107,9 +121,9 @@ export default function Demandas() {
     const qStatus = searchParams.get("status");
     const qOwner = searchParams.get("owner");
     const qPriority = searchParams.get("priority");
-    if (qStatus !== null) setInternalStatusFilter(qStatus);
-    if (qOwner !== null) setOwnerFilter(qOwner);
-    if (qPriority !== null) setPriorityFilter(qPriority);
+    if (qStatus !== null) setInternalStatusFilter(toArr(qStatus));
+    if (qOwner !== null) setOwnerFilter(toArr(qOwner));
+    if (qPriority !== null) setPriorityFilter(toArr(qPriority));
     // Limpa os params da URL após aplicar para não persistir indefinidamente
     if (qStatus !== null || qOwner !== null || qPriority !== null) {
       setSearchParams({}, { replace: true });
@@ -154,24 +168,22 @@ export default function Demandas() {
       const q = search.toLowerCase();
       const name = c.clients?.full_name?.toLowerCase() ?? "";
       const matchSearch = !q || name.includes(q);
-      const matchTag = tagFilter === "all" || (c.clients?.tags ?? []).includes(tagFilter);
-      const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
-      const matchInternal = internalStatusFilter === "all" || c.status === internalStatusFilter;
-      const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
-      const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
+      const matchTag = tagFilter.length === 0 || (c.clients?.tags ?? []).some((t: string) => tagFilter.includes(t));
+      const matchOwner = ownerFilter.length === 0 || (c.internal_owner ? ownerFilter.includes(c.internal_owner) : false);
+      const matchInternal = internalStatusFilter.length === 0 || internalStatusFilter.includes(c.status);
+      const matchClient = clientStatusFilter.length === 0 || clientStatusFilter.includes(c.status);
+      const matchPriority = priorityFilter.length === 0 || priorityFilter.includes(c.priority);
       let matchProc = true;
       if (procuracaoFilter !== "all") {
         const procItem = (c.internal_checklist ?? []).find((it: any) => it.label?.toLowerCase().includes("procura"));
         const hasProc = !!procItem?.checked;
         matchProc = procuracaoFilter === "ok" ? hasProc : !hasProc;
       }
-      const matchDeclType = declarationTypeFilter === "all" || (c as any).declaration_type === declarationTypeFilter;
+      const matchDeclType = declarationTypeFilter.length === 0 || declarationTypeFilter.includes((c as any).declaration_type);
       // Hide dispensadas unless explicitly filtered
-      if (c.status === "dispensada" && internalStatusFilter !== "dispensada") return false;
+      if (c.status === "dispensada" && !internalStatusFilter.includes("dispensada")) return false;
       // Quando filtro por urgentes em aberto, ocultar finalizadas
-      if (priorityFilter === "urgente" && (c.status === "finalizado" || c.status === "dispensada")) return false;
-      if (c.status === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
-      }
+      if (priorityFilter.length === 1 && priorityFilter[0] === "urgente" && (c.status === "finalizado" || c.status === "dispensada")) return false;
       return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType;
     });
     if (sortField) {
@@ -195,7 +207,7 @@ export default function Demandas() {
     return cases.filter((c) => (c.clients?.full_name?.toLowerCase() ?? "").includes(q)).length;
   }, [cases, search]);
 
-  const hasActiveFilters = tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all" || declarationTypeFilter !== "all";
+  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0;
 
   const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
   const paginatedData = useMemo(() => {
@@ -222,39 +234,27 @@ export default function Demandas() {
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Select value={tagFilter} onValueChange={setTagFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Tag" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as tags</SelectItem>
-                {tags.map((t) => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos responsáveis</SelectItem>
-                {owners.map((o) => (
-                  <SelectItem key={o} value={o}>{o}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={internalStatusFilter} onValueChange={setInternalStatusFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={tags.map((t) => ({ value: t, label: t }))}
+              selected={tagFilter}
+              onChange={setTagFilter}
+              placeholder="Tags"
+              width="w-40"
+            />
+            <MultiSelectFilter
+              options={owners.map((o) => ({ value: o, label: o }))}
+              selected={ownerFilter}
+              onChange={setOwnerFilter}
+              placeholder="Responsáveis"
+              width="w-44"
+            />
+            <MultiSelectFilter
+              options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+              selected={internalStatusFilter}
+              onChange={setInternalStatusFilter}
+              placeholder="Status"
+              width="w-44"
+            />
             <Select value={procuracaoFilter} onValueChange={setProcuracaoFilter}>
               <SelectTrigger className="w-44">
                 <SelectValue placeholder="Procuração" />
@@ -265,28 +265,28 @@ export default function Demandas() {
                 <SelectItem value="missing">Sem procuração</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Prioridade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as prioridades</SelectItem>
-                <SelectItem value="urgente">Urgente</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-                <SelectItem value="media">Média</SelectItem>
-                <SelectItem value="baixa">Baixa</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={declarationTypeFilter} onValueChange={setDeclarationTypeFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Tipo de declaração" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="simples">Simples</SelectItem>
-                <SelectItem value="completa">Completa</SelectItem>
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={[
+                { value: "urgente", label: "Urgente" },
+                { value: "alta", label: "Alta" },
+                { value: "media", label: "Média" },
+                { value: "baixa", label: "Baixa" },
+              ]}
+              selected={priorityFilter}
+              onChange={setPriorityFilter}
+              placeholder="Prioridades"
+              width="w-44"
+            />
+            <MultiSelectFilter
+              options={[
+                { value: "simples", label: "Simples" },
+                { value: "completa", label: "Completa" },
+              ]}
+              selected={declarationTypeFilter}
+              onChange={setDeclarationTypeFilter}
+              placeholder="Tipo de declaração"
+              width="w-44"
+            />
             {role === "admin" && (
               <Button
                 variant={showDeleted ? "default" : "outline"}
@@ -295,18 +295,18 @@ export default function Demandas() {
                 {showDeleted ? "Mostrando excluídas" : "Ver excluídas"}
               </Button>
             )}
-            {(search || tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all" || declarationTypeFilter !== "all") && (
+            {(search || hasActiveFilters) && (
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearch("");
-                  setTagFilter("all");
-                  setOwnerFilter("all");
-                  setInternalStatusFilter("all");
+                  setTagFilter([]);
+                  setOwnerFilter([]);
+                  setInternalStatusFilter([]);
                   setProcuracaoFilter("all");
-                  setPriorityFilter("all");
-                  setClientStatusFilter("all");
-                  setDeclarationTypeFilter("all");
+                  setPriorityFilter([]);
+                  setClientStatusFilter([]);
+                  setDeclarationTypeFilter([]);
                 }}
               >
                 Limpar filtros
@@ -474,12 +474,12 @@ export default function Demandas() {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                setTagFilter("all");
-                                setOwnerFilter("all");
-                                setInternalStatusFilter("all");
+                                setTagFilter([]);
+                                setOwnerFilter([]);
+                                setInternalStatusFilter([]);
                                 setProcuracaoFilter("all");
-                                setPriorityFilter("all");
-                                setClientStatusFilter("all");
+                                setPriorityFilter([]);
+                                setClientStatusFilter([]);
                               }}
                             >
                               Limpar filtros e ver resultados
