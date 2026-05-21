@@ -168,24 +168,22 @@ export default function Demandas() {
       const q = search.toLowerCase();
       const name = c.clients?.full_name?.toLowerCase() ?? "";
       const matchSearch = !q || name.includes(q);
-      const matchTag = tagFilter === "all" || (c.clients?.tags ?? []).includes(tagFilter);
-      const matchOwner = ownerFilter === "all" || c.internal_owner === ownerFilter;
-      const matchInternal = internalStatusFilter === "all" || c.status === internalStatusFilter;
-      const matchClient = clientStatusFilter === "all" || c.status === clientStatusFilter;
-      const matchPriority = priorityFilter === "all" || c.priority === priorityFilter;
+      const matchTag = tagFilter.length === 0 || (c.clients?.tags ?? []).some((t: string) => tagFilter.includes(t));
+      const matchOwner = ownerFilter.length === 0 || (c.internal_owner ? ownerFilter.includes(c.internal_owner) : false);
+      const matchInternal = internalStatusFilter.length === 0 || internalStatusFilter.includes(c.status);
+      const matchClient = clientStatusFilter.length === 0 || clientStatusFilter.includes(c.status);
+      const matchPriority = priorityFilter.length === 0 || priorityFilter.includes(c.priority);
       let matchProc = true;
       if (procuracaoFilter !== "all") {
         const procItem = (c.internal_checklist ?? []).find((it: any) => it.label?.toLowerCase().includes("procura"));
         const hasProc = !!procItem?.checked;
         matchProc = procuracaoFilter === "ok" ? hasProc : !hasProc;
       }
-      const matchDeclType = declarationTypeFilter === "all" || (c as any).declaration_type === declarationTypeFilter;
+      const matchDeclType = declarationTypeFilter.length === 0 || declarationTypeFilter.includes((c as any).declaration_type);
       // Hide dispensadas unless explicitly filtered
-      if (c.status === "dispensada" && internalStatusFilter !== "dispensada") return false;
+      if (c.status === "dispensada" && !internalStatusFilter.includes("dispensada")) return false;
       // Quando filtro por urgentes em aberto, ocultar finalizadas
-      if (priorityFilter === "urgente" && (c.status === "finalizado" || c.status === "dispensada")) return false;
-      if (c.status === "documentos_parciais" && internalStatusFilter !== "documentos_parciais" && internalStatusFilter !== "all") {
-      }
+      if (priorityFilter.length === 1 && priorityFilter[0] === "urgente" && (c.status === "finalizado" || c.status === "dispensada")) return false;
       return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType;
     });
     if (sortField) {
