@@ -207,7 +207,7 @@ export default function Demandas() {
     return cases.filter((c) => (c.clients?.full_name?.toLowerCase() ?? "").includes(q)).length;
   }, [cases, search]);
 
-  const hasActiveFilters = tagFilter !== "all" || ownerFilter !== "all" || internalStatusFilter !== "all" || procuracaoFilter !== "all" || priorityFilter !== "all" || clientStatusFilter !== "all" || declarationTypeFilter !== "all";
+  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0;
 
   const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
   const paginatedData = useMemo(() => {
