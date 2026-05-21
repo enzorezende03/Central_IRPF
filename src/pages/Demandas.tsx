@@ -121,9 +121,9 @@ export default function Demandas() {
     const qStatus = searchParams.get("status");
     const qOwner = searchParams.get("owner");
     const qPriority = searchParams.get("priority");
-    if (qStatus !== null) setInternalStatusFilter(qStatus);
-    if (qOwner !== null) setOwnerFilter(qOwner);
-    if (qPriority !== null) setPriorityFilter(qPriority);
+    if (qStatus !== null) setInternalStatusFilter(toArr(qStatus));
+    if (qOwner !== null) setOwnerFilter(toArr(qOwner));
+    if (qPriority !== null) setPriorityFilter(toArr(qPriority));
     // Limpa os params da URL após aplicar para não persistir indefinidamente
     if (qStatus !== null || qOwner !== null || qPriority !== null) {
       setSearchParams({}, { replace: true });
