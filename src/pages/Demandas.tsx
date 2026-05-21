@@ -474,12 +474,12 @@ export default function Demandas() {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                setTagFilter("all");
-                                setOwnerFilter("all");
-                                setInternalStatusFilter("all");
+                                setTagFilter([]);
+                                setOwnerFilter([]);
+                                setInternalStatusFilter([]);
                                 setProcuracaoFilter("all");
-                                setPriorityFilter("all");
-                                setClientStatusFilter("all");
+                                setPriorityFilter([]);
+                                setClientStatusFilter([]);
                               }}
                             >
                               Limpar filtros e ver resultados
