@@ -7,15 +7,19 @@ import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBad
 import { CaseActions } from "@/components/CaseActions";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewCaseDialog } from "@/components/NewCaseDialog";
 import { useCases } from "@/hooks/use-cases";
 import { useAuth } from "@/hooks/use-auth";
-import { STATUS_LABELS } from "@/lib/types";
+import { STATUS_LABELS, type DemandStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const DEMANDAS_FILTERS_KEY = "demandas-filters";
 
@@ -30,7 +34,7 @@ export default function Demandas() {
   const saved0 = useMemo(() => loadSavedFilters(), []);
   const [showDeleted, setShowDeleted] = useState<boolean>(saved0.showDeleted ?? false);
   const { data: cases = [], isLoading } = useCases(showDeleted);
-  const { role, hasPermission } = useAuth();
+  const { role, hasPermission, user, profileName } = useAuth() as any;
   const canCreate = role === "admin" || hasPermission("criar_demandas");
   const canEdit = role === "admin" || hasPermission("editar_demandas");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -53,6 +57,50 @@ export default function Demandas() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>("");
+  const [bulkApplying, setBulkApplying] = useState(false);
+  const queryClient = useQueryClient();
+  
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const applyBulkStatus = async () => {
+    if (!bulkStatus || selectedIds.size === 0) return;
+    setBulkApplying(true);
+    const ids = Array.from(selectedIds);
+    const label = STATUS_LABELS[bulkStatus as DemandStatus] ?? bulkStatus;
+    const author = profileName || user?.email || "Sistema";
+    try {
+      const { error } = await supabase
+        .from("irpf_cases")
+        .update({ status: bulkStatus as DemandStatus, updated_at: new Date().toISOString() })
+        .in("id", ids);
+      if (error) throw error;
+      const events = ids.map((case_id) => ({
+        case_id,
+        event_type: "Status alterado em lote",
+        description: `Status alterado para "${label}"`,
+        created_by: author,
+        visible_to_client: false,
+      }));
+      await supabase.from("case_timeline").insert(events);
+      toast({ title: "Status atualizado", description: `${ids.length} demanda(s) atualizada(s) para "${label}".` });
+      setSelectedIds(new Set());
+      setBulkStatus("");
+      queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
+    } catch (e: any) {
+      toast({ title: "Erro ao atualizar", description: e?.message ?? "Falha ao alterar status em lote", variant: "destructive" });
+    } finally {
+      setBulkApplying(false);
+    }
+  };
 
   // Reagir a mudanças nos query params (ex.: clicar em outro card vindo do Dashboard)
   useEffect(() => {
@@ -267,6 +315,29 @@ export default function Demandas() {
           </div>
         </div>
 
+        {/* Bulk action bar */}
+        {canEdit && selectedIds.size > 0 && (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-accent/40 p-3">
+            <span className="text-sm font-medium">{selectedIds.size} selecionada{selectedIds.size !== 1 ? "s" : ""}</span>
+            <Select value={bulkStatus} onValueChange={setBulkStatus}>
+              <SelectTrigger className="w-56 h-9">
+                <SelectValue placeholder="Alterar status para..." />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={applyBulkStatus} disabled={!bulkStatus || bulkApplying}>
+              {bulkApplying ? "Aplicando..." : "Aplicar"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); }}>
+              <X className="h-4 w-4 mr-1" /> Limpar seleção
+            </Button>
+          </div>
+        )}
+
         {/* Table */}
         {isLoading ? (
           <Skeleton className="h-96 rounded-xl" />
@@ -276,6 +347,22 @@ export default function Demandas() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {canEdit && (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={paginatedData.length > 0 && paginatedData.every((c) => selectedIds.has(c.id))}
+                          onCheckedChange={(v) => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              if (v) paginatedData.forEach((c) => next.add(c.id));
+                              else paginatedData.forEach((c) => next.delete(c.id));
+                              return next;
+                            });
+                          }}
+                          aria-label="Selecionar todas"
+                        />
+                      </TableHead>
+                    )}
                     <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("cliente")}>
                       <span className="flex items-center gap-1">
                         Cliente
@@ -303,6 +390,15 @@ export default function Demandas() {
                     const billing = c.billing?.[0];
                     return (
                       <TableRow key={c.id} className={`hover:bg-muted/50 ${billing && billing.billing_status !== "pago" ? "border-l-2 border-l-warning" : ""}`}>
+                        {canEdit && (
+                          <TableCell className="w-10">
+                            <Checkbox
+                              checked={selectedIds.has(c.id)}
+                              onCheckedChange={() => toggleSelect(c.id)}
+                              aria-label="Selecionar demanda"
+                            />
+                          </TableCell>
+                        )}
                         <TableCell className="font-medium">
                           <Link to={`/demandas/${c.id}`} className="hover:text-primary transition-colors">
                             {c.clients?.full_name}
@@ -366,7 +462,7 @@ export default function Demandas() {
                   })}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={showDeleted ? 11 : 10} className="text-center py-10 text-muted-foreground">
+                      <TableCell colSpan={(showDeleted ? 11 : 10) + (canEdit ? 1 : 0)} className="text-center py-10 text-muted-foreground">
                         {cases.length === 0 ? (
                           "Nenhuma demanda cadastrada ainda."
                         ) : search && searchOnlyMatches > 0 && hasActiveFilters ? (
