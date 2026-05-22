@@ -1788,7 +1788,7 @@ function PreviewCard({
 }
 
 // ── Declaration & Receipt Card ──
-function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
+function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao = false, readOnly = false }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void; isRetificacao?: boolean; readOnly?: boolean }) {
   const irpfRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<HTMLInputElement>(null);
