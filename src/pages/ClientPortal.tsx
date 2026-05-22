@@ -4,8 +4,9 @@ import React, { useState, useRef, useMemo, useEffect, useCallback } from "react"
 import {
   FileText, Upload, CheckCircle, Circle, AlertTriangle, Download,
   MessageSquare, Send, Loader2, Phone, Mail, Clock, Eye,
-  Home, ClipboardList, HelpCircle, RefreshCw, Bell,
+  Home, ClipboardList, HelpCircle, RefreshCw, Bell, ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
 import { Button } from "@/components/ui/button";
