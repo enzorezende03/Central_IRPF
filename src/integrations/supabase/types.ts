@@ -406,6 +406,7 @@ export type Database = {
           preview_status: Database["public"]["Enums"]["preview_status"] | null
           rec_file_url: string | null
           receipt_file_url: string | null
+          retificacao: boolean
           sent_to_client: boolean
           uploaded_at: string
         }
@@ -424,6 +425,7 @@ export type Database = {
           preview_status?: Database["public"]["Enums"]["preview_status"] | null
           rec_file_url?: string | null
           receipt_file_url?: string | null
+          retificacao?: boolean
           sent_to_client?: boolean
           uploaded_at?: string
         }
@@ -442,6 +444,7 @@ export type Database = {
           preview_status?: Database["public"]["Enums"]["preview_status"] | null
           rec_file_url?: string | null
           receipt_file_url?: string | null
+          retificacao?: boolean
           sent_to_client?: boolean
           uploaded_at?: string
         }
@@ -449,7 +452,7 @@ export type Database = {
           {
             foreignKeyName: "final_deliverables_case_id_fkey"
             columns: ["case_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "irpf_cases"
             referencedColumns: ["id"]
           },
@@ -548,6 +551,9 @@ export type Database = {
           portal_token: string
           priority: Database["public"]["Enums"]["case_priority"]
           progress_percent: number
+          retificacao_iniciada_em: string | null
+          retificacao_iniciada_por: string | null
+          retificacao_justificativa: string | null
           status: Database["public"]["Enums"]["case_status"]
           tax_year: number
           updated_at: string
@@ -570,6 +576,9 @@ export type Database = {
           portal_token: string
           priority?: Database["public"]["Enums"]["case_priority"]
           progress_percent?: number
+          retificacao_iniciada_em?: string | null
+          retificacao_iniciada_por?: string | null
+          retificacao_justificativa?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           tax_year?: number
           updated_at?: string
@@ -592,6 +601,9 @@ export type Database = {
           portal_token?: string
           priority?: Database["public"]["Enums"]["case_priority"]
           progress_percent?: number
+          retificacao_iniciada_em?: string | null
+          retificacao_iniciada_por?: string | null
+          retificacao_justificativa?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           tax_year?: number
           updated_at?: string
@@ -1031,6 +1043,8 @@ export type Database = {
         | "previa_enviada"
         | "previa_aprovada"
         | "pendencia_respondida"
+        | "retificando"
+        | "retificada"
       document_status: "pendente" | "enviado" | "aprovado" | "rejeitado"
       preview_status: "aguardando_revisao" | "aprovado" | "ajustes_solicitados"
       uploaded_by_type: "client" | "office"
@@ -1179,6 +1193,8 @@ export const Constants = {
         "previa_enviada",
         "previa_aprovada",
         "pendencia_respondida",
+        "retificando",
+        "retificada",
       ],
       document_status: ["pendente", "enviado", "aprovado", "rejeitado"],
       preview_status: ["aguardando_revisao", "aprovado", "ajustes_solicitados"],
