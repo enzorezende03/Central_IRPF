@@ -226,6 +226,8 @@ export default function ClientDetail() {
   const [showDispensarDialog, setShowDispensarDialog] = useState(false);
   const [dispensarJustificativa, setDispensarJustificativa] = useState("");
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [showRetificarDialog, setShowRetificarDialog] = useState(false);
+  const [retificacaoMotivo, setRetificacaoMotivo] = useState("");
 
   const savedNotes = caseData?.internal_notes ?? "";
   const notesValue = internalNotes ?? savedNotes;
