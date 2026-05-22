@@ -98,6 +98,8 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       pendencia: [],
       pendencia_respondida: [],
       finalizado: [],
+      retificando: [],
+      retificada: [],
     };
     cases.forEach((c) => {
       const status = c.status as string;
