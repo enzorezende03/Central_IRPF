@@ -185,7 +185,7 @@ export default function ClientPortal() {
     enabled: !!caseId,
   });
 
-  // ── Fetch deliverables ──
+  // ── Fetch deliverables (original) ──
   const { data: deliverable } = useQuery({
     queryKey: ["portal-deliverable", caseId],
     queryFn: async () => {
@@ -193,6 +193,22 @@ export default function ClientPortal() {
         .from("final_deliverables")
         .select("*")
         .eq("case_id", caseId!)
+        .eq("retificacao", false)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!caseId,
+  });
+
+  // ── Fetch retificadora deliverable ──
+  const { data: retDeliverable } = useQuery({
+    queryKey: ["portal-deliverable-ret", caseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("final_deliverables")
+        .select("*")
+        .eq("case_id", caseId!)
+        .eq("retificacao", true)
         .maybeSingle();
       return data;
     },
