@@ -1865,7 +1865,7 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
 
   const previewApproved = (deliverable as any)?.preview_status === "aprovado";
 
-  if (!previewApproved) {
+  if (!previewApproved && !isRetificacao) {
     return (
       <div className="rounded-md border border-dashed p-4 bg-muted/30 text-center space-y-1">
         <Lock className="h-5 w-5 mx-auto text-muted-foreground" />
@@ -1874,6 +1874,28 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
           Disponível somente após a <span className="font-medium">aprovação da prévia</span> pelo cliente
           (ou aprovação interna pela equipe).
         </p>
+      </div>
+    );
+  }
+
+  if (readOnly) {
+    return (
+      <div className="space-y-3">
+        {(["irpf","receipt","rec","dec"] as const).map((t) => {
+          const cfg = UPLOAD_CONFIG[t];
+          const url = fileUrl(cfg.field);
+          if (!url) return null;
+          return (
+            <div key={t} className="flex items-center gap-2 p-2.5 rounded-lg border bg-muted/20">
+              <FileText className="h-4 w-4 shrink-0 text-success" />
+              <span className="text-sm flex-1">{cfg.label}</span>
+              <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                <a href={url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
+              </Button>
+            </div>
+          );
+        })}
+        {!hasAnyFile && <p className="text-xs text-muted-foreground italic">Nenhum arquivo enviado.</p>}
       </div>
     );
   }
