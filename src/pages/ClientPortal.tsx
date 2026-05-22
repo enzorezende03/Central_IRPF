@@ -560,33 +560,124 @@ export default function ClientPortal() {
                   />
                 )}
 
-                {/* Final Deliverables */}
-                {deliverable && deliverable.sent_to_client && (
+                {/* Retificação — banner */}
+                {(caseData.status === "retificando" || caseData.status === "retificada") && (
+                  <Card className={caseData.status === "retificada" ? "border-success/40 bg-success/5" : "border-amber-500/40 bg-amber-500/5"}>
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <RefreshCw className={`h-5 w-5 mt-0.5 ${caseData.status === "retificada" ? "text-success" : "text-amber-600"}`} />
+                      <div className="text-sm">
+                        {caseData.status === "retificando"
+                          ? <>Sua declaração está sendo <strong>retificada</strong> pela nossa equipe.</>
+                          : <>Sua declaração <strong>retificada</strong> está disponível.</>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Declaração Retificada — entrega final */}
+                {caseData.status === "retificada" && retDeliverable && (
                   <Card className="border-success/40">
                     <CardContent className="p-5 text-center">
                       <CheckCircle className="h-10 w-10 text-success mx-auto mb-2" />
-                      <h2 className="text-base font-bold mb-1">Declaração Finalizada! 🎉</h2>
+                      <h2 className="text-base font-bold mb-1">Declaração Retificada 🎉</h2>
                       <p className="text-xs text-muted-foreground mb-4">
-                        Sua declaração de IRPF {caseData.tax_year} foi concluída com sucesso.
+                        Versão corrigida da sua declaração de IRPF {caseData.tax_year}.
                       </p>
                       <div className="flex flex-col gap-2">
-                        {deliverable.irpf_file_url && (
+                        {(retDeliverable as any).dec_file_url && (
                           <Button size="sm" asChild>
-                            <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer">
-                              <Download className="h-4 w-4 mr-2" /> Baixar Declaração
+                            <a href={(retDeliverable as any).dec_file_url} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4 mr-2" /> Baixar Declaração (.DEC)
                             </a>
                           </Button>
                         )}
-                        {deliverable.receipt_file_url && (
+                        {(retDeliverable as any).rec_file_url && (
                           <Button variant="outline" size="sm" asChild>
-                            <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer">
-                              <Download className="h-4 w-4 mr-2" /> Baixar Recibo de Entrega
+                            <a href={(retDeliverable as any).rec_file_url} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4 mr-2" /> Baixar Recibo (.REC)
+                            </a>
+                          </Button>
+                        )}
+                        {(retDeliverable as any).irpf_file_url && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={(retDeliverable as any).irpf_file_url} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4 mr-2" /> Baixar Declaração IRPF
+                            </a>
+                          </Button>
+                        )}
+                        {(retDeliverable as any).guide_url && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={(retDeliverable as any).guide_url} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4 mr-2" /> Baixar DARF
                             </a>
                           </Button>
                         )}
                       </div>
                     </CardContent>
                   </Card>
+                )}
+
+                {/* Final Deliverables (original) */}
+                {deliverable && deliverable.sent_to_client && (
+                  caseData.status === "retificada" ? (
+                    <Collapsible>
+                      <Card className="border-muted">
+                        <CollapsibleTrigger className="w-full text-left">
+                          <CardContent className="p-4 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">Declaração original (substituída)</span>
+                            </div>
+                            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [&[data-state=open]]:rotate-180" />
+                          </CardContent>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <CardContent className="p-5 pt-0 flex flex-col gap-2">
+                            {deliverable.irpf_file_url && (
+                              <Button variant="outline" size="sm" asChild>
+                                <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer">
+                                  <Download className="h-4 w-4 mr-2" /> Declaração Original
+                                </a>
+                              </Button>
+                            )}
+                            {deliverable.receipt_file_url && (
+                              <Button variant="outline" size="sm" asChild>
+                                <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer">
+                                  <Download className="h-4 w-4 mr-2" /> Recibo Original
+                                </a>
+                              </Button>
+                            )}
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
+                  ) : (
+                    <Card className="border-success/40">
+                      <CardContent className="p-5 text-center">
+                        <CheckCircle className="h-10 w-10 text-success mx-auto mb-2" />
+                        <h2 className="text-base font-bold mb-1">Declaração Finalizada! 🎉</h2>
+                        <p className="text-xs text-muted-foreground mb-4">
+                          Sua declaração de IRPF {caseData.tax_year} foi concluída com sucesso.
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          {deliverable.irpf_file_url && (
+                            <Button size="sm" asChild>
+                              <a href={deliverable.irpf_file_url} target="_blank" rel="noopener noreferrer">
+                                <Download className="h-4 w-4 mr-2" /> Baixar Declaração
+                              </a>
+                            </Button>
+                          )}
+                          {deliverable.receipt_file_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={deliverable.receipt_file_url} target="_blank" rel="noopener noreferrer">
+                                <Download className="h-4 w-4 mr-2" /> Baixar Recibo de Entrega
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
                 )}
 
                 {/* Guias DARF enviadas */}
