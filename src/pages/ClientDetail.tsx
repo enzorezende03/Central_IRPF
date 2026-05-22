@@ -54,7 +54,7 @@ import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MA
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
-  const { profileName } = useAuth();
+  const { profileName, user } = useAuth();
 
   // ── Fetch case with client ──
   const { data: caseData, isLoading } = useQuery({
@@ -141,6 +141,21 @@ export default function ClientDetail() {
         .from("final_deliverables")
         .select("*")
         .eq("case_id", id!)
+        .eq("retificacao", false)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: retDeliverable } = useQuery({
+    queryKey: ["case-deliverable-ret", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("final_deliverables")
+        .select("*")
+        .eq("case_id", id!)
+        .eq("retificacao", true)
         .maybeSingle();
       return data;
     },
@@ -211,6 +226,8 @@ export default function ClientDetail() {
   const [showDispensarDialog, setShowDispensarDialog] = useState(false);
   const [dispensarJustificativa, setDispensarJustificativa] = useState("");
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [showRetificarDialog, setShowRetificarDialog] = useState(false);
+  const [retificacaoMotivo, setRetificacaoMotivo] = useState("");
 
   const savedNotes = caseData?.internal_notes ?? "";
   const notesValue = internalNotes ?? savedNotes;
@@ -223,6 +240,7 @@ export default function ClientDetail() {
     queryClient.invalidateQueries({ queryKey: ["case-billing", id] });
     queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
     queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+    queryClient.invalidateQueries({ queryKey: ["case-deliverable-ret", id] });
     queryClient.invalidateQueries({ queryKey: ["case-messages", id] });
     queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
   };
@@ -667,8 +685,15 @@ export default function ClientDetail() {
                     <CardTitle className="text-base flex items-center gap-2">
                       <Download className="h-4 w-4 text-primary" />
                       Declaração e Recibo
+                      {(caseData.status === "retificando" || caseData.status === "retificada") && (
+                        <Badge variant="outline" className="text-xs">Original</Badge>
+                      )}
                     </CardTitle>
-                    <CardDescription>Declaração IRPF final e recibo de entrega</CardDescription>
+                    <CardDescription>
+                      {(caseData.status === "retificando" || caseData.status === "retificada")
+                        ? "Declaração original (substituída pela retificadora)"
+                        : "Declaração IRPF final e recibo de entrega"}
+                    </CardDescription>
                   </div>
                   <CopyStageMessageButton
                     message={`Olá!\n\nSua declaração de Imposto de Renda foi finalizada.\nAcesse pelo link da Central do IR no aplicativo ou pelo link: ${portalUrl} para conferência.\n\nEstamos à disposição para qualquer dúvida!`}
@@ -678,10 +703,15 @@ export default function ClientDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                <DeclarationReceiptCard caseId={id!} deliverable={deliverable} onRefresh={() => {
-                  queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
-                  queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
-                }} />
+                <DeclarationReceiptCard
+                  caseId={id!}
+                  deliverable={deliverable}
+                  readOnly={caseData.status === "retificando" || caseData.status === "retificada"}
+                  onRefresh={() => {
+                    queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
+                    queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                  }}
+                />
               </CardContent>
             </Card>
 
@@ -710,7 +740,151 @@ export default function ClientDetail() {
 
               </CardContent>
             </Card>
+
+            {/* ── 9d. Retificar (botão) ── */}
+            {caseData.status === "finalizado" && !caseData.retificacao_iniciada_em && (
+              <Card className="border-amber-500/40 bg-amber-500/5">
+                <CardContent className="p-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Precisa corrigir esta declaração?</p>
+                    <p className="text-xs text-muted-foreground">Inicie uma retificação dentro desta mesma demanda.</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="border-amber-500/50 text-amber-700 hover:bg-amber-500/10"
+                    onClick={() => { setRetificacaoMotivo(""); setShowRetificarDialog(true); }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1.5" /> Retificar Declaração
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {caseData.status === "retificada" && (
+              <Card className="border-amber-500/40 bg-amber-500/5">
+                <CardContent className="p-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Nova retificação</p>
+                    <p className="text-xs text-muted-foreground">Inicie uma nova rodada de retificação se necessário.</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="border-amber-500/50 text-amber-700 hover:bg-amber-500/10"
+                    onClick={() => { setRetificacaoMotivo(""); setShowRetificarDialog(true); }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1.5" /> Nova Retificação
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── 9e. Declaração Retificadora ── */}
+            {(caseData.status === "retificando" || caseData.status === "retificada") && (
+              <Card className="border-amber-500/40">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <RefreshCw className="h-4 w-4 text-amber-600" />
+                        Declaração Retificadora
+                        <StatusBadge status={caseData.status as any} />
+                      </CardTitle>
+                      {caseData.retificacao_justificativa && (
+                        <CardDescription className="mt-1">
+                          <span className="font-medium">Motivo:</span> {caseData.retificacao_justificativa}
+                        </CardDescription>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <DeclarationReceiptCard
+                    caseId={id!}
+                    deliverable={retDeliverable}
+                    isRetificacao
+                    onRefresh={() => {
+                      queryClient.invalidateQueries({ queryKey: ["case-deliverable-ret", id] });
+                      queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                    }}
+                  />
+                  {caseData.status === "retificando" && retDeliverable?.dec_file_url && retDeliverable?.rec_file_url && (
+                    <Button
+                      className="w-full"
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from("irpf_cases")
+                          .update({ status: "retificada" })
+                          .eq("id", id!);
+                        if (error) { toast.error("Erro ao concluir retificação."); return; }
+                        await logTimelineEvent(
+                          id!,
+                          "Retificação concluída",
+                          `Declaração retificada entregue por ${profileName ?? "equipe"}`,
+                          false,
+                        );
+                        toast.success("Declaração marcada como Retificada.");
+                        invalidateAll();
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1.5" /> Marcar como Retificada
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
+
+          {/* Retificar dialog */}
+          <Dialog open={showRetificarDialog} onOpenChange={setShowRetificarDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Iniciar retificação</DialogTitle>
+                <DialogDescription>
+                  Descreva o motivo da retificação. Esse texto será registrado no histórico da demanda.
+                </DialogDescription>
+              </DialogHeader>
+              <Textarea
+                value={retificacaoMotivo}
+                onChange={(e) => setRetificacaoMotivo(e.target.value)}
+                placeholder="Ex.: cliente enviou informe de rendimentos adicional não considerado..."
+                rows={5}
+                maxLength={1000}
+              />
+              <p className="text-xs text-muted-foreground">
+                {retificacaoMotivo.trim().length}/20 caracteres mínimos
+              </p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowRetificarDialog(false)}>Cancelar</Button>
+                <Button
+                  disabled={retificacaoMotivo.trim().length < 20}
+                  onClick={async () => {
+                    const motivo = retificacaoMotivo.trim();
+                    const { error } = await supabase
+                      .from("irpf_cases")
+                      .update({
+                        status: "retificando",
+                        retificacao_justificativa: motivo,
+                        retificacao_iniciada_em: new Date().toISOString(),
+                        retificacao_iniciada_por: user?.id ?? null,
+                      } as any)
+                      .eq("id", id!);
+                    if (error) { toast.error("Erro ao iniciar retificação."); return; }
+                    await logTimelineEvent(
+                      id!,
+                      "Retificação iniciada",
+                      `Retificação iniciada por ${profileName ?? "equipe"}. Motivo: ${motivo}`,
+                      false,
+                    );
+                    toast.success("Retificação iniciada.");
+                    setShowRetificarDialog(false);
+                    invalidateAll();
+                  }}
+                >
+                  Confirmar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
 
           {/* Right column (1/3) */}
           <div className="space-y-6">
@@ -1773,7 +1947,7 @@ function PreviewCard({
 }
 
 // ── Declaration & Receipt Card ──
-function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void }) {
+function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao = false, readOnly = false }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void; isRetificacao?: boolean; readOnly?: boolean }) {
   const irpfRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<HTMLInputElement>(null);
@@ -1807,7 +1981,7 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
       if (deliverable) {
         await supabase.from("final_deliverables").update({ [cfg.field]: url } as any).eq("id", deliverable.id);
       } else {
-        await supabase.from("final_deliverables").insert({ case_id: caseId, [cfg.field]: url } as any);
+        await supabase.from("final_deliverables").insert({ case_id: caseId, retificacao: isRetificacao, [cfg.field]: url } as any);
       }
       await logTimelineEvent(caseId, `${cfg.label} enviado(a)`, `Arquivo: ${file.name}`, true);
       toast.success(`${cfg.label} enviado(a)!`);
@@ -1850,7 +2024,7 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
 
   const previewApproved = (deliverable as any)?.preview_status === "aprovado";
 
-  if (!previewApproved) {
+  if (!previewApproved && !isRetificacao) {
     return (
       <div className="rounded-md border border-dashed p-4 bg-muted/30 text-center space-y-1">
         <Lock className="h-5 w-5 mx-auto text-muted-foreground" />
@@ -1859,6 +2033,28 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh }: { caseId: st
           Disponível somente após a <span className="font-medium">aprovação da prévia</span> pelo cliente
           (ou aprovação interna pela equipe).
         </p>
+      </div>
+    );
+  }
+
+  if (readOnly) {
+    return (
+      <div className="space-y-3">
+        {(["irpf","receipt","rec","dec"] as const).map((t) => {
+          const cfg = UPLOAD_CONFIG[t];
+          const url = fileUrl(cfg.field);
+          if (!url) return null;
+          return (
+            <div key={t} className="flex items-center gap-2 p-2.5 rounded-lg border bg-muted/20">
+              <FileText className="h-4 w-4 shrink-0 text-success" />
+              <span className="text-sm flex-1">{cfg.label}</span>
+              <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                <a href={url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
+              </Button>
+            </div>
+          );
+        })}
+        {!hasAnyFile && <p className="text-xs text-muted-foreground italic">Nenhum arquivo enviado.</p>}
       </div>
     );
   }

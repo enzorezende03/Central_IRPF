@@ -14,6 +14,8 @@ const statusColors: Record<DemandStatus, string> = {
   impedida: "bg-rose-500/15 text-rose-600 border-rose-500/30",
   reaberta: "bg-teal-500/15 text-teal-600 border-teal-500/30",
   dispensada: "bg-slate-500/15 text-slate-600 border-slate-500/30",
+  retificando: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  retificada: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
 };
 
 const billingColors: Record<BillingStatus, string> = {
