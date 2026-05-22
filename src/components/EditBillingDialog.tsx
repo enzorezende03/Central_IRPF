@@ -52,8 +52,8 @@ export function EditBillingDialog({ open, onOpenChange, billing, clientName }: E
     const file = e.target.files?.[0];
     if (!file || !billing) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Arquivo muito grande. Limite: 10 MB.");
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. Limite: 50 MB.");
       return;
     }
 
