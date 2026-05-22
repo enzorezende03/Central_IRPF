@@ -141,6 +141,21 @@ export default function ClientDetail() {
         .from("final_deliverables")
         .select("*")
         .eq("case_id", id!)
+        .eq("retificacao", false)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: retDeliverable } = useQuery({
+    queryKey: ["case-deliverable-ret", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("final_deliverables")
+        .select("*")
+        .eq("case_id", id!)
+        .eq("retificacao", true)
         .maybeSingle();
       return data;
     },
