@@ -1822,7 +1822,7 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
       if (deliverable) {
         await supabase.from("final_deliverables").update({ [cfg.field]: url } as any).eq("id", deliverable.id);
       } else {
-        await supabase.from("final_deliverables").insert({ case_id: caseId, [cfg.field]: url } as any);
+        await supabase.from("final_deliverables").insert({ case_id: caseId, retificacao: isRetificacao, [cfg.field]: url } as any);
       }
       await logTimelineEvent(caseId, `${cfg.label} enviado(a)`, `Arquivo: ${file.name}`, true);
       toast.success(`${cfg.label} enviado(a)!`);
