@@ -29,6 +29,8 @@ const COLUMNS: KanbanColumn[] = [
   "pendencia",
   "pendencia_respondida",
   "finalizado",
+  "retificando",
+  "retificada",
 ];
 
 const COLUMN_LABELS: Record<KanbanColumn, string> = {
@@ -42,6 +44,8 @@ const COLUMN_LABELS: Record<KanbanColumn, string> = {
   pendencia: STATUS_LABELS.pendencia,
   pendencia_respondida: STATUS_LABELS.pendencia_respondida,
   finalizado: STATUS_LABELS.finalizado,
+  retificando: STATUS_LABELS.retificando,
+  retificada: STATUS_LABELS.retificada,
 };
 
 const columnColors: Record<KanbanColumn, string> = {
@@ -55,6 +59,8 @@ const columnColors: Record<KanbanColumn, string> = {
   pendencia: "border-t-destructive",
   pendencia_respondida: "border-t-cyan-500",
   finalizado: "border-t-success",
+  retificando: "border-t-amber-500",
+  retificada: "border-t-emerald-600",
 };
 
 const dotColors: Record<KanbanColumn, string> = {
@@ -68,6 +74,8 @@ const dotColors: Record<KanbanColumn, string> = {
   pendencia: "bg-destructive",
   pendencia_respondida: "bg-cyan-500",
   finalizado: "bg-success",
+  retificando: "bg-amber-500",
+  retificada: "bg-emerald-600",
 };
 
 export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: CaseWithClient[]; columnOrder?: string[]; hiddenColumns?: string[] }) {
