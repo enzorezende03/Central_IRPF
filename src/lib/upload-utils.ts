@@ -17,7 +17,7 @@ const ALLOWED_EXTENSIONS = [
   ".doc", ".docx", ".xls", ".xlsx", ".csv",
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 export function validateFile(file: File): string | null {
   const ext = "." + file.name.split(".").pop()?.toLowerCase();
@@ -27,7 +27,7 @@ export function validateFile(file: File): string | null {
   }
   if (file.size > MAX_FILE_SIZE) {
     const sizeMb = (file.size / 1024 / 1024).toFixed(1);
-    return `Arquivo "${file.name}" tem ${sizeMb} MB. Limite: 10 MB.`;
+    return `Arquivo "${file.name}" tem ${sizeMb} MB. Limite: 50 MB.`;
   }
   return null;
 }
@@ -61,5 +61,5 @@ export function buildStoragePath(
   return `${base}/${ts}_${safe}`;
 }
 
-export const MAX_FILE_SIZE_LABEL = "10 MB";
+export const MAX_FILE_SIZE_LABEL = "50 MB";
 export const ALLOWED_EXTENSIONS_LABEL = "PDF, JPG, PNG, WEBP, DOC, DOCX, XLS, XLSX, CSV";

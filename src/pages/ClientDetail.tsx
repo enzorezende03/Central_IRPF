@@ -1973,7 +1973,7 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
       const err = validateFile(file);
       if (err) { toast.error(err); return; }
     }
-    if (file.size > 10 * 1024 * 1024) { toast.error(`Arquivo "${file.name}" excede o limite de 10 MB.`); return; }
+    if (file.size > 50 * 1024 * 1024) { toast.error(`Arquivo "${file.name}" excede o limite de 50 MB.`); return; }
     setUploading(type);
     const cfg = UPLOAD_CONFIG[type];
     try {
