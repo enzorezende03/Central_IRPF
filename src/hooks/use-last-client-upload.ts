@@ -5,16 +5,13 @@ export function useLastClientUploads() {
   return useQuery({
     queryKey: ["last-client-uploads"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("uploaded_documents")
-        .select("case_id, uploaded_at")
-        .eq("uploaded_by", "client")
-        .order("uploaded_at", { ascending: false })
-        .limit(10000);
+      const { data, error } = await supabase.rpc("get_last_client_uploads");
       if (error) throw error;
       const map = new Map<string, string>();
       (data ?? []).forEach((row: any) => {
-        if (!map.has(row.case_id)) map.set(row.case_id, row.uploaded_at);
+        if (row?.case_id && row?.last_uploaded_at) {
+          map.set(row.case_id, row.last_uploaded_at);
+        }
       });
       return map;
     },
