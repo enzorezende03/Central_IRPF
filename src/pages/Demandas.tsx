@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewCaseDialog } from "@/components/NewCaseDialog";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { useCases } from "@/hooks/use-cases";
+import { useLastClientUploads } from "@/hooks/use-last-client-upload";
 import { useAuth } from "@/hooks/use-auth";
 import { STATUS_LABELS, type DemandStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
