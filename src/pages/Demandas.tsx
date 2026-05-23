@@ -43,6 +43,7 @@ export default function Demandas() {
   const saved0 = useMemo(() => loadSavedFilters(), []);
   const [showDeleted, setShowDeleted] = useState<boolean>(saved0.showDeleted ?? false);
   const { data: cases = [], isLoading } = useCases(showDeleted);
+  const { data: lastUploads } = useLastClientUploads();
   const { role, hasPermission, user, profileName } = useAuth() as any;
   const canCreate = role === "admin" || hasPermission("criar_demandas");
   const canEdit = role === "admin" || hasPermission("editar_demandas");
