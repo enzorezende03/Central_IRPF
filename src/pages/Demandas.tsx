@@ -144,7 +144,7 @@ export default function Demandas() {
     setCurrentPage(1);
   }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize]);
 
-  const handleSort = (field: "cliente" | "ano") => {
+  const handleSort = (field: "cliente" | "ano" | "ultimo_doc") => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
