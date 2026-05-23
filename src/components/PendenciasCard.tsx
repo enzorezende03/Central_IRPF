@@ -257,23 +257,29 @@ export function PendenciasCard({
                                       const docs = attachedNames
                                         .map((n) => findDocByName(n))
                                         .filter(Boolean) as typeof uploadedDocs;
-                                      toast.info(`Baixando ${docs.length} arquivos...`);
-                                      for (const d of docs) {
-                                        try {
+                                      const toastId = toast.loading(`Compactando ${docs.length} arquivos...`);
+                                      try {
+                                        const JSZip = (await import("jszip")).default;
+                                        const zip = new JSZip();
+                                        for (const d of docs) {
                                           const res = await fetch(d!.file_url);
-                                          const blob = await res.blob();
-                                          const url = URL.createObjectURL(blob);
-                                          const a = document.createElement("a");
-                                          a.href = url;
-                                          a.download = d!.file_name;
-                                          document.body.appendChild(a);
-                                          a.click();
-                                          a.remove();
-                                          URL.revokeObjectURL(url);
-                                          await new Promise((r) => setTimeout(r, 300));
-                                        } catch {
-                                          toast.error(`Falha ao baixar ${d!.file_name}`);
+                                          if (!res.ok) throw new Error(`Falha em ${d!.file_name}`);
+                                          zip.file(d!.file_name, await res.blob());
                                         }
+                                        const blob = await zip.generateAsync({ type: "blob" });
+                                        const url = URL.createObjectURL(blob);
+                                        const safeTitle = p.title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "pendencia";
+                                        const a = document.createElement("a");
+                                        a.href = url;
+                                        a.download = `${safeTitle}_documentos.zip`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                        URL.revokeObjectURL(url);
+                                        toast.success("ZIP baixado com sucesso.", { id: toastId });
+                                      } catch (e) {
+                                        console.error(e);
+                                        toast.error("Erro ao gerar o ZIP.", { id: toastId });
                                       }
                                     }}
                                   >
