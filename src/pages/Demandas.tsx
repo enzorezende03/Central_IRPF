@@ -389,6 +389,12 @@ export default function Demandas() {
                     <TableHead className="min-w-[100px]">Status</TableHead>
                     <TableHead className="hidden md:table-cell">Prioridade</TableHead>
                     <TableHead className="hidden lg:table-cell">Tipo</TableHead>
+                    <TableHead className="hidden md:table-cell whitespace-nowrap cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("ultimo_doc")}>
+                      <span className="flex items-center gap-1">
+                        Últ. doc cliente
+                        {sortField === "ultimo_doc" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                      </span>
+                    </TableHead>
                     {showDeleted && <TableHead className="whitespace-nowrap">Excluída por</TableHead>}
                     <TableHead className="w-10" />
                   </TableRow>
