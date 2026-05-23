@@ -243,10 +243,45 @@ export function PendenciasCard({
                           )}
                           {attachedNames.length > 0 && (
                             <div className="mt-2 space-y-1">
-                              <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
-                                <Paperclip className="h-3 w-3" />
-                                Documentos anexados:
-                              </p>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                                  <Paperclip className="h-3 w-3" />
+                                  Documentos anexados:
+                                </p>
+                                {attachedNames.filter((n) => findDocByName(n)).length > 1 && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-[11px]"
+                                    onClick={async () => {
+                                      const docs = attachedNames
+                                        .map((n) => findDocByName(n))
+                                        .filter(Boolean) as typeof uploadedDocs;
+                                      toast.info(`Baixando ${docs.length} arquivos...`);
+                                      for (const d of docs) {
+                                        try {
+                                          const res = await fetch(d!.file_url);
+                                          const blob = await res.blob();
+                                          const url = URL.createObjectURL(blob);
+                                          const a = document.createElement("a");
+                                          a.href = url;
+                                          a.download = d!.file_name;
+                                          document.body.appendChild(a);
+                                          a.click();
+                                          a.remove();
+                                          URL.revokeObjectURL(url);
+                                          await new Promise((r) => setTimeout(r, 300));
+                                        } catch {
+                                          toast.error(`Falha ao baixar ${d!.file_name}`);
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Baixar todos
+                                  </Button>
+                                )}
+                              </div>
                               <ul className="space-y-1">
                                 {attachedNames.map((name, i) => {
                                   const doc = findDocByName(name);
