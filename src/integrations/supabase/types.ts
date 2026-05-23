@@ -1015,6 +1015,13 @@ export type Database = {
       }
       get_case_by_slug: { Args: { p_slug: string }; Returns: string }
       get_case_by_token: { Args: { p_token: string }; Returns: string }
+      get_last_client_uploads: {
+        Args: never
+        Returns: {
+          case_id: string
+          last_uploaded_at: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
