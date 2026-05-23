@@ -195,12 +195,18 @@ export default function Demandas() {
           cmp = (a.clients?.full_name ?? "").localeCompare(b.clients?.full_name ?? "", "pt-BR");
         } else if (sortField === "ano") {
           cmp = (a.base_year ?? 0) - (b.base_year ?? 0);
+        } else if (sortField === "ultimo_doc") {
+          const da = lastUploads?.get(a.id);
+          const db = lastUploads?.get(b.id);
+          const ta = da ? new Date(da).getTime() : Number.POSITIVE_INFINITY;
+          const tb = db ? new Date(db).getTime() : Number.POSITIVE_INFINITY;
+          cmp = ta - tb;
         }
         return sortDir === "asc" ? cmp : -cmp;
       });
     }
     return list;
-  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir]);
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, lastUploads]);
 
   // Quantos resultados existem considerando apenas a busca (ignorando filtros), para detectar quando filtros estão ocultando matches
   const searchOnlyMatches = useMemo(() => {
