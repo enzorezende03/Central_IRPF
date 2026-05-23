@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewCaseDialog } from "@/components/NewCaseDialog";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { useCases } from "@/hooks/use-cases";
+import { useLastClientUploads } from "@/hooks/use-last-client-upload";
 import { useAuth } from "@/hooks/use-auth";
 import { STATUS_LABELS, type DemandStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export default function Demandas() {
   const saved0 = useMemo(() => loadSavedFilters(), []);
   const [showDeleted, setShowDeleted] = useState<boolean>(saved0.showDeleted ?? false);
   const { data: cases = [], isLoading } = useCases(showDeleted);
+  const { data: lastUploads } = useLastClientUploads();
   const { role, hasPermission, user, profileName } = useAuth() as any;
   const canCreate = role === "admin" || hasPermission("criar_demandas");
   const canEdit = role === "admin" || hasPermission("editar_demandas");
@@ -67,7 +69,7 @@ export default function Demandas() {
   const [priorityFilter, setPriorityFilter] = useState<string[]>(initialPriority);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
   const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string[]>(toArr(saved.declarationTypeFilter));
-  const [sortField, setSortField] = useState<"cliente" | "ano" | null>(saved.sortField ?? null);
+  const [sortField, setSortField] = useState<"cliente" | "ano" | "ultimo_doc" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
   const [currentPage, setCurrentPage] = useState(1);
@@ -142,7 +144,7 @@ export default function Demandas() {
     setCurrentPage(1);
   }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize]);
 
-  const handleSort = (field: "cliente" | "ano") => {
+  const handleSort = (field: "cliente" | "ano" | "ultimo_doc") => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -193,12 +195,18 @@ export default function Demandas() {
           cmp = (a.clients?.full_name ?? "").localeCompare(b.clients?.full_name ?? "", "pt-BR");
         } else if (sortField === "ano") {
           cmp = (a.base_year ?? 0) - (b.base_year ?? 0);
+        } else if (sortField === "ultimo_doc") {
+          const da = lastUploads?.get(a.id);
+          const db = lastUploads?.get(b.id);
+          const ta = da ? new Date(da).getTime() : Number.POSITIVE_INFINITY;
+          const tb = db ? new Date(db).getTime() : Number.POSITIVE_INFINITY;
+          cmp = ta - tb;
         }
         return sortDir === "asc" ? cmp : -cmp;
       });
     }
     return list;
-  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir]);
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, lastUploads]);
 
   // Quantos resultados existem considerando apenas a busca (ignorando filtros), para detectar quando filtros estão ocultando matches
   const searchOnlyMatches = useMemo(() => {
@@ -381,6 +389,12 @@ export default function Demandas() {
                     <TableHead className="min-w-[100px]">Status</TableHead>
                     <TableHead className="hidden md:table-cell">Prioridade</TableHead>
                     <TableHead className="hidden lg:table-cell">Tipo</TableHead>
+                    <TableHead className="hidden md:table-cell whitespace-nowrap cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("ultimo_doc")}>
+                      <span className="flex items-center gap-1">
+                        Últ. doc cliente
+                        {sortField === "ultimo_doc" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                      </span>
+                    </TableHead>
                     {showDeleted && <TableHead className="whitespace-nowrap">Excluída por</TableHead>}
                     <TableHead className="w-10" />
                   </TableRow>
@@ -442,6 +456,20 @@ export default function Demandas() {
                             {c.declaration_type === "completa" ? "Completa" : "Simples"}
                           </Badge>
                         </TableCell>
+                        <TableCell className="hidden md:table-cell whitespace-nowrap text-xs text-muted-foreground">
+                          {(() => {
+                            const d = lastUploads?.get(c.id);
+                            if (!d) return <span className="opacity-60">—</span>;
+                            const days = Math.floor((Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24));
+                            const label = days === 0 ? "hoje" : days === 1 ? "há 1 dia" : `há ${days} dias`;
+                            return (
+                              <div className="flex flex-col">
+                                <span className="font-medium text-foreground">{new Date(d).toLocaleDateString("pt-BR")}</span>
+                                <span>{label}</span>
+                              </div>
+                            );
+                          })()}
+                        </TableCell>
                         {showDeleted && (
                           <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                             {(c as any).deleted_by_name ? (
@@ -462,7 +490,7 @@ export default function Demandas() {
                   })}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={(showDeleted ? 11 : 10) + (canEdit ? 1 : 0)} className="text-center py-10 text-muted-foreground">
+                      <TableCell colSpan={(showDeleted ? 12 : 11) + (canEdit ? 1 : 0)} className="text-center py-10 text-muted-foreground">
                         {cases.length === 0 ? (
                           "Nenhuma demanda cadastrada ainda."
                         ) : search && searchOnlyMatches > 0 && hasActiveFilters ? (
