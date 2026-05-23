@@ -456,6 +456,20 @@ export default function Demandas() {
                             {c.declaration_type === "completa" ? "Completa" : "Simples"}
                           </Badge>
                         </TableCell>
+                        <TableCell className="hidden md:table-cell whitespace-nowrap text-xs text-muted-foreground">
+                          {(() => {
+                            const d = lastUploads?.get(c.id);
+                            if (!d) return <span className="opacity-60">—</span>;
+                            const days = Math.floor((Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24));
+                            const label = days === 0 ? "hoje" : days === 1 ? "há 1 dia" : `há ${days} dias`;
+                            return (
+                              <div className="flex flex-col">
+                                <span className="font-medium text-foreground">{new Date(d).toLocaleDateString("pt-BR")}</span>
+                                <span>{label}</span>
+                              </div>
+                            );
+                          })()}
+                        </TableCell>
                         {showDeleted && (
                           <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                             {(c as any).deleted_by_name ? (
