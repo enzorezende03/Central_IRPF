@@ -288,9 +288,9 @@ export default function ClientPortal() {
         <Card className="max-w-md mx-auto">
           <CardContent className="p-8 text-center">
             <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
-            <h1 className="text-xl font-bold mb-2">Link inválido</h1>
+            <h1 className="text-xl font-bold mb-2">Link alterado</h1>
             <p className="text-sm text-muted-foreground">
-              Este link não é válido ou expirou. Entre em contato com seu escritório de contabilidade.
+              Este link foi alterado e não está mais ativo. Por favor, entre em contato com o escritório de contabilidade para receber o novo link de acesso.
             </p>
           </CardContent>
         </Card>
