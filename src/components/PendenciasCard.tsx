@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { AlertCircle, CheckCircle2, Plus, Trash2, Copy, Loader2, Paperclip, Download } from "lucide-react";
+import { AlertCircle, CheckCircle2, Plus, Trash2, Copy, Loader2, Paperclip, Download, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getPortalUrl } from "@/lib/portal-utils";
+import { validateFile, uploadFileToBucket, buildStoragePath, getAcceptString } from "@/lib/upload-utils";
 
 type Pendencia = {
   id: string;
