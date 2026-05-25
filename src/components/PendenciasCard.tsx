@@ -171,6 +171,72 @@ export function PendenciasCard({
     refresh();
   };
 
+  const openResolveDialog = (p: Pendencia) => {
+    setResolveTarget(p);
+    setResolveNote("");
+    setResolveFiles([]);
+    setResolveOpen(true);
+  };
+
+  const handleResolveWithUpload = async () => {
+    if (!resolveTarget) return;
+    for (const f of resolveFiles) {
+      const err = validateFile(f);
+      if (err) { toast.error(err); return; }
+    }
+    if (resolveFiles.length === 0 && !resolveNote.trim()) {
+      toast.error("Anexe pelo menos um arquivo ou adicione uma observação.");
+      return;
+    }
+    setResolving(true);
+    try {
+      const uploadedNames: string[] = [];
+      for (const f of resolveFiles) {
+        const path = buildStoragePath(caseId, f.name, "pendencias");
+        const url = await uploadFileToBucket("documentos_clientes", path, f);
+        const { error: insErr } = await supabase.from("uploaded_documents").insert({
+          case_id: caseId,
+          file_name: f.name,
+          file_url: url,
+          file_type: f.type || null,
+          uploaded_by: "client",
+        });
+        if (insErr) throw insErr;
+        uploadedNames.push(f.name);
+      }
+
+      const noteText = resolveNote.trim();
+      const headerLine = "(Recebido fora do portal — registrado pela equipe)";
+      const baseText = noteText ? `${headerLine}\n${noteText}` : headerLine;
+      const finalResponse = uploadedNames.length > 0
+        ? `${baseText}\n📎 Documentos anexados: ${uploadedNames.join(", ")}`
+        : baseText;
+
+      const { error } = await supabase
+        .from("case_pendencias" as any)
+        .update({
+          status: "resolvida",
+          resolved_at: new Date().toISOString(),
+          client_response: finalResponse,
+        })
+        .eq("id", resolveTarget.id);
+      if (error) throw error;
+
+      toast.success("Pendência resolvida e documentos anexados.");
+      setResolveOpen(false);
+      setResolveTarget(null);
+      setResolveNote("");
+      setResolveFiles([]);
+      refresh();
+      queryClient.invalidateQueries({ queryKey: ["case-uploaded-docs-pendencias", caseId] });
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao registrar resolução.");
+    } finally {
+      setResolving(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Excluir esta pendência?")) return;
     const { error } = await supabase.from("case_pendencias" as any).delete().eq("id", id);
