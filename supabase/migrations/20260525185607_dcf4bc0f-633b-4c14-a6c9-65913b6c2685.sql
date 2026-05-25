@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anon can insert cases" ON public.irpf_cases;
