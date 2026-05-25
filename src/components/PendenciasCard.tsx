@@ -44,6 +44,13 @@ export function PendenciasCard({
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
+  // Offline resolve dialog state
+  const [resolveOpen, setResolveOpen] = useState(false);
+  const [resolveTarget, setResolveTarget] = useState<Pendencia | null>(null);
+  const [resolveNote, setResolveNote] = useState("");
+  const [resolveFiles, setResolveFiles] = useState<File[]>([]);
+  const [resolving, setResolving] = useState(false);
+
   const { data: pendencias = [], isLoading } = useQuery({
     queryKey: ["case-pendencias", caseId],
     queryFn: async () => {
@@ -164,6 +171,72 @@ export function PendenciasCard({
     refresh();
   };
 
+  const openResolveDialog = (p: Pendencia) => {
+    setResolveTarget(p);
+    setResolveNote("");
+    setResolveFiles([]);
+    setResolveOpen(true);
+  };
+
+  const handleResolveWithUpload = async () => {
+    if (!resolveTarget) return;
+    for (const f of resolveFiles) {
+      const err = validateFile(f);
+      if (err) { toast.error(err); return; }
+    }
+    if (resolveFiles.length === 0 && !resolveNote.trim()) {
+      toast.error("Anexe pelo menos um arquivo ou adicione uma observação.");
+      return;
+    }
+    setResolving(true);
+    try {
+      const uploadedNames: string[] = [];
+      for (const f of resolveFiles) {
+        const path = buildStoragePath(caseId, f.name, "pendencias");
+        const url = await uploadFileToBucket("documentos_clientes", path, f);
+        const { error: insErr } = await supabase.from("uploaded_documents").insert({
+          case_id: caseId,
+          file_name: f.name,
+          file_url: url,
+          file_type: f.type || null,
+          uploaded_by: "client",
+        });
+        if (insErr) throw insErr;
+        uploadedNames.push(f.name);
+      }
+
+      const noteText = resolveNote.trim();
+      const headerLine = "(Recebido fora do portal — registrado pela equipe)";
+      const baseText = noteText ? `${headerLine}\n${noteText}` : headerLine;
+      const finalResponse = uploadedNames.length > 0
+        ? `${baseText}\n📎 Documentos anexados: ${uploadedNames.join(", ")}`
+        : baseText;
+
+      const { error } = await supabase
+        .from("case_pendencias" as any)
+        .update({
+          status: "resolvida",
+          resolved_at: new Date().toISOString(),
+          client_response: finalResponse,
+        })
+        .eq("id", resolveTarget.id);
+      if (error) throw error;
+
+      toast.success("Pendência resolvida e documentos anexados.");
+      setResolveOpen(false);
+      setResolveTarget(null);
+      setResolveNote("");
+      setResolveFiles([]);
+      refresh();
+      queryClient.invalidateQueries({ queryKey: ["case-uploaded-docs-pendencias", caseId] });
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao registrar resolução.");
+    } finally {
+      setResolving(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Excluir esta pendência?")) return;
     const { error } = await supabase.from("case_pendencias" as any).delete().eq("id", id);
@@ -270,6 +343,9 @@ export function PendenciasCard({
                   onClick={() => copyMessage(p)}
                 >
                   <Copy className="h-3.5 w-3.5 mr-1" /> Copiar mensagem
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => openResolveDialog(p)}>
+                  <Upload className="h-3.5 w-3.5 mr-1" /> Resolver com anexo
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => handleResolveByOffice(p.id)}>
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Marcar como resolvida
@@ -462,6 +538,81 @@ export function PendenciasCard({
             <Button onClick={handleCreate} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               Salvar e exibir ao cliente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={resolveOpen} onOpenChange={setResolveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resolver pendência com anexo</DialogTitle>
+            <DialogDescription>
+              Use quando o cliente enviou os documentos por outro canal (WhatsApp, e-mail, etc.).
+              O arquivo será registrado na demanda como envio do cliente e a pendência será marcada como resolvida.
+            </DialogDescription>
+          </DialogHeader>
+          {resolveTarget && (
+            <div className="rounded-md bg-muted/40 p-2 text-xs">
+              <p className="font-medium">{resolveTarget.title}</p>
+              <p className="text-muted-foreground whitespace-pre-wrap">{stripAttachmentsLine(resolveTarget.description)}</p>
+            </div>
+          )}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium">Observação (opcional)</label>
+              <Textarea
+                value={resolveNote}
+                onChange={(e) => setResolveNote(e.target.value)}
+                placeholder="Ex: Cliente enviou via WhatsApp em 25/05."
+                rows={3}
+                maxLength={1000}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium">Anexos</label>
+              <div className="mt-1 space-y-2">
+                <label className="flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
+                  <Upload className="h-4 w-4" />
+                  <span>Clique para selecionar arquivos</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept={getAcceptString()}
+                    className="hidden"
+                    onChange={(e) => {
+                      const list = Array.from(e.target.files ?? []);
+                      setResolveFiles((prev) => [...prev, ...list]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {resolveFiles.length > 0 && (
+                  <ul className="space-y-1">
+                    {resolveFiles.map((f, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2 py-1">
+                        <span className="truncate flex items-center gap-1">
+                          <Paperclip className="h-3 w-3 shrink-0" />{f.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setResolveFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResolveOpen(false)} disabled={resolving}>Cancelar</Button>
+            <Button onClick={handleResolveWithUpload} disabled={resolving}>
+              {resolving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Salvar e marcar como resolvida
             </Button>
           </DialogFooter>
         </DialogContent>
