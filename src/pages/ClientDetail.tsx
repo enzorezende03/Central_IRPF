@@ -1998,6 +1998,24 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
     onRefresh();
   };
 
+  const handleDelete = async (type: keyof typeof UPLOAD_CONFIG) => {
+    if (!deliverable) return;
+    const cfg = UPLOAD_CONFIG[type];
+    if (!confirm(`Remover ${cfg.label}? Esta ação não poderá ser desfeita.`)) return;
+    const updates: any = { [cfg.field]: null };
+    if (deliverable.sent_to_client) {
+      const remaining = (["irpf","receipt","rec","dec"] as const)
+        .filter((t) => t !== type)
+        .some((t) => (deliverable as any)?.[UPLOAD_CONFIG[t].field]);
+      if (!remaining) updates.sent_to_client = false;
+    }
+    const { error } = await supabase.from("final_deliverables").update(updates).eq("id", deliverable.id);
+    if (error) { toast.error("Erro ao remover arquivo."); return; }
+    await logTimelineEvent(caseId, `${cfg.label} removido(a)`, `Arquivo removido pela equipe`, false);
+    toast.success(`${cfg.label} removido(a).`);
+    onRefresh();
+  };
+
   const fileUrl = (field: string) => (deliverable as any)?.[field] as string | null | undefined;
 
   const renderRow = (type: keyof typeof UPLOAD_CONFIG, ref: React.RefObject<HTMLInputElement>) => {
@@ -2012,10 +2030,15 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
             <a href={url} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /></a>
           </Button>
         )}
-        <input ref={ref} type="file" className="hidden" accept={type === "rec" ? ".rec" : type === "dec" ? ".dec" : getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload(type, e.target.files[0])} />
+        <input ref={ref} type="file" className="hidden" accept={type === "rec" ? ".rec" : type === "dec" ? ".dec" : getAcceptString()} onChange={(e) => { if (e.target.files?.[0]) { handleUpload(type, e.target.files[0]); e.target.value = ""; } }} />
         <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === type} onClick={() => ref.current?.click()}>
           {uploading === type ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {url ? "Substituir" : "Upload"}</>}
         </Button>
+        {url && (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" title="Excluir arquivo" onClick={() => handleDelete(type)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
     );
   };
