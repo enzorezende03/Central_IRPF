@@ -216,7 +216,7 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
               ref={inputRef}
               type="file"
               multiple
-              accept={getAcceptString()}
+              accept={`${getAcceptString()},.zip,application/zip,application/x-zip-compressed`}
               className="hidden"
               onChange={(e) => handlePick(e.target.files)}
             />
