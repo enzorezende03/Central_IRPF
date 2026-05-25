@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { AlertCircle, CheckCircle2, Plus, Trash2, Copy, Loader2, Paperclip, Download } from "lucide-react";
+import { AlertCircle, CheckCircle2, Plus, Trash2, Copy, Loader2, Paperclip, Download, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getPortalUrl } from "@/lib/portal-utils";
+import { validateFile, uploadFileToBucket, buildStoragePath, getAcceptString } from "@/lib/upload-utils";
 
 type Pendencia = {
   id: string;
@@ -40,6 +41,7 @@ export function PendenciasCard({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
   const { data: pendencias = [], isLoading } = useQuery({
@@ -63,7 +65,6 @@ export function PendenciasCard({
         .from("uploaded_documents")
         .select("id, file_name, file_url, uploaded_at, uploaded_by")
         .eq("case_id", caseId)
-        .eq("uploaded_by", "client")
         .order("uploaded_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -104,20 +105,46 @@ export function PendenciasCard({
       toast.error("Texto muito longo.");
       return;
     }
+    for (const f of files) {
+      const err = validateFile(f);
+      if (err) { toast.error(err); return; }
+    }
     setSaving(true);
     try {
+      const uploadedNames: string[] = [];
+      for (const f of files) {
+        const path = buildStoragePath(caseId, f.name, "pendencias");
+        const url = await uploadFileToBucket("documentos_clientes", path, f);
+        const { error: insErr } = await supabase.from("uploaded_documents").insert({
+          case_id: caseId,
+          file_name: f.name,
+          file_url: url,
+          file_type: f.type || null,
+          uploaded_by: "office",
+        });
+        if (insErr) throw insErr;
+        uploadedNames.push(f.name);
+      }
+
+      const finalDescription = uploadedNames.length > 0
+        ? `${d}\n\n📎 Documentos anexados: ${uploadedNames.join(", ")}`
+        : d;
+
       const { error } = await supabase.from("case_pendencias" as any).insert({
         case_id: caseId,
         title: t,
-        description: d,
+        description: finalDescription,
       });
       if (error) throw error;
       toast.success("Pendência registrada e visível ao cliente.");
       setTitle("");
       setDescription("");
+      setFiles([]);
       setOpen(false);
       refresh();
+      queryClient.invalidateQueries({ queryKey: ["case-uploaded-docs-pendencias", caseId] });
     } catch (e) {
+      console.error(e);
       toast.error("Erro ao salvar pendência.");
     } finally {
       setSaving(false);
@@ -194,12 +221,40 @@ export function PendenciasCard({
             <p className="text-sm text-muted-foreground py-3 text-center">Nenhuma pendência registrada.</p>
           )}
 
-          {abertas.map((p) => (
+          {abertas.map((p) => {
+            const internalAttached = parseAttachedNames(p.description);
+            const descText = stripAttachmentsLine(p.description);
+            return (
             <div key={p.id} className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm">{p.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{p.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{descText}</p>
+                  {internalAttached.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                        <Paperclip className="h-3 w-3" /> Anexos da equipe:
+                      </p>
+                      <ul className="space-y-1">
+                        {internalAttached.map((name, i) => {
+                          const doc = findDocByName(name);
+                          return (
+                            <li key={i} className="text-xs">
+                              {doc ? (
+                                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline break-all">
+                                  <Download className="h-3 w-3 shrink-0" />{name}
+                                </a>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-muted-foreground break-all">
+                                  <Paperclip className="h-3 w-3 shrink-0" />{name}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                   <p className="text-[10px] text-muted-foreground mt-1">
                     Criada em {format(new Date(p.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   </p>
@@ -221,7 +276,7 @@ export function PendenciasCard({
                 </Button>
               </div>
             </div>
-          ))}
+          );})}
 
           {resolvidas.length > 0 && (
             <div className="pt-2 border-t">
@@ -362,6 +417,44 @@ export function PendenciasCard({
                 rows={5}
                 maxLength={2000}
               />
+            </div>
+            <div>
+              <label className="text-xs font-medium">Anexos (opcional)</label>
+              <div className="mt-1 space-y-2">
+                <label className="flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
+                  <Upload className="h-4 w-4" />
+                  <span>Clique para selecionar arquivos</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept={getAcceptString()}
+                    className="hidden"
+                    onChange={(e) => {
+                      const list = Array.from(e.target.files ?? []);
+                      setFiles((prev) => [...prev, ...list]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {files.length > 0 && (
+                  <ul className="space-y-1">
+                    {files.map((f, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2 py-1">
+                        <span className="truncate flex items-center gap-1">
+                          <Paperclip className="h-3 w-3 shrink-0" />{f.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>
