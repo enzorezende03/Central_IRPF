@@ -542,6 +542,81 @@ export function PendenciasCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={resolveOpen} onOpenChange={setResolveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resolver pendência com anexo</DialogTitle>
+            <DialogDescription>
+              Use quando o cliente enviou os documentos por outro canal (WhatsApp, e-mail, etc.).
+              O arquivo será registrado na demanda como envio do cliente e a pendência será marcada como resolvida.
+            </DialogDescription>
+          </DialogHeader>
+          {resolveTarget && (
+            <div className="rounded-md bg-muted/40 p-2 text-xs">
+              <p className="font-medium">{resolveTarget.title}</p>
+              <p className="text-muted-foreground whitespace-pre-wrap">{stripAttachmentsLine(resolveTarget.description)}</p>
+            </div>
+          )}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium">Observação (opcional)</label>
+              <Textarea
+                value={resolveNote}
+                onChange={(e) => setResolveNote(e.target.value)}
+                placeholder="Ex: Cliente enviou via WhatsApp em 25/05."
+                rows={3}
+                maxLength={1000}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium">Anexos</label>
+              <div className="mt-1 space-y-2">
+                <label className="flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
+                  <Upload className="h-4 w-4" />
+                  <span>Clique para selecionar arquivos</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept={getAcceptString()}
+                    className="hidden"
+                    onChange={(e) => {
+                      const list = Array.from(e.target.files ?? []);
+                      setResolveFiles((prev) => [...prev, ...list]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {resolveFiles.length > 0 && (
+                  <ul className="space-y-1">
+                    {resolveFiles.map((f, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2 py-1">
+                        <span className="truncate flex items-center gap-1">
+                          <Paperclip className="h-3 w-3 shrink-0" />{f.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setResolveFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResolveOpen(false)} disabled={resolving}>Cancelar</Button>
+            <Button onClick={handleResolveWithUpload} disabled={resolving}>
+              {resolving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Salvar e marcar como resolvida
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
