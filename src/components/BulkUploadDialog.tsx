@@ -231,7 +231,7 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
               {files.length === 0 ? "Selecionar arquivos" : "Adicionar mais arquivos"}
             </Button>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Aceitos: {ALLOWED_EXTENSIONS_LABEL} — até {MAX_FILE_SIZE_LABEL} cada
+              Aceitos: {ALLOWED_EXTENSIONS_LABEL} ou .ZIP (extraído automaticamente) — até {MAX_FILE_SIZE_LABEL} cada
             </p>
           </div>
 
