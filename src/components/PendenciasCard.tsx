@@ -344,6 +344,9 @@ export function PendenciasCard({
                 >
                   <Copy className="h-3.5 w-3.5 mr-1" /> Copiar mensagem
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => openResolveDialog(p)}>
+                  <Upload className="h-3.5 w-3.5 mr-1" /> Resolver com anexo
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => handleResolveByOffice(p.id)}>
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Marcar como resolvida
                 </Button>
