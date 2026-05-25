@@ -41,6 +41,7 @@ export function PendenciasCard({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
   const { data: pendencias = [], isLoading } = useQuery({
