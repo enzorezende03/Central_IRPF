@@ -65,7 +65,6 @@ export function PendenciasCard({
         .from("uploaded_documents")
         .select("id, file_name, file_url, uploaded_at, uploaded_by")
         .eq("case_id", caseId)
-        .eq("uploaded_by", "client")
         .order("uploaded_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
