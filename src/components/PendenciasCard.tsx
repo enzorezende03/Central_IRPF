@@ -44,6 +44,13 @@ export function PendenciasCard({
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
+  // Offline resolve dialog state
+  const [resolveOpen, setResolveOpen] = useState(false);
+  const [resolveTarget, setResolveTarget] = useState<Pendencia | null>(null);
+  const [resolveNote, setResolveNote] = useState("");
+  const [resolveFiles, setResolveFiles] = useState<File[]>([]);
+  const [resolving, setResolving] = useState(false);
+
   const { data: pendencias = [], isLoading } = useQuery({
     queryKey: ["case-pendencias", caseId],
     queryFn: async () => {
