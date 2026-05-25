@@ -418,6 +418,44 @@ export function PendenciasCard({
                 maxLength={2000}
               />
             </div>
+            <div>
+              <label className="text-xs font-medium">Anexos (opcional)</label>
+              <div className="mt-1 space-y-2">
+                <label className="flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
+                  <Upload className="h-4 w-4" />
+                  <span>Clique para selecionar arquivos</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept={getAcceptString()}
+                    className="hidden"
+                    onChange={(e) => {
+                      const list = Array.from(e.target.files ?? []);
+                      setFiles((prev) => [...prev, ...list]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {files.length > 0 && (
+                  <ul className="space-y-1">
+                    {files.map((f, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2 py-1">
+                        <span className="truncate flex items-center gap-1">
+                          <Paperclip className="h-3 w-3 shrink-0" />{f.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button>
