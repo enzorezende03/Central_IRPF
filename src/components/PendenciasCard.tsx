@@ -105,20 +105,46 @@ export function PendenciasCard({
       toast.error("Texto muito longo.");
       return;
     }
+    for (const f of files) {
+      const err = validateFile(f);
+      if (err) { toast.error(err); return; }
+    }
     setSaving(true);
     try {
+      const uploadedNames: string[] = [];
+      for (const f of files) {
+        const path = buildStoragePath(caseId, f.name, "pendencias");
+        const url = await uploadFileToBucket("documentos_clientes", path, f);
+        const { error: insErr } = await supabase.from("uploaded_documents").insert({
+          case_id: caseId,
+          file_name: f.name,
+          file_url: url,
+          file_type: f.type || null,
+          uploaded_by: "office",
+        });
+        if (insErr) throw insErr;
+        uploadedNames.push(f.name);
+      }
+
+      const finalDescription = uploadedNames.length > 0
+        ? `${d}\n\n📎 Documentos anexados: ${uploadedNames.join(", ")}`
+        : d;
+
       const { error } = await supabase.from("case_pendencias" as any).insert({
         case_id: caseId,
         title: t,
-        description: d,
+        description: finalDescription,
       });
       if (error) throw error;
       toast.success("Pendência registrada e visível ao cliente.");
       setTitle("");
       setDescription("");
+      setFiles([]);
       setOpen(false);
       refresh();
+      queryClient.invalidateQueries({ queryKey: ["case-uploaded-docs-pendencias", caseId] });
     } catch (e) {
+      console.error(e);
       toast.error("Erro ao salvar pendência.");
     } finally {
       setSaving(false);
