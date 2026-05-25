@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from "react";
+import JSZip from "jszip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -76,10 +77,39 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
     if (inputRef.current) inputRef.current.value = "";
   };
 
-  const handlePick = (selected: FileList | null) => {
+  const handlePick = async (selected: FileList | null) => {
     if (!selected) return;
     const valid: File[] = [];
     for (const f of Array.from(selected)) {
+      const isZip =
+        f.name.toLowerCase().endsWith(".zip") ||
+        f.type === "application/zip" ||
+        f.type === "application/x-zip-compressed";
+      if (isZip) {
+        try {
+          const zip = await JSZip.loadAsync(f);
+          const entries = Object.values(zip.files).filter((e) => !e.dir);
+          let added = 0;
+          for (const entry of entries) {
+            const base = entry.name.split("/").pop() || entry.name;
+            if (!base || base.startsWith(".") || base.startsWith("__MACOSX")) continue;
+            const blob = await entry.async("blob");
+            const extracted = new File([blob], base, {
+              type: blob.type || "application/octet-stream",
+            });
+            const err = validateFile(extracted);
+            if (err) { toast.error(err); continue; }
+            valid.push(extracted);
+            added++;
+          }
+          if (added === 0) toast.error(`Nenhum arquivo válido em "${f.name}".`);
+          else toast.success(`${added} arquivo(s) extraídos de "${f.name}".`);
+        } catch (e) {
+          console.error(e);
+          toast.error(`Falha ao ler o ZIP "${f.name}".`);
+        }
+        continue;
+      }
       const err = validateFile(f);
       if (err) { toast.error(err); continue; }
       valid.push(f);
@@ -186,7 +216,7 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
               ref={inputRef}
               type="file"
               multiple
-              accept={getAcceptString()}
+              accept={`${getAcceptString()},.zip,application/zip,application/x-zip-compressed`}
               className="hidden"
               onChange={(e) => handlePick(e.target.files)}
             />
@@ -201,7 +231,7 @@ export function BulkUploadDialog({ open, onOpenChange, caseId, docRequests, onDo
               {files.length === 0 ? "Selecionar arquivos" : "Adicionar mais arquivos"}
             </Button>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Aceitos: {ALLOWED_EXTENSIONS_LABEL} — até {MAX_FILE_SIZE_LABEL} cada
+              Aceitos: {ALLOWED_EXTENSIONS_LABEL} ou .ZIP (extraído automaticamente) — até {MAX_FILE_SIZE_LABEL} cada
             </p>
           </div>
 
