@@ -221,12 +221,40 @@ export function PendenciasCard({
             <p className="text-sm text-muted-foreground py-3 text-center">Nenhuma pendência registrada.</p>
           )}
 
-          {abertas.map((p) => (
+          {abertas.map((p) => {
+            const internalAttached = parseAttachedNames(p.description);
+            const descText = stripAttachmentsLine(p.description);
+            return (
             <div key={p.id} className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm">{p.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{p.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{descText}</p>
+                  {internalAttached.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                        <Paperclip className="h-3 w-3" /> Anexos da equipe:
+                      </p>
+                      <ul className="space-y-1">
+                        {internalAttached.map((name, i) => {
+                          const doc = findDocByName(name);
+                          return (
+                            <li key={i} className="text-xs">
+                              {doc ? (
+                                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline break-all">
+                                  <Download className="h-3 w-3 shrink-0" />{name}
+                                </a>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-muted-foreground break-all">
+                                  <Paperclip className="h-3 w-3 shrink-0" />{name}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                   <p className="text-[10px] text-muted-foreground mt-1">
                     Criada em {format(new Date(p.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   </p>
@@ -248,7 +276,7 @@ export function PendenciasCard({
                 </Button>
               </div>
             </div>
-          ))}
+          );})}
 
           {resolvidas.length > 0 && (
             <div className="pt-2 border-t">
