@@ -147,7 +147,9 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
     return map;
   }, [cases]);
 
-  const visibleColumns = (columnOrder ?? COLUMNS).filter(
+  const orderSource = columnOrder ?? COLUMNS;
+  const merged = [...orderSource, ...COLUMNS.filter((c) => !orderSource.includes(c))];
+  const visibleColumns = merged.filter(
     (col) => COLUMNS.includes(col as KanbanColumn) && !(hiddenColumns ?? []).includes(col)
   ) as KanbanColumn[];
 
