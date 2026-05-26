@@ -539,13 +539,27 @@ export default function ClientDetail() {
           </div>
         </div>
 
-        {caseData.status === "dispensada" && (
-          <div className="rounded-lg border border-slate-300 bg-slate-100 p-4 text-center text-slate-500">
-            <X className="h-5 w-5 mx-auto mb-1" />
-            <p className="font-medium">Demanda dispensada</p>
-            <p className="text-sm">Todas as ações estão desativadas. Use "Reverter Dispensa" para reativar.</p>
-          </div>
-        )}
+        {caseData.status === "dispensada" && (() => {
+          const ev = (timeline as any[]).find((t) => t.event_type === "Demanda dispensada");
+          const motivo = ev?.description?.replace(/^Motivo:\s*/i, "") ?? "Sem justificativa registrada.";
+          return (
+            <div className="rounded-lg border border-slate-300 bg-slate-100 p-4 text-slate-700">
+              <div className="flex items-start gap-2">
+                <X className="h-5 w-5 mt-0.5 text-slate-500 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">Demanda dispensada</p>
+                  <p className="text-xs text-slate-500 mb-1">
+                    Justificativa registrada{ev?.created_by ? ` por ${ev.created_by}` : ""}
+                    {ev?.created_at ? ` em ${new Date(ev.created_at).toLocaleString("pt-BR")}` : ""}:
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">{motivo}</p>
+                  <p className="text-xs text-slate-500 mt-2">Todas as ações estão desativadas. Use "Reverter Dispensa" para reativar.</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
 
         {caseData.status === "impedida" && (() => {
           const ev = (timeline as any[]).find((t) => t.event_type === "Demanda impedida");
