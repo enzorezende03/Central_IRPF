@@ -482,6 +482,12 @@ export default function Demandas() {
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             <StatusBadge status={c.status} />
+                            {(c as any).notes_alert === true && (
+                              <span className="inline-flex w-fit items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-2.5 w-2.5"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                                Observação p/ responsável
+                              </span>
+                            )}
                             {c.status === "previa_enviada" && (() => {
                               const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
                               if (fd?.preview_status === "ajustes_solicitados") {
