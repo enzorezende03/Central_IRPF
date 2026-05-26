@@ -266,30 +266,36 @@ export default function ClientDetail() {
   const toggleNotesAlert = useMutation({
     mutationFn: async (active: boolean) => {
       const author = profileName || user?.email || "Equipe";
+      const nowIso = new Date().toISOString();
       const { error } = await supabase
         .from("irpf_cases")
         .update({
           notes_alert: active,
-          notes_alert_at: active ? new Date().toISOString() : null,
+          notes_alert_at: active ? nowIso : null,
           notes_alert_by: active ? author : null,
+          // Quando marca como visualizado (active=false), grava quem/quando viu.
+          // Quando reativa o aviso, limpa o "visto" anterior.
+          notes_alert_seen_at: active ? null : nowIso,
+          notes_alert_seen_by: active ? null : author,
         } as any)
         .eq("id", id!);
       if (error) throw error;
       await logTimelineEvent(
         id!,
-        active ? "Aviso ao responsável" : "Aviso ao responsável removido",
+        active ? "Aviso ao responsável" : "Observação visualizada",
         active
           ? "Observação interna marcada para atenção do responsável"
-          : "Marcação de atenção removida da observação interna",
+          : `Observação interna visualizada por ${author}`,
         false,
       );
     },
     onSuccess: (_, active) => {
-      toast.success(active ? "Responsável avisado!" : "Aviso removido.");
+      toast.success(active ? "Responsável avisado!" : "Marcado como visualizado.");
       invalidateAll();
     },
     onError: () => toast.error("Erro ao atualizar aviso"),
   });
+
 
 
 
