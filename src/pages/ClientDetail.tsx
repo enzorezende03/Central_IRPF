@@ -263,6 +263,33 @@ export default function ClientDetail() {
     onError: () => toast.error("Erro ao salvar notas"),
   });
 
+  const toggleNotesAlert = useMutation({
+    mutationFn: async (active: boolean) => {
+      const author = profileName || user?.email || "Equipe";
+      const { error } = await supabase
+        .from("irpf_cases")
+        .update({
+          notes_alert: active,
+          notes_alert_at: active ? new Date().toISOString() : null,
+          notes_alert_by: active ? author : null,
+        } as any)
+        .eq("id", id!);
+      if (error) throw error;
+      await logTimelineEvent(
+        id!,
+        active ? "Aviso ao responsável" : "Aviso ao responsável removido",
+        active
+          ? "Observação interna marcada para atenção do responsável"
+          : "Marcação de atenção removida da observação interna",
+        false,
+      );
+    },
+    onSuccess: (_, active) => {
+      toast.success(active ? "Responsável avisado!" : "Aviso removido.");
+      invalidateAll();
+    },
+    onError: () => toast.error("Erro ao atualizar aviso"),
+
   const updateStatus = useMutation({
     mutationFn: async (status: CaseStatus) => {
       const { error } = await supabase
