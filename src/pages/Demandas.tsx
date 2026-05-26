@@ -199,7 +199,17 @@ export default function Demandas() {
       if (c.status === "dispensada" && !internalStatusFilter.includes("dispensada")) return false;
       // Quando filtro por urgentes em aberto, ocultar finalizadas
       if (priorityFilter.length === 1 && priorityFilter[0] === "urgente" && (c.status === "finalizado" || c.status === "dispensada")) return false;
-      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType;
+      // Filtros especiais vindos do Dashboard
+      let matchSpecial = true;
+      if (specialFilter === "previa_ajustes") {
+        const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
+        matchSpecial = !!fd?.preview_file_url && fd?.preview_status === "ajustes_solicitados" && c.status !== "finalizado" && c.status !== "dispensada";
+      } else if (specialFilter === "notes_alert_mine") {
+        matchSpecial = (c as any).notes_alert === true && !!profileName && c.internal_owner === profileName;
+      } else if (specialFilter === "notes_alert_all") {
+        matchSpecial = (c as any).notes_alert === true;
+      }
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType && matchSpecial;
     });
     if (sortField) {
       list.sort((a, b) => {
