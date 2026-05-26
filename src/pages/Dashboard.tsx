@@ -5,6 +5,7 @@ import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   ArrowRight, Filter,
   FileText, Bell, Send, Ban, FileWarning, ShieldAlert, MessageSquareReply,
+  AlertCircle, BellRing,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCases } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
+import { useAuth } from "@/hooks/use-auth";
 import { MessageCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
