@@ -144,6 +144,7 @@ export default function Demandas() {
     if (qOwner !== null) setOwnerFilter(toArr(qOwner));
     if (qPriority !== null) setPriorityFilter(toArr(qPriority));
     if (qStatus !== null || qOwner !== null || qPriority !== null) {
+      setShowDeleted(false);
       setSearchParams({}, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
