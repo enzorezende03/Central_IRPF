@@ -19,6 +19,7 @@ const ALL_COLUMNS = [
   { key: "em_andamento", label: "Em Andamento" },
   { key: "impedida", label: "Impedida" },
   { key: "previa_enviada", label: "Prévia Enviada" },
+  { key: "previa_ajustes", label: "Ajuste de Prévia" },
   { key: "previa_aprovada", label: "Prévia Aprovada" },
   { key: "pendencia", label: "Pendência" },
   { key: "finalizado", label: "Finalizado" },
