@@ -1212,7 +1212,7 @@ export default function ClientDetail() {
                   </>
                 )}
 
-                <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-2.5">
+                <div className={`flex items-start gap-2 rounded-md border p-2.5 ${(caseData as any)?.notes_alert ? "border-amber-500/40 bg-amber-500/10" : "bg-muted/30"}`}>
                   <Checkbox
                     id="notes-alert-toggle"
                     checked={!!(caseData as any)?.notes_alert}
@@ -1230,6 +1230,19 @@ export default function ClientDetail() {
                     </span>
                   </label>
                 </div>
+
+                {(caseData as any)?.notes_alert && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full border-amber-500/50 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 hover:text-amber-900"
+                    onClick={() => toggleNotesAlert.mutate(false)}
+                    disabled={toggleNotesAlert.isPending}
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1.5" />
+                    {toggleNotesAlert.isPending ? "Marcando..." : "Marcar como visualizado"}
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
