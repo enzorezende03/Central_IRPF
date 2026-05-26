@@ -289,6 +289,9 @@ export default function ClientDetail() {
       invalidateAll();
     },
     onError: () => toast.error("Erro ao atualizar aviso"),
+  });
+
+
 
   const updateStatus = useMutation({
     mutationFn: async (status: CaseStatus) => {
