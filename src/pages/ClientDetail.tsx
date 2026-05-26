@@ -1190,6 +1190,25 @@ export default function ClientDetail() {
                     </div>
                   </>
                 )}
+
+                <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-2.5">
+                  <Checkbox
+                    id="notes-alert-toggle"
+                    checked={!!(caseData as any)?.notes_alert}
+                    onCheckedChange={(v) => toggleNotesAlert.mutate(!!v)}
+                    disabled={toggleNotesAlert.isPending}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="notes-alert-toggle" className="text-xs leading-tight cursor-pointer flex-1">
+                    <span className="font-medium">Avisar responsável</span>
+                    <span className="block text-muted-foreground">
+                      Marca esta demanda como precisando de atenção do responsável.
+                      {(caseData as any)?.notes_alert_at && (caseData as any)?.notes_alert_by && (
+                        <> Marcado por {(caseData as any).notes_alert_by} em {format(new Date((caseData as any).notes_alert_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}.</>
+                      )}
+                    </span>
+                  </label>
+                </div>
               </CardContent>
             </Card>
 
