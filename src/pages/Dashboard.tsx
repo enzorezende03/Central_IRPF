@@ -156,9 +156,14 @@ export default function Dashboard() {
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => goToDemandasWithFilter("pendencia")} />
               <StatCard label="Pendências Respondidas" value={byStatus("pendencia_respondida")} icon={MessageSquareReply} color="text-cyan-600" onClick={() => goToDemandasWithFilter("pendencia_respondida")} />
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => goToDemandasWithFilter("previa_enviada")} />
+              <StatCard label="Ajuste de Prévia" value={previaAjustes} icon={AlertCircle} color="text-destructive" onClick={() => goToDemandasWithFilter("previa_ajustes")} />
               <StatCard label="Prévias Aprovadas" value={previaAprovada} icon={CheckCircle} color="text-emerald-500" onClick={() => goToDemandasWithFilter("previa_aprovada")} />
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => goToDemandasWithFilter("finalizado")} />
               <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} />
+              {profileName && (
+                <StatCard label="Observações p/ você" value={notesAlertMine} icon={BellRing} color="text-amber-500" onClick={() => goToDemandasWithFilter("notes_alert_mine")} />
+              )}
+              <StatCard label="Observações pendentes" value={notesAlertAll} icon={Bell} color="text-amber-600" onClick={() => goToDemandasWithFilter("notes_alert_all")} />
             </div>
           </>
         )}
