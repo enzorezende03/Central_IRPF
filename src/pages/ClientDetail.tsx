@@ -540,20 +540,27 @@ export default function ClientDetail() {
         </div>
 
         {caseData.status === "dispensada" && (() => {
-          const ev = (timeline as any[]).find((t) => t.event_type === "Demanda dispensada");
-          const motivo = ev?.description?.replace(/^Motivo:\s*/i, "") ?? "Sem justificativa registrada.";
+          const ev = (timeline as any[])
+            .filter((t) => t.event_type === "Demanda dispensada")
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+          const rawDesc: string = ev?.description ?? "";
+          const motivo = rawDesc
+            ? (rawDesc.replace(/^\s*Motivo\s*:\s*/i, "").trim() || rawDesc)
+            : (caseData.internal_notes?.trim() || "Sem justificativa registrada.");
           return (
-            <div className="rounded-lg border border-slate-300 bg-slate-100 p-4 text-slate-700">
-              <div className="flex items-start gap-2">
-                <X className="h-5 w-5 mt-0.5 text-slate-500 shrink-0" />
+            <div className="rounded-lg border-2 border-rose-400 bg-rose-50 p-4 text-rose-900 shadow-sm">
+              <div className="flex items-start gap-3">
+                <X className="h-6 w-6 mt-0.5 text-rose-600 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold">Demanda dispensada</p>
-                  <p className="text-xs text-slate-500 mb-1">
+                  <p className="font-bold text-base text-rose-700">Demanda dispensada</p>
+                  <p className="text-xs text-rose-600/80 mb-2">
                     Justificativa registrada{ev?.created_by ? ` por ${ev.created_by}` : ""}
-                    {ev?.created_at ? ` em ${new Date(ev.created_at).toLocaleString("pt-BR")}` : ""}:
+                    {ev?.created_at ? ` em ${new Date(ev.created_at).toLocaleString("pt-BR")}` : ""}{ev ? ":" : ""}
                   </p>
-                  <p className="text-sm whitespace-pre-wrap">{motivo}</p>
-                  <p className="text-xs text-slate-500 mt-2">Todas as ações estão desativadas. Use "Reverter Dispensa" para reativar.</p>
+                  <p className="text-sm whitespace-pre-wrap font-medium bg-white/70 rounded p-3 border border-rose-200">
+                    {motivo}
+                  </p>
+                  <p className="text-xs text-rose-600/70 mt-2">Todas as ações estão desativadas. Use "Reverter Dispensa" para reativar.</p>
                 </div>
               </div>
             </div>
