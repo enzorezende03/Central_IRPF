@@ -72,6 +72,7 @@ export default function Demandas() {
   const [internalStatusFilter, setInternalStatusFilter] = useState<string[]>(initialStatus);
   const [clientStatusFilter, setClientStatusFilter] = useState<string[]>(toArr(saved.clientStatusFilter));
   const [priorityFilter, setPriorityFilter] = useState<string[]>(initialPriority);
+  const [specialFilter, setSpecialFilter] = useState<string | null>(isSpecial ? rawStatusParam : null);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
   const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string[]>(toArr(saved.declarationTypeFilter));
   const [sortField, setSortField] = useState<"cliente" | "ano" | "ultimo_doc" | null>(saved.sortField ?? null);
