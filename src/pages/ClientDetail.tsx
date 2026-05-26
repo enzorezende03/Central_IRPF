@@ -1241,7 +1241,7 @@ export default function ClientDetail() {
                   </label>
                 </div>
 
-                {(caseData as any)?.notes_alert && (
+                {(caseData as any)?.notes_alert ? (
                   <Button
                     size="sm"
                     variant="outline"
@@ -1252,7 +1252,18 @@ export default function ClientDetail() {
                     <Check className="h-3.5 w-3.5 mr-1.5" />
                     {toggleNotesAlert.isPending ? "Marcando..." : "Marcar como visualizado"}
                   </Button>
-                )}
+                ) : (caseData as any)?.notes_alert_seen_at ? (
+                  <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2.5 text-xs text-emerald-800">
+                    <Check className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>
+                      <span className="font-medium">Observação visualizada</span>
+                      {(caseData as any)?.notes_alert_seen_by && (
+                        <> por {(caseData as any).notes_alert_seen_by}</>
+                      )}{" "}
+                      em {format(new Date((caseData as any).notes_alert_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}.
+                    </span>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
 
