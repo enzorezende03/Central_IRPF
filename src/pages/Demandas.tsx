@@ -41,19 +41,22 @@ function loadSavedFilters() {
 
 export default function Demandas() {
   const saved0 = useMemo(() => loadSavedFilters(), []);
-  const [showDeleted, setShowDeleted] = useState<boolean>(saved0.showDeleted ?? false);
-  const { data: cases = [], isLoading } = useCases(showDeleted);
-  const { data: lastUploads } = useLastClientUploads();
-  const { role, hasPermission, user, profileName } = useAuth() as any;
-  const canCreate = role === "admin" || hasPermission("criar_demandas");
-  const canEdit = role === "admin" || hasPermission("editar_demandas");
   const [searchParams, setSearchParams] = useSearchParams();
-  const saved = useMemo(() => loadSavedFilters(), []);
 
   // Special filter keys vindos do Dashboard (não são status reais)
   const SPECIAL_FILTERS = ["previa_ajustes", "notes_alert_mine", "notes_alert_all"] as const;
   const rawStatusParam = searchParams.get("status");
   const isSpecial = !!rawStatusParam && (SPECIAL_FILTERS as readonly string[]).includes(rawStatusParam);
+  const hasNavParams = searchParams.get("status") !== null || searchParams.get("owner") !== null || searchParams.get("priority") !== null;
+
+  // Quando vindo do Dashboard, ignorar o estado persistido de "ver excluídas"
+  const [showDeleted, setShowDeleted] = useState<boolean>(hasNavParams ? false : (saved0.showDeleted ?? false));
+  const { data: cases = [], isLoading } = useCases(showDeleted);
+  const { data: lastUploads } = useLastClientUploads();
+  const { role, hasPermission, user, profileName } = useAuth() as any;
+  const canCreate = role === "admin" || hasPermission("criar_demandas");
+  const canEdit = role === "admin" || hasPermission("editar_demandas");
+  const saved = useMemo(() => loadSavedFilters(), []);
 
   // Query params override saved filters when presentes (vindo do Dashboard)
   const initialStatus = rawStatusParam && !isSpecial
