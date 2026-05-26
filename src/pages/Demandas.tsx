@@ -50,9 +50,14 @@ export default function Demandas() {
   const [searchParams, setSearchParams] = useSearchParams();
   const saved = useMemo(() => loadSavedFilters(), []);
 
+  // Special filter keys vindos do Dashboard (não são status reais)
+  const SPECIAL_FILTERS = ["previa_ajustes", "notes_alert_mine", "notes_alert_all"] as const;
+  const rawStatusParam = searchParams.get("status");
+  const isSpecial = !!rawStatusParam && (SPECIAL_FILTERS as readonly string[]).includes(rawStatusParam);
+
   // Query params override saved filters when presentes (vindo do Dashboard)
-  const initialStatus = searchParams.get("status")
-    ? toArr(searchParams.get("status"))
+  const initialStatus = rawStatusParam && !isSpecial
+    ? toArr(rawStatusParam)
     : toArr(saved.internalStatusFilter);
   const initialOwner = searchParams.get("owner")
     ? toArr(searchParams.get("owner"))
