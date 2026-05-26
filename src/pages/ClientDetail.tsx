@@ -1078,11 +1078,15 @@ export default function ClientDetail() {
                     <CardTitle className="text-base">Observações Internas</CardTitle>
                     <CardDescription>Visível apenas para a equipe</CardDescription>
                   </div>
-                  {(caseData as any)?.notes_alert && (
+                  {(caseData as any)?.notes_alert ? (
                     <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
                       <BellRing className="h-3 w-3" /> Aviso ao responsável
                     </span>
-                  )}
+                  ) : (caseData as any)?.notes_alert_seen_at ? (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                      <Check className="h-3 w-3" /> Visualizado
+                    </span>
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
