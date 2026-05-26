@@ -15,8 +15,8 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
-// Real DB statuses + virtual "previa_enviada" column
-type KanbanColumn = Exclude<CaseStatus, "dispensada" | "reaberta"> | "previa_enviada";
+// Real DB statuses + virtual "previa_enviada" / "previa_ajustes" columns
+type KanbanColumn = Exclude<CaseStatus, "dispensada" | "reaberta"> | "previa_enviada" | "previa_ajustes";
 
 const COLUMNS: KanbanColumn[] = [
   "aguardando_cliente",
@@ -25,6 +25,7 @@ const COLUMNS: KanbanColumn[] = [
   "em_andamento",
   "impedida",
   "previa_enviada",
+  "previa_ajustes",
   "previa_aprovada",
   "pendencia",
   "pendencia_respondida",
@@ -40,6 +41,7 @@ const COLUMN_LABELS: Record<KanbanColumn, string> = {
   em_andamento: STATUS_LABELS.em_andamento,
   impedida: STATUS_LABELS.impedida,
   previa_enviada: "Prévia Enviada",
+  previa_ajustes: "Ajuste de Prévia",
   previa_aprovada: "Prévia Aprovada",
   pendencia: STATUS_LABELS.pendencia,
   pendencia_respondida: STATUS_LABELS.pendencia_respondida,
@@ -55,6 +57,7 @@ const columnColors: Record<KanbanColumn, string> = {
   em_andamento: "border-t-primary",
   impedida: "border-t-rose-500",
   previa_enviada: "border-t-violet-500",
+  previa_ajustes: "border-t-destructive",
   previa_aprovada: "border-t-emerald-500",
   pendencia: "border-t-destructive",
   pendencia_respondida: "border-t-cyan-500",
@@ -70,6 +73,7 @@ const dotColors: Record<KanbanColumn, string> = {
   em_andamento: "bg-primary",
   impedida: "bg-rose-500",
   previa_enviada: "bg-violet-500",
+  previa_ajustes: "bg-destructive",
   previa_aprovada: "bg-emerald-500",
   pendencia: "bg-destructive",
   pendencia_respondida: "bg-cyan-500",
@@ -94,6 +98,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       em_andamento: [],
       impedida: [],
       previa_enviada: [],
+      previa_ajustes: [],
       previa_aprovada: [],
       pendencia: [],
       pendencia_respondida: [],
@@ -107,11 +112,15 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       // Skip dispensadas from Kanban
       if (status === "dispensada") return;
 
-      // Check if case has preview sent and awaiting approval (virtual column)
+      // Check if case has preview sent (virtual columns)
       if (status !== "finalizado") {
         const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
         if (fd?.preview_file_url && fd?.preview_status !== "aprovado") {
-          map.previa_enviada.push(c);
+          if (fd?.preview_status === "ajustes_solicitados") {
+            map.previa_ajustes.push(c);
+          } else {
+            map.previa_enviada.push(c);
+          }
           return;
         }
       }
@@ -138,7 +147,9 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
     return map;
   }, [cases]);
 
-  const visibleColumns = (columnOrder ?? COLUMNS).filter(
+  const orderSource = columnOrder ?? COLUMNS;
+  const merged = [...orderSource, ...COLUMNS.filter((c) => !orderSource.includes(c))];
+  const visibleColumns = merged.filter(
     (col) => COLUMNS.includes(col as KanbanColumn) && !(hiddenColumns ?? []).includes(col)
   ) as KanbanColumn[];
 
