@@ -7,7 +7,7 @@ import { STATUS_LABELS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
-import { CheckCircle2, AlertCircle, Clock, CalendarPlus } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock, CalendarPlus, Bell } from "lucide-react";
 import { AddToWeekDialog } from "@/components/AddToWeekDialog";
 import { useAllPlanItems } from "@/hooks/use-weekly-plan";
 
