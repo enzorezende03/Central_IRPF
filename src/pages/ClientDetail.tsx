@@ -266,30 +266,36 @@ export default function ClientDetail() {
   const toggleNotesAlert = useMutation({
     mutationFn: async (active: boolean) => {
       const author = profileName || user?.email || "Equipe";
+      const nowIso = new Date().toISOString();
       const { error } = await supabase
         .from("irpf_cases")
         .update({
           notes_alert: active,
-          notes_alert_at: active ? new Date().toISOString() : null,
+          notes_alert_at: active ? nowIso : null,
           notes_alert_by: active ? author : null,
+          // Quando marca como visualizado (active=false), grava quem/quando viu.
+          // Quando reativa o aviso, limpa o "visto" anterior.
+          notes_alert_seen_at: active ? null : nowIso,
+          notes_alert_seen_by: active ? null : author,
         } as any)
         .eq("id", id!);
       if (error) throw error;
       await logTimelineEvent(
         id!,
-        active ? "Aviso ao responsável" : "Aviso ao responsável removido",
+        active ? "Aviso ao responsável" : "Observação visualizada",
         active
           ? "Observação interna marcada para atenção do responsável"
-          : "Marcação de atenção removida da observação interna",
+          : `Observação interna visualizada por ${author}`,
         false,
       );
     },
     onSuccess: (_, active) => {
-      toast.success(active ? "Responsável avisado!" : "Aviso removido.");
+      toast.success(active ? "Responsável avisado!" : "Marcado como visualizado.");
       invalidateAll();
     },
     onError: () => toast.error("Erro ao atualizar aviso"),
   });
+
 
 
 
@@ -1072,11 +1078,15 @@ export default function ClientDetail() {
                     <CardTitle className="text-base">Observações Internas</CardTitle>
                     <CardDescription>Visível apenas para a equipe</CardDescription>
                   </div>
-                  {(caseData as any)?.notes_alert && (
+                  {(caseData as any)?.notes_alert ? (
                     <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
                       <BellRing className="h-3 w-3" /> Aviso ao responsável
                     </span>
-                  )}
+                  ) : (caseData as any)?.notes_alert_seen_at ? (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                      <Check className="h-3 w-3" /> Visualizado
+                    </span>
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -1231,7 +1241,7 @@ export default function ClientDetail() {
                   </label>
                 </div>
 
-                {(caseData as any)?.notes_alert && (
+                {(caseData as any)?.notes_alert ? (
                   <Button
                     size="sm"
                     variant="outline"
@@ -1242,7 +1252,18 @@ export default function ClientDetail() {
                     <Check className="h-3.5 w-3.5 mr-1.5" />
                     {toggleNotesAlert.isPending ? "Marcando..." : "Marcar como visualizado"}
                   </Button>
-                )}
+                ) : (caseData as any)?.notes_alert_seen_at ? (
+                  <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2.5 text-xs text-emerald-800">
+                    <Check className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>
+                      <span className="font-medium">Observação visualizada</span>
+                      {(caseData as any)?.notes_alert_seen_by && (
+                        <> por {(caseData as any).notes_alert_seen_by}</>
+                      )}{" "}
+                      em {format(new Date((caseData as any).notes_alert_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}.
+                    </span>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
 
