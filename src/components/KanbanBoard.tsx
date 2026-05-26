@@ -98,6 +98,7 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       em_andamento: [],
       impedida: [],
       previa_enviada: [],
+      previa_ajustes: [],
       previa_aprovada: [],
       pendencia: [],
       pendencia_respondida: [],
@@ -111,11 +112,15 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
       // Skip dispensadas from Kanban
       if (status === "dispensada") return;
 
-      // Check if case has preview sent and awaiting approval (virtual column)
+      // Check if case has preview sent (virtual columns)
       if (status !== "finalizado") {
         const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : c.final_deliverables;
         if (fd?.preview_file_url && fd?.preview_status !== "aprovado") {
-          map.previa_enviada.push(c);
+          if (fd?.preview_status === "ajustes_solicitados") {
+            map.previa_ajustes.push(c);
+          } else {
+            map.previa_enviada.push(c);
+          }
           return;
         }
       }
