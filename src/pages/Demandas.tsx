@@ -238,7 +238,13 @@ export default function Demandas() {
     return cases.filter((c) => (c.clients?.full_name?.toLowerCase() ?? "").includes(q)).length;
   }, [cases, search]);
 
-  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0;
+  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0 || !!specialFilter;
+
+  const specialFilterLabel: Record<string, string> = {
+    previa_ajustes: "Ajuste de Prévia",
+    notes_alert_mine: "Observações para você",
+    notes_alert_all: "Observações pendentes",
+  };
 
   const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
   const paginatedData = useMemo(() => {
