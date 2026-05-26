@@ -437,6 +437,13 @@ export default function Demandas() {
                             <StatusBadge status={c.status} />
                             {c.status === "previa_enviada" && (() => {
                               const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
+                              if (fd?.preview_status === "ajustes_solicitados") {
+                                return (
+                                  <span className="inline-flex w-fit items-center rounded-md border border-destructive/30 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
+                                    Ajuste de Prévia
+                                  </span>
+                                );
+                              }
                               const sentAt = fd?.uploaded_at;
                               if (!sentAt) return null;
                               const days = Math.max(0, Math.floor((Date.now() - new Date(sentAt).getTime()) / (1000 * 60 * 60 * 24)));
