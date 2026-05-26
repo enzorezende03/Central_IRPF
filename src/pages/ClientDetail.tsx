@@ -1044,10 +1044,19 @@ export default function ClientDetail() {
             />
 
             {/* ── Observações Internas ── */}
-            <Card>
+            <Card className={(caseData as any)?.notes_alert ? "border-amber-500/50 bg-amber-500/5" : undefined}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Observações Internas</CardTitle>
-                <CardDescription>Visível apenas para a equipe</CardDescription>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-base">Observações Internas</CardTitle>
+                    <CardDescription>Visível apenas para a equipe</CardDescription>
+                  </div>
+                  {(caseData as any)?.notes_alert && (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                      <BellRing className="h-3 w-3" /> Aviso ao responsável
+                    </span>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {notesMode === "view" && hasSavedNotes && (
