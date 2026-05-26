@@ -42,6 +42,7 @@ export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
   const [ownerFilter, setOwnerFilter] = useState("todos");
   const navigate = useNavigate();
+  const { profileName } = useAuth();
 
   const { data: unreadMessages = [] } = useUnreadMessages();
 
@@ -61,8 +62,22 @@ export default function Dashboard() {
 
   const total = filtered.filter((c) => c.status !== "dispensada").length;
   const byStatus = (s: CaseStatus) => filtered.filter((c) => c.status === s).length;
-  const previaEnviada = filtered.filter((c) => c.status === "previa_enviada").length;
+  const previaEnviada = filtered.filter((c) => {
+    if (c.status !== "previa_enviada") return false;
+    const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
+    return fd?.preview_status !== "ajustes_solicitados";
+  }).length;
+  const previaAjustes = filtered.filter((c) => {
+    if (c.status === "finalizado" || c.status === "dispensada") return false;
+    const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
+    return !!fd?.preview_file_url && fd?.preview_status === "ajustes_solicitados";
+  }).length;
   const previaAprovada = filtered.filter((c) => c.status === "previa_aprovada").length;
+
+  const notesAlertAll = filtered.filter((c: any) => c.notes_alert === true).length;
+  const notesAlertMine = filtered.filter(
+    (c: any) => c.notes_alert === true && profileName && c.internal_owner === profileName,
+  ).length;
 
   // Navegar para Demandas com o filtro do card
   const goToDemandasWithFilter = (key: string) => {
