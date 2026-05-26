@@ -9,6 +9,7 @@ const DEFAULT_COLUMNS = [
   "em_andamento",
   "impedida",
   "previa_enviada",
+  "previa_ajustes",
   "previa_aprovada",
   "pendencia",
   "finalizado",
