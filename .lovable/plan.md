@@ -1,69 +1,54 @@
-## Reformulação de /planejamento — Coordenação central
+## 1. Card "Ajuste de Prévia" no Dashboard
 
-Transformar a tela em ferramenta de **distribuição** (Admin/coordenadora) com visão somente leitura para Operacional, que continua executando no Kanban.
+- Em `src/pages/Dashboard.tsx`, adicionar um `StatCard` ao lado de "Prévias Enviadas".
+- Valor: nº de cases não finalizados cujo `final_deliverables.preview_status === "ajustes_solicitados"` e ainda existe `preview_file_url`.
+- Cor: `text-destructive`, ícone `AlertCircle`.
+- Clique aplica filtro novo `previa_ajustes` na lista de Demandas.
 
-### 1. Visão Operacional (somente leitura)
+### Filtro em /demandas
 
-Detectar via `useAuth().role`:
-- `admin` → visão de coordenação completa (descrita abaixo).
-- demais perfis (`operacional`, `financeiro`, etc.) → visão pessoal.
+- Em `src/pages/Demandas.tsx`, suportar o valor de filtro `previa_ajustes`: trata como subset de `previa_enviada` filtrando pelos cases com `preview_status === "ajustes_solicitados"`. Apenas leitura do filtro vindo da URL; não precisa entrar no select de status.
 
-Layout pessoal:
-- Banner discreto no topo: "Seu planejamento desta semana · para editar, fale com a coordenação".
-- Lista simples (sem grade, sem fila, sem carryover) das demandas em que `irpf_weekly_plan.responsible == profileName` da semana atual.
-- Cada item: nome do cliente, status atual (badge), prioridade (badge), link para `/demandas/:id`.
-- Sem botões de remover/atribuir/mover. Sem seletor de semana (só atual).
+## 2. Flag "Avisar responsável" nas Observações Internas
 
-### 2. Visão Admin — cabeçalho
+### Schema
 
-- Trocar o `Select` de semana por **navegador com setas** ◀ / S{n} {datas} / ▶ + botão "Hoje".
-- Resumo numérico permanece: Planejadas · Concluídas · Em aberto.
-- Novo botão **"Nova semana"** abre modal:
-  - Mostra demandas planejadas na semana anterior cujo status ∉ {finalizado, previa_enviada, dispensada}.
-  - Checkbox por item (todas pré-marcadas).
-  - "Copiar para esta semana" → para cada selecionada, INSERT em `irpf_weekly_plan` com `week_number = semana selecionada`, mantendo `responsible`. Pula casos já planejados na semana atual.
+Migration adiciona em `irpf_cases`:
 
-### 3. Coluna esquerda — Fila de disponíveis
+- `notes_alert` (boolean, default `false`) — quando ligado, sinaliza que a observação precisa de atenção do responsável.
+- `notes_alert_at` (timestamptz, nullable) — data da marcação.
+- `notes_alert_by` (text, nullable) — nome de quem marcou (snapshot).
 
-- Manter fonte (`useEligibleCases`, `QUEUE_STATUSES`, ordenação por `getReferenceDate`).
-- **Trocar filtros**: remover "responsável", adicionar:
-  - Filtro de **tag do cliente** (multi via Select simples; lê `clients.tags`).
-  - Filtro de **prioridade** (alta/média/baixa).
-- Card adiciona:
-  - Badge de **prioridade** (cores: alta=destructive, media=secondary, baixa=outline).
-  - Badge **"Procuração"** quando o caso tiver `document_requests` com `category = 'procuracao'` OU `title ILIKE '%procura%'` em status `enviado`/`aprovado`. Buscar em batch para a lista da fila.
-- Estender `useEligibleCases` para retornar `priority` e `tags` do cliente; criar `useProcuracaoFlags(caseIds)` que devolve um `Set<string>` de case_ids com procuração.
+Sem alteração de RLS (tabela já tem políticas).
 
-### 4. Coluna direita — Grade da semana por operadora
+### UI em ClientDetail (card "Observações Internas")
 
-- **Operadoras = somente usuários com role `operacional`** (consulta `user_roles` join `profiles.full_name`). Garantir presença de quem aparece em `weekPlan.responsible` mesmo que a role tenha mudado.
-- Card de operadora: nome + `X/Y` + barra (cores existentes mantidas).
-- Cards das demandas planejadas: cliente, status atual, **menu de contexto "⋯"** com opção "Mover para…" abrindo lista de operadoras (reatribui = UPDATE em `irpf_weekly_plan.responsible` + `irpf_cases.internal_owner`). Botão "×" remove.
-- **Drag and drop** entre seções de operadora usando HTML5 nativo (sem dependências):
-  - Cards têm `draggable`, ao soltar em outra seção dispara o mesmo `useMovePlanWeek` com `responsible` novo, ajustado para também atualizar `internal_owner`.
-- Remover Realtime e overlays "concluído/risco" complexos. Status é informativo: badge simples, sem auto-refresh; fetch acontece ao montar a página/trocar semana.
+- Abaixo do textarea/visualização, adicionar um `Checkbox` "Avisar responsável sobre esta observação".
+- Estado ligado/desligado escreve em `irpf_cases.notes_alert/notes_alert_at/notes_alert_by` (usa `useAuth` para o nome) e registra `case_timeline` com `event_type: "Observação marcada para responsável"`.
+- Quando ligado, o card de observações ganha borda/realce `border-destructive/40` e um badge "Aviso ao responsável" com data e autor.
+- Botão "Marcar como visto" (visível só para o responsável da demanda — `caseData.internal_owner` igual ao nome do usuário logado) desliga a flag.
 
-### 5. Bloco de remanescentes
+### Indicador na lista de Demandas
 
-- Reusar lógica atual mas **incluir `previa_aprovada`** como status que ainda requer ação (remover de `CARRYOVER_EXCLUDED`/manter exclusão só de `finalizado, previa_enviada, dispensada`).
-- Botões: "Mover para esta semana" e "Ignorar" (já existe).
-- Esconder o bloco automaticamente quando a lista fica vazia (já é o comportamento).
+- Em `Demandas.tsx`, na célula de status, exibir badge amarelo "Observação para responsável" quando `notes_alert === true` (não troca o status real, apenas selo).
+- Mesma sinalização nos cards do Kanban (`KanbanBoard.tsx`): badge pequeno com ícone `Bell` no canto do card.
 
-### 6. O que remover
+### Notificação (sino) e destaque no Dashboard
 
-- `useEffect` de Realtime em `irpf_cases` (canal `planning-cases`).
-- Filtro "responsável" da fila.
-- Badge "X dias com docs" mantém (é informação útil para distribuir); remover apenas indicadores ligados a execução pessoal (não há nesta tela hoje).
-- Nenhuma coluna/valor financeiro entra (já não há).
+- Reaproveitar o componente de notificações existente (sino do header — vamos confirmar no arquivo do header; se não existir um sino, este passo gera um indicador visual no item de menu "Demandas" do `AppSidebar` com a contagem).
+- Card novo no Dashboard "Observações para você" (somente para o usuário logado) com a contagem de cases onde `internal_owner === nome do usuário` e `notes_alert === true`. Clique leva a `/demandas?filter=notes_alert_mine`.
+- Card global "Observações pendentes" (toda a equipe) com filtro `notes_alert_all`.
 
-### Arquivos
+## Arquivos afetados
 
-- `src/pages/PlanejamentoSemanal.tsx` — reescrever `PlanContent` + adicionar `OperationalView` + `NewWeekDialog` + drag-and-drop nos cards da grade.
-- `src/hooks/use-weekly-plan.ts` — `useEligibleCases` retorna `priority` e `tags`; novo `useProcuracaoFlags(ids)`; `useMovePlanWeek` já aceita `responsible`.
-- Novo hook `src/hooks/use-operators.ts` — lista operadores (role `operacional`) com `full_name` para a grade e seletores de "Mover para…".
-- Sem migração: schema atual atende.
+- `supabase/migrations/...` — novas colunas em `irpf_cases`.
+- `src/pages/Dashboard.tsx` — 2 novos `StatCard` + cálculos + navegação.
+- `src/pages/Demandas.tsx` — filtros `previa_ajustes`, `notes_alert_mine`, `notes_alert_all` + selo na coluna status.
+- `src/pages/ClientDetail.tsx` — checkbox + mutação + realce visual no card de Observações Internas.
+- `src/components/KanbanBoard.tsx` — badge no card quando `notes_alert`.
+- `src/components/AppSidebar.tsx` (ou header existente) — indicador de contagem para o responsável logado.
 
-### Notas
+## Notas
 
-- Drag-and-drop fica em HTML5 puro (dataTransfer com plan id). Fallback é o menu "Mover para…".
-- Operacional sem `profileName` definido vê lista vazia + dica para configurar nome no perfil.
+- Sem mudanças no enum `case_status`; o status do Kanban continua o mesmo. Tudo é sinalização visual + filtro.
+- A flag é única por demanda (não por nota individual), conforme escolha de UI.

@@ -8,7 +8,7 @@ import {
   ArrowLeft, Copy, MessageCircle, CheckCircle, Circle, FileText, Clock,
   User, Mail, Phone, DollarSign, ExternalLink, Upload, Send, Eye,
   AlertCircle, Calendar, CreditCard, Save, RefreshCw, Download, Loader2, Trash2,
-  Plus, X, ListChecks, Lock,
+  Plus, X, ListChecks, Lock, Bell, BellRing,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -262,6 +262,36 @@ export default function ClientDetail() {
     },
     onError: () => toast.error("Erro ao salvar notas"),
   });
+
+  const toggleNotesAlert = useMutation({
+    mutationFn: async (active: boolean) => {
+      const author = profileName || user?.email || "Equipe";
+      const { error } = await supabase
+        .from("irpf_cases")
+        .update({
+          notes_alert: active,
+          notes_alert_at: active ? new Date().toISOString() : null,
+          notes_alert_by: active ? author : null,
+        } as any)
+        .eq("id", id!);
+      if (error) throw error;
+      await logTimelineEvent(
+        id!,
+        active ? "Aviso ao responsável" : "Aviso ao responsável removido",
+        active
+          ? "Observação interna marcada para atenção do responsável"
+          : "Marcação de atenção removida da observação interna",
+        false,
+      );
+    },
+    onSuccess: (_, active) => {
+      toast.success(active ? "Responsável avisado!" : "Aviso removido.");
+      invalidateAll();
+    },
+    onError: () => toast.error("Erro ao atualizar aviso"),
+  });
+
+
 
   const updateStatus = useMutation({
     mutationFn: async (status: CaseStatus) => {
@@ -1014,10 +1044,19 @@ export default function ClientDetail() {
             />
 
             {/* ── Observações Internas ── */}
-            <Card>
+            <Card className={(caseData as any)?.notes_alert ? "border-amber-500/50 bg-amber-500/5" : undefined}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Observações Internas</CardTitle>
-                <CardDescription>Visível apenas para a equipe</CardDescription>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-base">Observações Internas</CardTitle>
+                    <CardDescription>Visível apenas para a equipe</CardDescription>
+                  </div>
+                  {(caseData as any)?.notes_alert && (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                      <BellRing className="h-3 w-3" /> Aviso ao responsável
+                    </span>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {notesMode === "view" && hasSavedNotes && (
@@ -1151,6 +1190,25 @@ export default function ClientDetail() {
                     </div>
                   </>
                 )}
+
+                <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-2.5">
+                  <Checkbox
+                    id="notes-alert-toggle"
+                    checked={!!(caseData as any)?.notes_alert}
+                    onCheckedChange={(v) => toggleNotesAlert.mutate(!!v)}
+                    disabled={toggleNotesAlert.isPending}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="notes-alert-toggle" className="text-xs leading-tight cursor-pointer flex-1">
+                    <span className="font-medium">Avisar responsável</span>
+                    <span className="block text-muted-foreground">
+                      Marca esta demanda como precisando de atenção do responsável.
+                      {(caseData as any)?.notes_alert_at && (caseData as any)?.notes_alert_by && (
+                        <> Marcado por {(caseData as any).notes_alert_by} em {format(new Date((caseData as any).notes_alert_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}.</>
+                      )}
+                    </span>
+                  </label>
+                </div>
               </CardContent>
             </Card>
 

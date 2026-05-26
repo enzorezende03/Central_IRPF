@@ -50,9 +50,14 @@ export default function Demandas() {
   const [searchParams, setSearchParams] = useSearchParams();
   const saved = useMemo(() => loadSavedFilters(), []);
 
+  // Special filter keys vindos do Dashboard (não são status reais)
+  const SPECIAL_FILTERS = ["previa_ajustes", "notes_alert_mine", "notes_alert_all"] as const;
+  const rawStatusParam = searchParams.get("status");
+  const isSpecial = !!rawStatusParam && (SPECIAL_FILTERS as readonly string[]).includes(rawStatusParam);
+
   // Query params override saved filters when presentes (vindo do Dashboard)
-  const initialStatus = searchParams.get("status")
-    ? toArr(searchParams.get("status"))
+  const initialStatus = rawStatusParam && !isSpecial
+    ? toArr(rawStatusParam)
     : toArr(saved.internalStatusFilter);
   const initialOwner = searchParams.get("owner")
     ? toArr(searchParams.get("owner"))
@@ -67,6 +72,7 @@ export default function Demandas() {
   const [internalStatusFilter, setInternalStatusFilter] = useState<string[]>(initialStatus);
   const [clientStatusFilter, setClientStatusFilter] = useState<string[]>(toArr(saved.clientStatusFilter));
   const [priorityFilter, setPriorityFilter] = useState<string[]>(initialPriority);
+  const [specialFilter, setSpecialFilter] = useState<string | null>(isSpecial ? rawStatusParam : null);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
   const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string[]>(toArr(saved.declarationTypeFilter));
   const [sortField, setSortField] = useState<"cliente" | "ano" | "ultimo_doc" | null>(saved.sortField ?? null);
@@ -123,10 +129,17 @@ export default function Demandas() {
     const qStatus = searchParams.get("status");
     const qOwner = searchParams.get("owner");
     const qPriority = searchParams.get("priority");
-    if (qStatus !== null) setInternalStatusFilter(toArr(qStatus));
+    if (qStatus !== null) {
+      if ((SPECIAL_FILTERS as readonly string[]).includes(qStatus)) {
+        setSpecialFilter(qStatus);
+        setInternalStatusFilter([]);
+      } else {
+        setSpecialFilter(null);
+        setInternalStatusFilter(toArr(qStatus));
+      }
+    }
     if (qOwner !== null) setOwnerFilter(toArr(qOwner));
     if (qPriority !== null) setPriorityFilter(toArr(qPriority));
-    // Limpa os params da URL após aplicar para não persistir indefinidamente
     if (qStatus !== null || qOwner !== null || qPriority !== null) {
       setSearchParams({}, { replace: true });
     }
@@ -186,7 +199,17 @@ export default function Demandas() {
       if (c.status === "dispensada" && !internalStatusFilter.includes("dispensada")) return false;
       // Quando filtro por urgentes em aberto, ocultar finalizadas
       if (priorityFilter.length === 1 && priorityFilter[0] === "urgente" && (c.status === "finalizado" || c.status === "dispensada")) return false;
-      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType;
+      // Filtros especiais vindos do Dashboard
+      let matchSpecial = true;
+      if (specialFilter === "previa_ajustes") {
+        const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
+        matchSpecial = !!fd?.preview_file_url && fd?.preview_status === "ajustes_solicitados" && c.status !== "finalizado" && c.status !== "dispensada";
+      } else if (specialFilter === "notes_alert_mine") {
+        matchSpecial = (c as any).notes_alert === true && !!profileName && c.internal_owner === profileName;
+      } else if (specialFilter === "notes_alert_all") {
+        matchSpecial = (c as any).notes_alert === true;
+      }
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType && matchSpecial;
     });
     if (sortField) {
       list.sort((a, b) => {
@@ -206,7 +229,7 @@ export default function Demandas() {
       });
     }
     return list;
-  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, lastUploads]);
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, lastUploads, specialFilter, profileName]);
 
   // Quantos resultados existem considerando apenas a busca (ignorando filtros), para detectar quando filtros estão ocultando matches
   const searchOnlyMatches = useMemo(() => {
@@ -215,7 +238,13 @@ export default function Demandas() {
     return cases.filter((c) => (c.clients?.full_name?.toLowerCase() ?? "").includes(q)).length;
   }, [cases, search]);
 
-  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0;
+  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0 || !!specialFilter;
+
+  const specialFilterLabel: Record<string, string> = {
+    previa_ajustes: "Ajuste de Prévia",
+    notes_alert_mine: "Observações para você",
+    notes_alert_all: "Observações pendentes",
+  };
 
   const totalPages = pageSize === 0 ? 1 : Math.ceil(filtered.length / pageSize);
   const paginatedData = useMemo(() => {
@@ -315,6 +344,7 @@ export default function Demandas() {
                   setPriorityFilter([]);
                   setClientStatusFilter([]);
                   setDeclarationTypeFilter([]);
+                  setSpecialFilter(null);
                 }}
               >
                 Limpar filtros
@@ -322,6 +352,23 @@ export default function Demandas() {
             )}
           </div>
         </div>
+
+        {specialFilter && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
+            <span className="font-medium text-amber-700">Filtro ativo:</span>
+            <Badge variant="outline" className="border-amber-500/40 text-amber-700">
+              {specialFilterLabel[specialFilter] ?? specialFilter}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-7 px-2 text-xs"
+              onClick={() => setSpecialFilter(null)}
+            >
+              <X className="h-3 w-3 mr-1" /> Remover
+            </Button>
+          </div>
+        )}
 
         {/* Bulk action bar */}
         {canEdit && selectedIds.size > 0 && (
@@ -435,6 +482,12 @@ export default function Demandas() {
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             <StatusBadge status={c.status} />
+                            {(c as any).notes_alert === true && (
+                              <span className="inline-flex w-fit items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-2.5 w-2.5"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                                Observação p/ responsável
+                              </span>
+                            )}
                             {c.status === "previa_enviada" && (() => {
                               const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
                               if (fd?.preview_status === "ajustes_solicitados") {

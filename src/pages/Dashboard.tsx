@@ -5,6 +5,7 @@ import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   ArrowRight, Filter,
   FileText, Bell, Send, Ban, FileWarning, ShieldAlert, MessageSquareReply,
+  AlertCircle, BellRing,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCases } from "@/hooks/use-cases";
 import { STATUS_LABELS } from "@/lib/types";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
+import { useAuth } from "@/hooks/use-auth";
 import { MessageCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -40,6 +42,7 @@ export default function Dashboard() {
   const { data: cases = [], isLoading } = useCases();
   const [ownerFilter, setOwnerFilter] = useState("todos");
   const navigate = useNavigate();
+  const { profileName } = useAuth();
 
   const { data: unreadMessages = [] } = useUnreadMessages();
 
@@ -59,8 +62,22 @@ export default function Dashboard() {
 
   const total = filtered.filter((c) => c.status !== "dispensada").length;
   const byStatus = (s: CaseStatus) => filtered.filter((c) => c.status === s).length;
-  const previaEnviada = filtered.filter((c) => c.status === "previa_enviada").length;
+  const previaEnviada = filtered.filter((c) => {
+    if (c.status !== "previa_enviada") return false;
+    const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
+    return fd?.preview_status !== "ajustes_solicitados";
+  }).length;
+  const previaAjustes = filtered.filter((c) => {
+    if (c.status === "finalizado" || c.status === "dispensada") return false;
+    const fd = Array.isArray(c.final_deliverables) ? c.final_deliverables[0] : (c.final_deliverables as any);
+    return !!fd?.preview_file_url && fd?.preview_status === "ajustes_solicitados";
+  }).length;
   const previaAprovada = filtered.filter((c) => c.status === "previa_aprovada").length;
+
+  const notesAlertAll = filtered.filter((c: any) => c.notes_alert === true).length;
+  const notesAlertMine = filtered.filter(
+    (c: any) => c.notes_alert === true && profileName && c.internal_owner === profileName,
+  ).length;
 
   // Navegar para Demandas com o filtro do card
   const goToDemandasWithFilter = (key: string) => {
@@ -139,9 +156,14 @@ export default function Dashboard() {
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => goToDemandasWithFilter("pendencia")} />
               <StatCard label="Pendências Respondidas" value={byStatus("pendencia_respondida")} icon={MessageSquareReply} color="text-cyan-600" onClick={() => goToDemandasWithFilter("pendencia_respondida")} />
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => goToDemandasWithFilter("previa_enviada")} />
+              <StatCard label="Ajuste de Prévia" value={previaAjustes} icon={AlertCircle} color="text-destructive" onClick={() => goToDemandasWithFilter("previa_ajustes")} />
               <StatCard label="Prévias Aprovadas" value={previaAprovada} icon={CheckCircle} color="text-emerald-500" onClick={() => goToDemandasWithFilter("previa_aprovada")} />
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => goToDemandasWithFilter("finalizado")} />
               <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} />
+              {profileName && (
+                <StatCard label="Observações p/ você" value={notesAlertMine} icon={BellRing} color="text-amber-500" onClick={() => goToDemandasWithFilter("notes_alert_mine")} />
+              )}
+              <StatCard label="Observações pendentes" value={notesAlertAll} icon={Bell} color="text-amber-600" onClick={() => goToDemandasWithFilter("notes_alert_all")} />
             </div>
           </>
         )}

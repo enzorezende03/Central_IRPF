@@ -7,7 +7,7 @@ import { STATUS_LABELS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PriorityBadge, BillingBadge } from "@/components/StatusBadge";
-import { CheckCircle2, AlertCircle, Clock, CalendarPlus } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock, CalendarPlus, Bell } from "lucide-react";
 import { AddToWeekDialog } from "@/components/AddToWeekDialog";
 import { useAllPlanItems } from "@/hooks/use-weekly-plan";
 
@@ -204,6 +204,11 @@ export function KanbanBoard({ cases, columnOrder, hiddenColumns }: { cases: Case
                       </p>
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <PriorityBadge priority={c.priority} />
+                      {(c as any).notes_alert === true && (
+                        <Badge variant="outline" className="bg-amber-500/15 text-amber-700 border-amber-500/40 text-xs gap-1">
+                          <Bell className="h-3 w-3" /> Aviso responsável
+                        </Badge>
+                      )}
                       {planInfo && (
                         <Badge className="bg-violet-500 text-white hover:bg-violet-500 text-xs gap-1 border-0">
                           <CalendarPlus className="h-3 w-3" /> Planejada · S{planInfo.week_number}
