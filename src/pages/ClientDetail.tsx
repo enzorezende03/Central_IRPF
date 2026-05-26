@@ -8,7 +8,7 @@ import {
   ArrowLeft, Copy, MessageCircle, CheckCircle, Circle, FileText, Clock,
   User, Mail, Phone, DollarSign, ExternalLink, Upload, Send, Eye,
   AlertCircle, Calendar, CreditCard, Save, RefreshCw, Download, Loader2, Trash2,
-  Plus, X, ListChecks, Lock, Bell, BellRing,
+  Plus, X, ListChecks, Lock, Bell, BellRing, Check,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
