@@ -344,6 +344,7 @@ export default function Demandas() {
                   setPriorityFilter([]);
                   setClientStatusFilter([]);
                   setDeclarationTypeFilter([]);
+                  setSpecialFilter(null);
                 }}
               >
                 Limpar filtros
@@ -351,6 +352,23 @@ export default function Demandas() {
             )}
           </div>
         </div>
+
+        {specialFilter && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
+            <span className="font-medium text-amber-700">Filtro ativo:</span>
+            <Badge variant="outline" className="border-amber-500/40 text-amber-700">
+              {specialFilterLabel[specialFilter] ?? specialFilter}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-7 px-2 text-xs"
+              onClick={() => setSpecialFilter(null)}
+            >
+              <X className="h-3 w-3 mr-1" /> Remover
+            </Button>
+          </div>
+        )}
 
         {/* Bulk action bar */}
         {canEdit && selectedIds.size > 0 && (
