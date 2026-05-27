@@ -1018,6 +1018,7 @@ function PreviewApprovalCard({
   sentAt?: string | null;
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const [feedback, setFeedback] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
   const [showRevert, setShowRevert] = useState(false);
