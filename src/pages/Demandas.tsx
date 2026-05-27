@@ -241,7 +241,12 @@ export default function Demandas() {
   const searchOnlyMatches = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return 0;
-    return cases.filter((c) => (c.clients?.full_name?.toLowerCase() ?? "").includes(q)).length;
+    const qDigits = q.replace(/\D/g, "");
+    return cases.filter((c) => {
+      const name = c.clients?.full_name?.toLowerCase() ?? "";
+      const cpfDigits = (c.clients?.cpf ?? "").replace(/\D/g, "");
+      return name.includes(q) || (qDigits.length > 0 && cpfDigits.includes(qDigits));
+    }).length;
   }, [cases, search]);
 
   const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0 || !!specialFilter;
