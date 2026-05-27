@@ -1284,13 +1284,80 @@ export default function ClientDetail() {
                   </>
                 )}
 
-                <div className={`flex items-start gap-2 rounded-md border p-2.5 ${(caseData as any)?.notes_alert ? "border-amber-500/40 bg-amber-500/10" : "bg-muted/30"}`}>
+                {/* ── Anexos da observação ── */}
+                <div className="rounded-md border bg-muted/20 p-2.5 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium">Anexos</span>
+                    <input
+                      ref={noteAttachmentInputRef}
+                      type="file"
+                      multiple
+                      accept={getAcceptString()}
+                      className="hidden"
+                      onChange={handleAddNoteAttachment}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={uploadingNoteAttachment}
+                      onClick={() => noteAttachmentInputRef.current?.click()}
+                    >
+                      {uploadingNoteAttachment ? (
+                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Enviando...</>
+                      ) : (
+                        <><Upload className="h-3 w-3 mr-1" /> Anexar</>
+                      )}
+                    </Button>
+                  </div>
+                  {noteAttachments.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      Nenhum anexo. {ALLOWED_EXTENSIONS_LABEL} (até {MAX_FILE_SIZE_LABEL}).
+                    </p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {noteAttachments.map((att, i) => (
+                        <li key={`${att.url}-${i}`} className="flex items-center gap-2 rounded border bg-background p-1.5">
+                          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <a
+                            href={att.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline truncate flex-1"
+                            title={att.name}
+                          >
+                            {att.name}
+                          </a>
+                          {att.uploaded_by && att.uploaded_at && (
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap hidden sm:inline">
+                              {att.uploaded_by} • {format(new Date(att.uploaded_at), "dd/MM/yyyy", { locale: ptBR })}
+                            </span>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleRemoveNoteAttachment(i)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
 
+                <div className={`flex items-start gap-2 rounded-md border p-2.5 ${(caseData as any)?.notes_alert ? "border-amber-500/40 bg-amber-500/10" : "bg-muted/30"}`}>
+                  <Checkbox
+                    id="notes-alert-toggle"
                     checked={!!(caseData as any)?.notes_alert}
                     onCheckedChange={(v) => toggleNotesAlert.mutate(!!v)}
                     disabled={toggleNotesAlert.isPending}
                     className="mt-0.5"
                   />
+
                   <label htmlFor="notes-alert-toggle" className="text-xs leading-tight cursor-pointer flex-1">
                     <span className="font-medium">Avisar responsável</span>
                     <span className="block text-muted-foreground">
