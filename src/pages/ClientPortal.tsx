@@ -1596,6 +1596,7 @@ function UploadedFileRow({
   canReplace: boolean;
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [replacingFile, setReplacingFile] = useState<File | null>(null);
