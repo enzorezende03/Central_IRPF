@@ -226,8 +226,70 @@ export default function ClientDetail() {
   const [showDispensarDialog, setShowDispensarDialog] = useState(false);
   const [dispensarJustificativa, setDispensarJustificativa] = useState("");
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [uploadingNoteAttachment, setUploadingNoteAttachment] = useState(false);
+  const noteAttachmentInputRef = useRef<HTMLInputElement>(null);
   const [showRetificarDialog, setShowRetificarDialog] = useState(false);
   const [retificacaoMotivo, setRetificacaoMotivo] = useState("");
+
+  type NoteAttachment = { url: string; name: string; uploaded_by?: string; uploaded_at?: string };
+  const noteAttachments: NoteAttachment[] = Array.isArray((caseData as any)?.notes_attachments)
+    ? ((caseData as any).notes_attachments as NoteAttachment[])
+    : [];
+
+  const persistNoteAttachments = async (next: NoteAttachment[]) => {
+    const { error } = await supabase
+      .from("irpf_cases")
+      .update({ notes_attachments: next } as any)
+      .eq("id", id!);
+    if (error) throw error;
+  };
+
+  const handleAddNoteAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (noteAttachmentInputRef.current) noteAttachmentInputRef.current.value = "";
+    if (!files.length || !id) return;
+    setUploadingNoteAttachment(true);
+    try {
+      const author = profileName || user?.email || "Equipe";
+      const added: NoteAttachment[] = [];
+      for (const file of files) {
+        const err = validateFile(file);
+        if (err) { toast.error(err); continue; }
+        const path = buildStoragePath(id, file.name, "internal_notes");
+        const url = await uploadFileToBucket("documentos_clientes", path, file);
+        added.push({ url, name: file.name, uploaded_by: author, uploaded_at: new Date().toISOString() });
+      }
+      if (!added.length) return;
+      await persistNoteAttachments([...noteAttachments, ...added]);
+      await logTimelineEvent(id, "Anexo em observação", `${added.length} arquivo(s) anexado(s) às observações internas por ${author}`, false);
+      toast.success(`${added.length} arquivo(s) anexado(s)!`);
+      invalidateAll();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao anexar arquivo.");
+    } finally {
+      setUploadingNoteAttachment(false);
+    }
+  };
+
+  const handleRemoveNoteAttachment = async (idx: number) => {
+    if (!id) return;
+    const target = noteAttachments[idx];
+    if (!target) return;
+    if (!confirm(`Remover o anexo "${target.name}"?`)) return;
+    try {
+      const next = noteAttachments.filter((_, i) => i !== idx);
+      await persistNoteAttachments(next);
+      const author = profileName || user?.email || "Equipe";
+      await logTimelineEvent(id, "Anexo removido", `Anexo "${target.name}" removido das observações internas por ${author}`, false);
+      toast.success("Anexo removido.");
+      invalidateAll();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao remover anexo.");
+    }
+  };
+
 
   const savedNotes = caseData?.internal_notes ?? "";
   const notesValue = internalNotes ?? savedNotes;
