@@ -1,4 +1,4 @@
-export type DemandStatus = 'aguardando_cliente' | 'documentos_parciais' | 'documentos_em_analise' | 'em_andamento' | 'pendencia' | 'pendencia_respondida' | 'previa_enviada' | 'previa_aprovada' | 'finalizado' | 'impedida' | 'reaberta' | 'dispensada' | 'retificando' | 'retificada';
+export type DemandStatus = 'aguardando_cliente' | 'documentos_parciais' | 'documentos_em_analise' | 'em_andamento' | 'declaracao_em_preenchimento' | 'pendencia' | 'pendencia_respondida' | 'previa_enviada' | 'previa_aprovada' | 'finalizado' | 'impedida' | 'reaberta' | 'dispensada' | 'retificando' | 'retificada';
 export type BillingStatus = 'nao_cobrado' | 'cobrado' | 'pago';
 export type BillingType = 'incluso_mensalidade' | 'cobranca_extra';
 export type Priority = 'baixa' | 'media' | 'alta' | 'urgente';
@@ -8,6 +8,7 @@ export const STATUS_LABELS: Record<DemandStatus, string> = {
   documentos_parciais: 'Documentos Parciais',
   documentos_em_analise: 'Documentos em Análise',
   em_andamento: 'Em Andamento',
+  declaracao_em_preenchimento: 'Declaração em Preenchimento',
   pendencia: 'Pendência',
   pendencia_respondida: 'Pendência Respondida',
   previa_enviada: 'Prévia Enviada',
