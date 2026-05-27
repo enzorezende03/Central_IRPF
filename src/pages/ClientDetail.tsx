@@ -2128,10 +2128,11 @@ function PreviewCard({
                 )}
                 {parsedTax >= 100 && (
                   <p className="text-xs text-muted-foreground">
-                    Será enviada uma pergunta ao cliente para escolher em quantas cotas deseja pagar
-                    (até <strong>{maxCotas}</strong> {maxCotas === 1 ? "cota" : "cotas"}, mínimo R$ 100,00 por cota).
+                    O cliente verá o valor do imposto junto com a aprovação da prévia e poderá escolher em quantas
+                    cotas pagar (até <strong>{maxCotas}</strong> {maxCotas === 1 ? "cota" : "cotas"}, mínimo R$ 100,00 por cota).
                   </p>
                 )}
+
               </div>
             )}
           </div>
