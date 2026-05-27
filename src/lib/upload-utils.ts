@@ -24,7 +24,7 @@ export function validateFile(file: File): string | null {
   const ext = "." + file.name.split(".").pop()?.toLowerCase();
   const validType = ALLOWED_TYPES.includes(file.type) || ALLOWED_EXTENSIONS.includes(ext);
   if (!validType) {
-    return `Tipo de arquivo não permitido: ${file.name}. Aceitos: PDF, imagens, Word e Excel.`;
+    return `Tipo de arquivo não permitido: ${file.name}. Aceitos: PDF, imagens, Word, Excel, DBK/DEC.`;
   }
   if (file.size > MAX_FILE_SIZE) {
     const sizeMb = (file.size / 1024 / 1024).toFixed(1);
