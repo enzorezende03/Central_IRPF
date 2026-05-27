@@ -185,8 +185,10 @@ export default function Demandas() {
   const filtered = useMemo(() => {
     const list = cases.filter((c) => {
       const q = search.toLowerCase();
+      const qDigits = q.replace(/\D/g, "");
       const name = c.clients?.full_name?.toLowerCase() ?? "";
-      const matchSearch = !q || name.includes(q);
+      const cpfDigits = (c.clients?.cpf ?? "").replace(/\D/g, "");
+      const matchSearch = !q || name.includes(q) || (qDigits.length > 0 && cpfDigits.includes(qDigits));
       const matchTag = tagFilter.length === 0 || (c.clients?.tags ?? []).some((t: string) => tagFilter.includes(t));
       const matchOwner = ownerFilter.length === 0 || (c.internal_owner ? ownerFilter.includes(c.internal_owner) : false);
       const matchInternal = internalStatusFilter.length === 0 || internalStatusFilter.includes(c.status);
