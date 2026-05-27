@@ -1989,34 +1989,8 @@ function PreviewCard({
         true,
       );
 
-      if (hadTax === "sim" && parsedTax >= 100) {
-        const valorFmt = fmt(parsedTax);
-        const questionText =
-          `Sua declaração apresentou imposto a pagar no valor de ${valorFmt}. ` +
-          `O pagamento pode ser parcelado em até ${maxCotas} ${maxCotas === 1 ? "cota" : "cotas"} mensais ` +
-          `(mínimo de R$ 100,00 por cota). Em quantas cotas você deseja pagar? Informe um número de 1 a ${maxCotas}.`;
-        const { data: maxOrder } = await supabase
-          .from("case_questions")
-          .select("sort_order")
-          .eq("case_id", caseId)
-          .order("sort_order", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const nextOrder = ((maxOrder?.sort_order as number) ?? 0) + 1;
-        await supabase.from("case_questions").insert({
-          case_id: caseId,
-          question: questionText,
-          answer_type: "number",
-          is_required: true,
-          sort_order: nextOrder,
-        } as any);
-        await logTimelineEvent(
-          caseId,
-          "Pergunta enviada ao cliente",
-          `Pergunta sobre parcelamento do imposto (${valorFmt}, até ${maxCotas} cotas)`,
-          true,
-        );
-      }
+
+
 
       toast.success("Prévia enviada!");
       setTaxDialogOpen(false);
