@@ -827,6 +827,7 @@ export default function ClientDetail() {
                 <DeclarationReceiptCard
                   caseId={id!}
                   deliverable={deliverable}
+                  clientCpf={caseData.clients?.cpf ?? null}
                   readOnly={caseData.status === "retificando" || caseData.status === "retificada"}
                   onRefresh={() => {
                     queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
