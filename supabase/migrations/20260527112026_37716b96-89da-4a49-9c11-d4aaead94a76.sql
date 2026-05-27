@@ -1,0 +1,1 @@
+ALTER TYPE case_status ADD VALUE IF NOT EXISTS 'declaracao_em_preenchimento';

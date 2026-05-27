@@ -1077,6 +1077,7 @@ export type Database = {
         | "pendencia_respondida"
         | "retificando"
         | "retificada"
+        | "declaracao_em_preenchimento"
       document_status: "pendente" | "enviado" | "aprovado" | "rejeitado"
       preview_status: "aguardando_revisao" | "aprovado" | "ajustes_solicitados"
       uploaded_by_type: "client" | "office"
@@ -1227,6 +1228,7 @@ export const Constants = {
         "pendencia_respondida",
         "retificando",
         "retificada",
+        "declaracao_em_preenchimento",
       ],
       document_status: ["pendente", "enviado", "aprovado", "rejeitado"],
       preview_status: ["aguardando_revisao", "aprovado", "ajustes_solicitados"],
