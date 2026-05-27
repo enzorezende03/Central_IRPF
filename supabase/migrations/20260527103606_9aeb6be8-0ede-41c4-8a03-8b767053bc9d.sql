@@ -1,0 +1,1 @@
+ALTER TABLE public.final_deliverables ADD COLUMN IF NOT EXISTS tax_due_amount numeric;
