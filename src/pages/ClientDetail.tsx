@@ -2111,11 +2111,65 @@ function PreviewCard({
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}
-        <input ref={previewRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
+        <input ref={previewRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => { const f = e.target.files?.[0]; if (f) openTaxDialog(f); e.target.value = ""; }} />
         <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading} onClick={() => previewRef.current?.click()}>
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {del?.preview_file_url ? "Substituir" : "Upload"}</>}
         </Button>
       </div>
+
+      <Dialog open={taxDialogOpen} onOpenChange={(o) => { if (!uploading) setTaxDialogOpen(o); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Envio da prévia</DialogTitle>
+            <DialogDescription>
+              Antes de enviar a prévia, confirme se a declaração apresenta imposto a pagar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {pendingFile && (
+              <div className="flex items-center gap-2 text-sm rounded-md border p-2 bg-muted/30">
+                <FileText className="h-4 w-4 text-primary shrink-0" />
+                <span className="truncate">{pendingFile.name}</span>
+              </div>
+            )}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Houve imposto a pagar no IR?</p>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setHadTax("sim")} className={hadTax === "sim" ? "border-primary bg-primary/10" : ""}>Sim</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setHadTax("nao"); setTaxValue(""); }} className={hadTax === "nao" ? "border-primary bg-primary/10" : ""}>Não</Button>
+              </div>
+            </div>
+            {hadTax === "sim" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Valor do imposto a pagar (R$)</label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={taxValue}
+                  onChange={(e) => setTaxValue(e.target.value)}
+                />
+                {parsedTax > 0 && parsedTax < 100 && (
+                  <p className="text-xs text-destructive">O valor mínimo para parcelamento é R$ 100,00.</p>
+                )}
+                {parsedTax >= 100 && (
+                  <p className="text-xs text-muted-foreground">
+                    Será enviada uma pergunta ao cliente para escolher em quantas cotas deseja pagar
+                    (até <strong>{maxCotas}</strong> {maxCotas === 1 ? "cota" : "cotas"}, mínimo R$ 100,00 por cota).
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" disabled={uploading} onClick={() => setTaxDialogOpen(false)}>Cancelar</Button>
+            <Button disabled={!canSubmitTax || uploading} onClick={handleConfirmUpload}>
+              {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</> : "Enviar prévia"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {del?.preview_file_url && sentAtIso && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
