@@ -1319,6 +1319,7 @@ function DocumentRow({
   uploadedDocs: Tables<"uploaded_documents">[];
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [markingNotHave, setMarkingNotHave] = useState(false);
