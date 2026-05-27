@@ -1,0 +1,1 @@
+ALTER TABLE public.irpf_cases ADD COLUMN IF NOT EXISTS notes_attachments jsonb NOT NULL DEFAULT '[]'::jsonb;

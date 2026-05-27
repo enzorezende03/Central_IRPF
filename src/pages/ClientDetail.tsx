@@ -226,8 +226,70 @@ export default function ClientDetail() {
   const [showDispensarDialog, setShowDispensarDialog] = useState(false);
   const [dispensarJustificativa, setDispensarJustificativa] = useState("");
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [uploadingNoteAttachment, setUploadingNoteAttachment] = useState(false);
+  const noteAttachmentInputRef = useRef<HTMLInputElement>(null);
   const [showRetificarDialog, setShowRetificarDialog] = useState(false);
   const [retificacaoMotivo, setRetificacaoMotivo] = useState("");
+
+  type NoteAttachment = { url: string; name: string; uploaded_by?: string; uploaded_at?: string };
+  const noteAttachments: NoteAttachment[] = Array.isArray((caseData as any)?.notes_attachments)
+    ? ((caseData as any).notes_attachments as NoteAttachment[])
+    : [];
+
+  const persistNoteAttachments = async (next: NoteAttachment[]) => {
+    const { error } = await supabase
+      .from("irpf_cases")
+      .update({ notes_attachments: next } as any)
+      .eq("id", id!);
+    if (error) throw error;
+  };
+
+  const handleAddNoteAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (noteAttachmentInputRef.current) noteAttachmentInputRef.current.value = "";
+    if (!files.length || !id) return;
+    setUploadingNoteAttachment(true);
+    try {
+      const author = profileName || user?.email || "Equipe";
+      const added: NoteAttachment[] = [];
+      for (const file of files) {
+        const err = validateFile(file);
+        if (err) { toast.error(err); continue; }
+        const path = buildStoragePath(id, file.name, "internal_notes");
+        const url = await uploadFileToBucket("documentos_clientes", path, file);
+        added.push({ url, name: file.name, uploaded_by: author, uploaded_at: new Date().toISOString() });
+      }
+      if (!added.length) return;
+      await persistNoteAttachments([...noteAttachments, ...added]);
+      await logTimelineEvent(id, "Anexo em observação", `${added.length} arquivo(s) anexado(s) às observações internas por ${author}`, false);
+      toast.success(`${added.length} arquivo(s) anexado(s)!`);
+      invalidateAll();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao anexar arquivo.");
+    } finally {
+      setUploadingNoteAttachment(false);
+    }
+  };
+
+  const handleRemoveNoteAttachment = async (idx: number) => {
+    if (!id) return;
+    const target = noteAttachments[idx];
+    if (!target) return;
+    if (!confirm(`Remover o anexo "${target.name}"?`)) return;
+    try {
+      const next = noteAttachments.filter((_, i) => i !== idx);
+      await persistNoteAttachments(next);
+      const author = profileName || user?.email || "Equipe";
+      await logTimelineEvent(id, "Anexo removido", `Anexo "${target.name}" removido das observações internas por ${author}`, false);
+      toast.success("Anexo removido.");
+      invalidateAll();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao remover anexo.");
+    }
+  };
+
 
   const savedNotes = caseData?.internal_notes ?? "";
   const notesValue = internalNotes ?? savedNotes;
@@ -1222,6 +1284,71 @@ export default function ClientDetail() {
                   </>
                 )}
 
+                {/* ── Anexos da observação ── */}
+                <div className="rounded-md border bg-muted/20 p-2.5 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium">Anexos</span>
+                    <input
+                      ref={noteAttachmentInputRef}
+                      type="file"
+                      multiple
+                      accept={getAcceptString()}
+                      className="hidden"
+                      onChange={handleAddNoteAttachment}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={uploadingNoteAttachment}
+                      onClick={() => noteAttachmentInputRef.current?.click()}
+                    >
+                      {uploadingNoteAttachment ? (
+                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Enviando...</>
+                      ) : (
+                        <><Upload className="h-3 w-3 mr-1" /> Anexar</>
+                      )}
+                    </Button>
+                  </div>
+                  {noteAttachments.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      Nenhum anexo. {ALLOWED_EXTENSIONS_LABEL} (até {MAX_FILE_SIZE_LABEL}).
+                    </p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {noteAttachments.map((att, i) => (
+                        <li key={`${att.url}-${i}`} className="flex items-center gap-2 rounded border bg-background p-1.5">
+                          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <a
+                            href={att.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline truncate flex-1"
+                            title={att.name}
+                          >
+                            {att.name}
+                          </a>
+                          {att.uploaded_by && att.uploaded_at && (
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap hidden sm:inline">
+                              {att.uploaded_by} • {format(new Date(att.uploaded_at), "dd/MM/yyyy", { locale: ptBR })}
+                            </span>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleRemoveNoteAttachment(i)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
                 <div className={`flex items-start gap-2 rounded-md border p-2.5 ${(caseData as any)?.notes_alert ? "border-amber-500/40 bg-amber-500/10" : "bg-muted/30"}`}>
                   <Checkbox
                     id="notes-alert-toggle"
@@ -1230,6 +1357,7 @@ export default function ClientDetail() {
                     disabled={toggleNotesAlert.isPending}
                     className="mt-0.5"
                   />
+
                   <label htmlFor="notes-alert-toggle" className="text-xs leading-tight cursor-pointer flex-1">
                     <span className="font-medium">Avisar responsável</span>
                     <span className="block text-muted-foreground">
