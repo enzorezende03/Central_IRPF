@@ -1264,12 +1264,56 @@ function PreviewApprovalCard({
           </div>
         )}
 
+        {!isApproved && hasTax && (
+          <div className="rounded-lg border-2 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-bold text-amber-800 dark:text-amber-200">
+                  Sua declaração apresentou imposto a pagar de{" "}
+                  {taxDue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}.
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  O pagamento pode ser parcelado em até <strong>{maxQuotas}</strong>{" "}
+                  {maxQuotas === 1 ? "cota" : "cotas"} mensais (mínimo R$ 100,00 por cota).
+                  Escolha em quantas cotas deseja pagar antes de aprovar:
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: maxQuotas }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setQuotaChoice(n)}
+                  className={`h-9 min-w-9 px-3 rounded-md border text-sm font-semibold transition-colors ${
+                    quotaChoice === n
+                      ? "bg-amber-600 text-white border-amber-600"
+                      : "bg-background border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                  }`}
+                >
+                  {n}x
+                </button>
+              ))}
+            </div>
+            {quotaChoice && (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Cada cota ficará em aproximadamente{" "}
+                <strong>
+                  {(taxDue / quotaChoice).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </strong>
+                {quotaChoice === 1 ? " (cota única)." : "."}
+              </p>
+            )}
+          </div>
+        )}
+
         {!isApproved && (
           <div className="flex flex-col gap-2">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 onClick={handleApprove}
-                disabled={submitting}
+                disabled={submitting || (hasTax && !quotaChoice)}
                 size="lg"
                 className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold text-base shadow-lg shadow-violet-300/50 dark:shadow-violet-900/40 py-6"
               >
@@ -1277,6 +1321,7 @@ function PreviewApprovalCard({
                 ✅ Aprovar Prévia da Declaração
               </Button>
             </motion.div>
+
 
             {!showFeedback ? (
               <Button
