@@ -27,6 +27,7 @@ type Pendencia = {
 };
 
 export function PortalPendenciasBanner({ caseId }: { caseId: string }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const queryClient = useQueryClient();
   const [responseFor, setResponseFor] = useState<string | null>(null);
   const [responseText, setResponseText] = useState("");
