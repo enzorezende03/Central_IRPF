@@ -1285,8 +1285,7 @@ export default function ClientDetail() {
                 )}
 
                 <div className={`flex items-start gap-2 rounded-md border p-2.5 ${(caseData as any)?.notes_alert ? "border-amber-500/40 bg-amber-500/10" : "bg-muted/30"}`}>
-                  <Checkbox
-                    id="notes-alert-toggle"
+
                     checked={!!(caseData as any)?.notes_alert}
                     onCheckedChange={(v) => toggleNotesAlert.mutate(!!v)}
                     disabled={toggleNotesAlert.isPending}
