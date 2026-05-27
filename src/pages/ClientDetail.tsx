@@ -1936,25 +1936,99 @@ function PreviewCard({
 }) {
   const previewRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [taxDialogOpen, setTaxDialogOpen] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [hadTax, setHadTax] = useState<"sim" | "nao" | null>(null);
+  const [taxValue, setTaxValue] = useState<string>("");
   const del = deliverable as any;
 
-  const handleUpload = async (file: File) => {
+  const openTaxDialog = (file: File) => {
     const err = validateFile(file);
     if (err) { toast.error(err); return; }
+    setPendingFile(file);
+    setHadTax(null);
+    setTaxValue("");
+    setTaxDialogOpen(true);
+  };
+
+  const parsedTax = (() => {
+    const n = parseFloat(taxValue.replace(/\./g, "").replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  })();
+  const maxCotas = Math.min(8, Math.max(1, Math.floor(parsedTax / 100)));
+  const canSubmitTax =
+    !!pendingFile && (hadTax === "nao" || (hadTax === "sim" && parsedTax >= 100));
+
+  const handleConfirmUpload = async () => {
+    if (!pendingFile || !canSubmitTax) return;
     setUploading(true);
     try {
+      const file = pendingFile;
       const url = await uploadFileToBucket("declaracoes_finais", buildStoragePath(caseId, file.name, "preview"), file);
-      const updates: any = { preview_file_url: url, preview_status: "aguardando_revisao", preview_feedback: null };
+      const updates: any = {
+        preview_file_url: url,
+        preview_status: "aguardando_revisao",
+        preview_feedback: null,
+        tax_due_amount: hadTax === "sim" ? parsedTax : 0,
+      };
+      let deliverableId = deliverable?.id;
       if (deliverable) {
         await supabase.from("final_deliverables").update(updates).eq("id", deliverable.id);
       } else {
-        await supabase.from("final_deliverables").insert({ case_id: caseId, ...updates } as any);
+        const { data: inserted } = await supabase
+          .from("final_deliverables")
+          .insert({ case_id: caseId, ...updates } as any)
+          .select("id")
+          .single();
+        deliverableId = inserted?.id;
       }
-      await logTimelineEvent(caseId, "Prévia da Declaração enviada", `Arquivo: ${file.name}`, true);
+      await logTimelineEvent(
+        caseId,
+        "Prévia da Declaração enviada",
+        `Arquivo: ${file.name}${hadTax === "sim" ? ` — Imposto a pagar: ${fmt(parsedTax)}` : " — Sem imposto a pagar"}`,
+        true,
+      );
+
+      if (hadTax === "sim" && parsedTax >= 100) {
+        const valorFmt = fmt(parsedTax);
+        const questionText =
+          `Sua declaração apresentou imposto a pagar no valor de ${valorFmt}. ` +
+          `O pagamento pode ser parcelado em até ${maxCotas} ${maxCotas === 1 ? "cota" : "cotas"} mensais ` +
+          `(mínimo de R$ 100,00 por cota). Em quantas cotas você deseja pagar? Informe um número de 1 a ${maxCotas}.`;
+        const { data: maxOrder } = await supabase
+          .from("case_questions")
+          .select("sort_order")
+          .eq("case_id", caseId)
+          .order("sort_order", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const nextOrder = ((maxOrder?.sort_order as number) ?? 0) + 1;
+        await supabase.from("case_questions").insert({
+          case_id: caseId,
+          question: questionText,
+          answer_type: "number",
+          is_required: true,
+          sort_order: nextOrder,
+        } as any);
+        await logTimelineEvent(
+          caseId,
+          "Pergunta enviada ao cliente",
+          `Pergunta sobre parcelamento do imposto (${valorFmt}, até ${maxCotas} cotas)`,
+          true,
+        );
+      }
+
       toast.success("Prévia enviada!");
+      setTaxDialogOpen(false);
+      setPendingFile(null);
       onRefresh();
-    } catch { toast.error("Erro ao enviar."); } finally { setUploading(false); }
+    } catch {
+      toast.error("Erro ao enviar.");
+    } finally {
+      setUploading(false);
+    }
   };
+
 
   const previewStatusLabel: Record<string, { text: string; color: string }> = {
     aguardando_revisao: { text: "Aguardando revisão do cliente", color: "text-warning" },
