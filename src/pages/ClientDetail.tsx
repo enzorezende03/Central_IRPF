@@ -2419,8 +2419,10 @@ function DeclarationReceiptCard({ caseId, deliverable, clientCpf, onRefresh, isR
           </Button>
         )}
         <input ref={ref} type="file" className="hidden" accept={type === "rec" ? ".rec" : type === "dec" ? ".dec" : getAcceptString()} onChange={(e) => { if (e.target.files?.[0]) { handleUpload(type, e.target.files[0]); e.target.value = ""; } }} />
-        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === type} onClick={() => ref.current?.click()}>
-          {uploading === type ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {url ? "Substituir" : "Upload"}</>}
+        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === type || checking === type} onClick={() => ref.current?.click()}>
+          {uploading === type || checking === type
+            ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> {checking === type ? "Conferindo CPF…" : ""}</>
+            : <><Upload className="h-3.5 w-3.5 mr-1" /> {url ? "Substituir" : "Upload"}</>}
         </Button>
         {url && (
           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" title="Excluir arquivo" onClick={() => handleDelete(type)}>
