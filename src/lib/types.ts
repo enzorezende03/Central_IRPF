@@ -8,6 +8,7 @@ export const STATUS_LABELS: Record<DemandStatus, string> = {
   documentos_parciais: 'Documentos Parciais',
   documentos_em_analise: 'Documentos em Análise',
   em_andamento: 'Em Andamento',
+  declaracao_em_preenchimento: 'Declaração em Preenchimento',
   pendencia: 'Pendência',
   pendencia_respondida: 'Pendência Respondida',
   previa_enviada: 'Prévia Enviada',
