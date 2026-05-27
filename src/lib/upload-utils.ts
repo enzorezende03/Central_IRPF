@@ -15,6 +15,7 @@ const ALLOWED_TYPES = [
 const ALLOWED_EXTENSIONS = [
   ".pdf", ".jpg", ".jpeg", ".png", ".webp",
   ".doc", ".docx", ".xls", ".xlsx", ".csv",
+  ".dbk", ".dec", ".bak",
 ];
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
