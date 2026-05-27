@@ -184,7 +184,6 @@ export function NewCaseDialog() {
       const defaultChecklist = [
         "Solicitar Documentação",
         "Fazer Procuração",
-        "Verificar se a declaração está de acordo com a proposta, caso não esteja passar para o comercial",
         "Preencher declaração",
       ];
       await supabase.from("internal_checklist").insert(

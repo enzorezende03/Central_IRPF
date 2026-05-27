@@ -1,0 +1,1 @@
+DELETE FROM public.internal_checklist WHERE label = 'Verificar se a declaração está de acordo com a proposta, caso não esteja passar para o comercial';
