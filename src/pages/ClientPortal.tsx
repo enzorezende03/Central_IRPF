@@ -1888,6 +1888,7 @@ function BatchAnswersForm({
   formTemplates: Tables<"form_question_templates">[];
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const refs = useRef<Record<string, { getDraft: () => QuestionDraft } | null>>({});
   const [submitting, setSubmitting] = useState(false);
 
