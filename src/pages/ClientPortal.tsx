@@ -19,7 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as defaultSupabase } from "@/integrations/supabase/client";
+import { createPortalClient, getPortalClient } from "@/integrations/supabase/portal-client";
 import { STATUS_LABELS } from "@/lib/types";
 import { PortalPendenciasBanner } from "@/components/PortalPendenciasBanner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -52,6 +53,16 @@ export default function ClientPortal() {
 
   // Build the identifier: either "org/slug" or plain token
   const identifier = org && slug ? `${org}/${slug}` : token;
+  const fullSlug = org && slug ? `${org}/${slug}` : null;
+
+  // Portal-scoped Supabase client that sends x-portal-token / x-portal-slug
+  // headers on every request so that anon-write RLS policies can verify
+  // the target case_id belongs to this portal session.
+  const supabase = useMemo(
+    () => createPortalClient(token ?? null, fullSlug),
+    [token, fullSlug],
+  );
+
 
   // ── Resolve token or slug → case_id ──
   const { data: caseId, isLoading: loadingToken, isError } = useQuery({
@@ -1007,6 +1018,7 @@ function PreviewApprovalCard({
   sentAt?: string | null;
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const [feedback, setFeedback] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
   const [showRevert, setShowRevert] = useState(false);
@@ -1307,6 +1319,7 @@ function DocumentRow({
   uploadedDocs: Tables<"uploaded_documents">[];
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [markingNotHave, setMarkingNotHave] = useState(false);
@@ -1583,6 +1596,7 @@ function UploadedFileRow({
   canReplace: boolean;
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [replacingFile, setReplacingFile] = useState<File | null>(null);
@@ -1874,6 +1888,7 @@ function BatchAnswersForm({
   formTemplates: Tables<"form_question_templates">[];
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const refs = useRef<Record<string, { getDraft: () => QuestionDraft } | null>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -1958,6 +1973,7 @@ function BatchAnswersForm({
 
 // ── Portal Reply Box ──
 function PortalReplyBox({ caseId, onSent }: { caseId: string; onSent: () => void }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -2009,6 +2025,7 @@ function PortalBulkActions({
   docRequests: Tables<"document_requests">[];
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [marking, setMarking] = useState(false);
