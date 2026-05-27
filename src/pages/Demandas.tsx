@@ -185,8 +185,10 @@ export default function Demandas() {
   const filtered = useMemo(() => {
     const list = cases.filter((c) => {
       const q = search.toLowerCase();
+      const qDigits = q.replace(/\D/g, "");
       const name = c.clients?.full_name?.toLowerCase() ?? "";
-      const matchSearch = !q || name.includes(q);
+      const cpfDigits = (c.clients?.cpf ?? "").replace(/\D/g, "");
+      const matchSearch = !q || name.includes(q) || (qDigits.length > 0 && cpfDigits.includes(qDigits));
       const matchTag = tagFilter.length === 0 || (c.clients?.tags ?? []).some((t: string) => tagFilter.includes(t));
       const matchOwner = ownerFilter.length === 0 || (c.internal_owner ? ownerFilter.includes(c.internal_owner) : false);
       const matchInternal = internalStatusFilter.length === 0 || internalStatusFilter.includes(c.status);
@@ -239,7 +241,12 @@ export default function Demandas() {
   const searchOnlyMatches = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return 0;
-    return cases.filter((c) => (c.clients?.full_name?.toLowerCase() ?? "").includes(q)).length;
+    const qDigits = q.replace(/\D/g, "");
+    return cases.filter((c) => {
+      const name = c.clients?.full_name?.toLowerCase() ?? "";
+      const cpfDigits = (c.clients?.cpf ?? "").replace(/\D/g, "");
+      return name.includes(q) || (qDigits.length > 0 && cpfDigits.includes(qDigits));
+    }).length;
   }, [cases, search]);
 
   const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0 || !!specialFilter;
@@ -268,7 +275,7 @@ export default function Demandas() {
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nome do cliente..."
+              placeholder="Buscar por nome ou CPF do cliente..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
