@@ -53,6 +53,16 @@ export default function ClientPortal() {
 
   // Build the identifier: either "org/slug" or plain token
   const identifier = org && slug ? `${org}/${slug}` : token;
+  const fullSlug = org && slug ? `${org}/${slug}` : null;
+
+  // Portal-scoped Supabase client that sends x-portal-token / x-portal-slug
+  // headers on every request so that anon-write RLS policies can verify
+  // the target case_id belongs to this portal session.
+  const supabase = useMemo(
+    () => createPortalClient(token ?? null, fullSlug),
+    [token, fullSlug],
+  );
+
 
   // ── Resolve token or slug → case_id ──
   const { data: caseId, isLoading: loadingToken, isError } = useQuery({
