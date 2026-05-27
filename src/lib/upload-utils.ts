@@ -63,4 +63,4 @@ export function buildStoragePath(
 }
 
 export const MAX_FILE_SIZE_LABEL = "50 MB";
-export const ALLOWED_EXTENSIONS_LABEL = "PDF, JPG, PNG, WEBP, DOC, DOCX, XLS, XLSX, CSV";
+export const ALLOWED_EXTENSIONS_LABEL = "PDF, JPG, PNG, WEBP, DOC, DOCX, XLS, XLSX, CSV, DBK, DEC, BAK";
