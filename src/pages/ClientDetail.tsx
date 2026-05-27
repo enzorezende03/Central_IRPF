@@ -50,6 +50,8 @@ import { PendenciasCard } from "@/components/PendenciasCard";
 import { BulkUploadDialog } from "@/components/BulkUploadDialog";
 import { useAuth } from "@/hooks/use-auth";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
+import { filenameMatchesCpf, pdfContainsCpf, formatCpfMask } from "@/lib/cpf-check";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -825,6 +827,7 @@ export default function ClientDetail() {
                 <DeclarationReceiptCard
                   caseId={id!}
                   deliverable={deliverable}
+                  clientCpf={caseData.clients?.cpf ?? null}
                   readOnly={caseData.status === "retificando" || caseData.status === "retificada"}
                   onRefresh={() => {
                     queryClient.invalidateQueries({ queryKey: ["case-deliverable", id] });
@@ -919,6 +922,7 @@ export default function ClientDetail() {
                   <DeclarationReceiptCard
                     caseId={id!}
                     deliverable={retDeliverable}
+                    clientCpf={caseData.clients?.cpf ?? null}
                     isRetificacao
                     onRefresh={() => {
                       queryClient.invalidateQueries({ queryKey: ["case-deliverable-ret", id] });
@@ -2291,12 +2295,14 @@ function PreviewCard({
 }
 
 // ── Declaration & Receipt Card ──
-function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao = false, readOnly = false }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void; isRetificacao?: boolean; readOnly?: boolean }) {
+function DeclarationReceiptCard({ caseId, deliverable, clientCpf, onRefresh, isRetificacao = false, readOnly = false }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; clientCpf?: string | null; onRefresh: () => void; isRetificacao?: boolean; readOnly?: boolean }) {
   const irpfRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<HTMLInputElement>(null);
   const decRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<"irpf" | "receipt" | "rec" | "dec" | null>(null);
+  const [checking, setChecking] = useState<"irpf" | "receipt" | "rec" | "dec" | null>(null);
+  const [confirmState, setConfirmState] = useState<{ type: "irpf" | "receipt" | "rec" | "dec"; file: File; reason: string } | null>(null);
 
   const UPLOAD_CONFIG = {
     irpf: { bucket: "declaracoes_finais", field: "irpf_file_url", label: "Declaração IRPF" },
@@ -2304,6 +2310,27 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
     rec: { bucket: "recibos_entrega", field: "rec_file_url", label: "Arquivo REC" },
     dec: { bucket: "declaracoes_finais", field: "dec_file_url", label: "Arquivo DEC" },
   } as const;
+
+  const performUpload = async (type: keyof typeof UPLOAD_CONFIG, file: File, skippedCheck = false) => {
+    setUploading(type);
+    const cfg = UPLOAD_CONFIG[type];
+    try {
+      const url = await uploadFileToBucket(cfg.bucket, buildStoragePath(caseId, file.name), file);
+      if (deliverable) {
+        await supabase.from("final_deliverables").update({ [cfg.field]: url } as any).eq("id", deliverable.id);
+      } else {
+        await supabase.from("final_deliverables").insert({ case_id: caseId, retificacao: isRetificacao, [cfg.field]: url } as any);
+      }
+      await logTimelineEvent(
+        caseId,
+        `${cfg.label} enviado(a)`,
+        `Arquivo: ${file.name}${skippedCheck ? " — anexado SEM confirmação de CPF do cliente" : ""}`,
+        true,
+      );
+      toast.success(`${cfg.label} enviado(a)!`);
+      onRefresh();
+    } catch { toast.error("Erro ao enviar."); } finally { setUploading(null); }
+  };
 
   const handleUpload = async (type: keyof typeof UPLOAD_CONFIG, file: File) => {
     // REC and DEC have specific extension requirements – skip generic validation
@@ -2318,20 +2345,37 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
       if (err) { toast.error(err); return; }
     }
     if (file.size > 50 * 1024 * 1024) { toast.error(`Arquivo "${file.name}" excede o limite de 50 MB.`); return; }
-    setUploading(type);
-    const cfg = UPLOAD_CONFIG[type];
-    try {
-      const url = await uploadFileToBucket(cfg.bucket, buildStoragePath(caseId, file.name), file);
-      if (deliverable) {
-        await supabase.from("final_deliverables").update({ [cfg.field]: url } as any).eq("id", deliverable.id);
-      } else {
-        await supabase.from("final_deliverables").insert({ case_id: caseId, retificacao: isRetificacao, [cfg.field]: url } as any);
+
+    // CPF verification
+    const cpfDigits = (clientCpf ?? "").replace(/\D/g, "");
+    if (cpfDigits.length === 11) {
+      const nameMatch = filenameMatchesCpf(file.name, clientCpf);
+      if (nameMatch) {
+        await performUpload(type, file);
+        return;
       }
-      await logTimelineEvent(caseId, `${cfg.label} enviado(a)`, `Arquivo: ${file.name}`, true);
-      toast.success(`${cfg.label} enviado(a)!`);
-      onRefresh();
-    } catch { toast.error("Erro ao enviar."); } finally { setUploading(null); }
+      const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+      if (isPdf) {
+        setChecking(type);
+        try {
+          const pdfMatch = await pdfContainsCpf(file, clientCpf);
+          if (pdfMatch) {
+            setChecking(null);
+            await performUpload(type, file);
+            return;
+          }
+        } finally { setChecking(null); }
+        setConfirmState({ type, file, reason: "O CPF do cliente não foi encontrado no nome do arquivo nem no conteúdo do PDF." });
+        return;
+      }
+      setConfirmState({ type, file, reason: "O CPF do cliente não foi encontrado no nome do arquivo." });
+      return;
+    }
+
+    // No CPF on client record — just upload
+    await performUpload(type, file);
   };
+
 
   const toggleRelease = async () => {
     if (!deliverable) return;
@@ -2375,8 +2419,10 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
           </Button>
         )}
         <input ref={ref} type="file" className="hidden" accept={type === "rec" ? ".rec" : type === "dec" ? ".dec" : getAcceptString()} onChange={(e) => { if (e.target.files?.[0]) { handleUpload(type, e.target.files[0]); e.target.value = ""; } }} />
-        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === type} onClick={() => ref.current?.click()}>
-          {uploading === type ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {url ? "Substituir" : "Upload"}</>}
+        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading === type || checking === type} onClick={() => ref.current?.click()}>
+          {uploading === type || checking === type
+            ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> {checking === type ? "Conferindo CPF…" : ""}</>
+            : <><Upload className="h-3.5 w-3.5 mr-1" /> {url ? "Substituir" : "Upload"}</>}
         </Button>
         {url && (
           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" title="Excluir arquivo" onClick={() => handleDelete(type)}>
@@ -2446,6 +2492,37 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
           )}
         </Button>
       )}
+
+      <AlertDialog open={!!confirmState} onOpenChange={(o) => { if (!o) setConfirmState(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>CPF não confere</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">{confirmState?.reason}</span>
+              <span className="block">
+                <strong>Cliente:</strong> {formatCpfMask(clientCpf)}<br />
+                <strong>Arquivo:</strong> {confirmState?.file.name}
+              </span>
+              <span className="block text-destructive font-medium">
+                Confirme se este arquivo realmente pertence a este cliente antes de anexar.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmState(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!confirmState) return;
+                const { type, file } = confirmState;
+                setConfirmState(null);
+                await performUpload(type, file, true);
+              }}
+            >
+              Anexar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,54 +1,43 @@
-## 1. Card "Ajuste de Prévia" no Dashboard
+## Validação de CPF no upload da Declaração e Recibo
 
-- Em `src/pages/Dashboard.tsx`, adicionar um `StatCard` ao lado de "Prévias Enviadas".
-- Valor: nº de cases não finalizados cujo `final_deliverables.preview_status === "ajustes_solicitados"` e ainda existe `preview_file_url`.
-- Cor: `text-destructive`, ícone `AlertCircle`.
-- Clique aplica filtro novo `previa_ajustes` na lista de Demandas.
+Adicionar uma checagem automática do CPF do cliente no momento em que a equipe anexa um dos 4 arquivos do card **Declaração e Recibo** (Declaração IRPF, Recibo de Entrega, Arquivo REC, Arquivo DEC), para evitar anexar arquivo de cliente errado.
 
-### Filtro em /demandas
+### Como funciona
 
-- Em `src/pages/Demandas.tsx`, suportar o valor de filtro `previa_ajustes`: trata como subset de `previa_enviada` filtrando pelos cases com `preview_status === "ajustes_solicitados"`. Apenas leitura do filtro vindo da URL; não precisa entrar no select de status.
+1. **Conferência pelo nome do arquivo (sempre primeiro)**
+   - Extrai todos os dígitos do `file.name`.
+   - Compara com o CPF do cliente (`caseData.clients.cpf`, normalizado para dígitos).
+   - Se o CPF do cliente aparecer como subsequência contínua nos dígitos do nome → ✅ válido, segue upload.
 
-## 2. Flag "Avisar responsável" nas Observações Internas
+2. **Conferência dentro do PDF (fallback)**
+   - Se o nome não contém o CPF e o arquivo é `.pdf`, extrai o texto do PDF no próprio navegador com `pdfjs-dist` (já é uma lib leve, lazy-loaded só nesse fluxo).
+   - Busca o CPF do cliente (com e sem máscara `000.000.000-00`) no texto.
+   - Se encontrado → ✅ segue upload.
 
-### Schema
+3. **Quando nenhuma das duas confere**
+   - Abre um `AlertDialog` de confirmação:
+     > "O CPF do cliente (`xxx.xxx.xxx-xx`) não foi encontrado no nome do arquivo nem no conteúdo do PDF. Deseja anexar mesmo assim?"
+   - Botões: **Cancelar** (padrão) / **Anexar mesmo assim**.
+   - Decisão é registrada no `case_timeline` como observação interna ("Arquivo anexado sem confirmação de CPF").
 
-Migration adiciona em `irpf_cases`:
+### Escopo
 
-- `notes_alert` (boolean, default `false`) — quando ligado, sinaliza que a observação precisa de atenção do responsável.
-- `notes_alert_at` (timestamptz, nullable) — data da marcação.
-- `notes_alert_by` (text, nullable) — nome de quem marcou (snapshot).
+- Aplica-se apenas ao card **Declaração e Recibo** em `ClientDetail.tsx` (`DeclarationReceiptCard`), tanto na declaração original quanto na retificação.
+- Arquivos **.REC** e **.DEC** (binários) → só a conferência por nome de arquivo. Sem leitura interna.
+- Arquivos **.PDF** (Declaração IRPF / Recibo) → nome + conteúdo do PDF.
+- Outros formatos (JPG/PNG do recibo, por exemplo) → só nome de arquivo.
+- Sem mudanças em outros uploads (BulkUploadDialog, documentos do cliente, prévia) — fora do pedido.
 
-Sem alteração de RLS (tabela já tem políticas).
+### Detalhes técnicos
 
-### UI em ClientDetail (card "Observações Internas")
+- Função utilitária nova em `src/lib/cpf-check.ts`:
+  - `digitsOnly(s)`, `extractCpfFromFilename(name, cpf)`, `extractCpfFromPdf(file, cpf)` (usa `pdfjs-dist` dinâmico).
+- `handleUpload` em `DeclarationReceiptCard` chama a checagem antes de subir o arquivo. Estado novo para controlar o `AlertDialog` de confirmação com o arquivo pendente.
+- Dependência adicional: `pdfjs-dist` (lazy import, sem impacto no bundle inicial).
+- Sem alteração de schema, RLS, ou edge functions.
 
-- Abaixo do textarea/visualização, adicionar um `Checkbox` "Avisar responsável sobre esta observação".
-- Estado ligado/desligado escreve em `irpf_cases.notes_alert/notes_alert_at/notes_alert_by` (usa `useAuth` para o nome) e registra `case_timeline` com `event_type: "Observação marcada para responsável"`.
-- Quando ligado, o card de observações ganha borda/realce `border-destructive/40` e um badge "Aviso ao responsável" com data e autor.
-- Botão "Marcar como visto" (visível só para o responsável da demanda — `caseData.internal_owner` igual ao nome do usuário logado) desliga a flag.
+### Arquivos afetados
 
-### Indicador na lista de Demandas
-
-- Em `Demandas.tsx`, na célula de status, exibir badge amarelo "Observação para responsável" quando `notes_alert === true` (não troca o status real, apenas selo).
-- Mesma sinalização nos cards do Kanban (`KanbanBoard.tsx`): badge pequeno com ícone `Bell` no canto do card.
-
-### Notificação (sino) e destaque no Dashboard
-
-- Reaproveitar o componente de notificações existente (sino do header — vamos confirmar no arquivo do header; se não existir um sino, este passo gera um indicador visual no item de menu "Demandas" do `AppSidebar` com a contagem).
-- Card novo no Dashboard "Observações para você" (somente para o usuário logado) com a contagem de cases onde `internal_owner === nome do usuário` e `notes_alert === true`. Clique leva a `/demandas?filter=notes_alert_mine`.
-- Card global "Observações pendentes" (toda a equipe) com filtro `notes_alert_all`.
-
-## Arquivos afetados
-
-- `supabase/migrations/...` — novas colunas em `irpf_cases`.
-- `src/pages/Dashboard.tsx` — 2 novos `StatCard` + cálculos + navegação.
-- `src/pages/Demandas.tsx` — filtros `previa_ajustes`, `notes_alert_mine`, `notes_alert_all` + selo na coluna status.
-- `src/pages/ClientDetail.tsx` — checkbox + mutação + realce visual no card de Observações Internas.
-- `src/components/KanbanBoard.tsx` — badge no card quando `notes_alert`.
-- `src/components/AppSidebar.tsx` (ou header existente) — indicador de contagem para o responsável logado.
-
-## Notas
-
-- Sem mudanças no enum `case_status`; o status do Kanban continua o mesmo. Tudo é sinalização visual + filtro.
-- A flag é única por demanda (não por nota individual), conforme escolha de UI.
+- `src/pages/ClientDetail.tsx` — fluxo de upload em `DeclarationReceiptCard`, AlertDialog de confirmação.
+- `src/lib/cpf-check.ts` *(novo)* — utilitário de validação por nome e por conteúdo de PDF.
+- `package.json` — adicionar `pdfjs-dist`.
