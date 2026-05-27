@@ -15,6 +15,7 @@ const ALLOWED_TYPES = [
 const ALLOWED_EXTENSIONS = [
   ".pdf", ".jpg", ".jpeg", ".png", ".webp",
   ".doc", ".docx", ".xls", ".xlsx", ".csv",
+  ".dbk", ".dec", ".bak",
 ];
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
@@ -23,7 +24,7 @@ export function validateFile(file: File): string | null {
   const ext = "." + file.name.split(".").pop()?.toLowerCase();
   const validType = ALLOWED_TYPES.includes(file.type) || ALLOWED_EXTENSIONS.includes(ext);
   if (!validType) {
-    return `Tipo de arquivo não permitido: ${file.name}. Aceitos: PDF, imagens, Word e Excel.`;
+    return `Tipo de arquivo não permitido: ${file.name}. Aceitos: PDF, imagens, Word, Excel, DBK/DEC.`;
   }
   if (file.size > MAX_FILE_SIZE) {
     const sizeMb = (file.size / 1024 / 1024).toFixed(1);
@@ -62,4 +63,4 @@ export function buildStoragePath(
 }
 
 export const MAX_FILE_SIZE_LABEL = "50 MB";
-export const ALLOWED_EXTENSIONS_LABEL = "PDF, JPG, PNG, WEBP, DOC, DOCX, XLS, XLSX, CSV";
+export const ALLOWED_EXTENSIONS_LABEL = "PDF, JPG, PNG, WEBP, DOC, DOCX, XLS, XLSX, CSV, DBK, DEC, BAK";
