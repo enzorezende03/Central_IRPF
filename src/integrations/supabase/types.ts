@@ -1031,6 +1031,10 @@ export type Database = {
         Args: { p_case_id: string }
         Returns: undefined
       }
+      case_matches_portal_token: {
+        Args: { p_case_id: string }
+        Returns: boolean
+      }
       get_case_by_slug: { Args: { p_slug: string }; Returns: string }
       get_case_by_token: { Args: { p_token: string }; Returns: string }
       get_last_client_uploads: {
