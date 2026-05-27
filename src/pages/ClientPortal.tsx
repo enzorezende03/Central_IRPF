@@ -1973,6 +1973,7 @@ function BatchAnswersForm({
 
 // ── Portal Reply Box ──
 function PortalReplyBox({ caseId, onSent }: { caseId: string; onSent: () => void }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
 
