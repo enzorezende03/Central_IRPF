@@ -3123,8 +3123,8 @@ function InternalChecklistCard({ caseId }: { caseId: string }) {
       const { data: c } = await supabase.from("irpf_cases").select("status").eq("id", caseId).single();
       const blocked = ["finalizado", "impedida", "dispensada", "previa_aprovada", "previa_enviada", "retificada"];
       if (c && !blocked.includes(c.status as string)) {
-        await supabase.from("irpf_cases").update({ status: "em_andamento" }).eq("id", caseId);
-        await logTimelineEvent(caseId, "Status alterado", "Declaração em preenchimento — status alterado para Em Andamento", false);
+        await supabase.from("irpf_cases").update({ status: "declaracao_em_preenchimento" as any }).eq("id", caseId);
+        await logTimelineEvent(caseId, "Status alterado", "Declaração em preenchimento", false);
         queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
         queryClient.invalidateQueries({ queryKey: ["irpf-case", caseId] });
         queryClient.invalidateQueries({ queryKey: ["case-timeline", caseId] });
