@@ -408,6 +408,7 @@ export type Database = {
           receipt_file_url: string | null
           retificacao: boolean
           sent_to_client: boolean
+          tax_due_amount: number | null
           uploaded_at: string
         }
         Insert: {
@@ -427,6 +428,7 @@ export type Database = {
           receipt_file_url?: string | null
           retificacao?: boolean
           sent_to_client?: boolean
+          tax_due_amount?: number | null
           uploaded_at?: string
         }
         Update: {
@@ -446,6 +448,7 @@ export type Database = {
           receipt_file_url?: string | null
           retificacao?: boolean
           sent_to_client?: boolean
+          tax_due_amount?: number | null
           uploaded_at?: string
         }
         Relationships: [

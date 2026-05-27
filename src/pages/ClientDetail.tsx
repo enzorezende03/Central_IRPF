@@ -1936,25 +1936,99 @@ function PreviewCard({
 }) {
   const previewRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [taxDialogOpen, setTaxDialogOpen] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [hadTax, setHadTax] = useState<"sim" | "nao" | null>(null);
+  const [taxValue, setTaxValue] = useState<string>("");
   const del = deliverable as any;
 
-  const handleUpload = async (file: File) => {
+  const openTaxDialog = (file: File) => {
     const err = validateFile(file);
     if (err) { toast.error(err); return; }
+    setPendingFile(file);
+    setHadTax(null);
+    setTaxValue("");
+    setTaxDialogOpen(true);
+  };
+
+  const parsedTax = (() => {
+    const n = parseFloat(taxValue.replace(/\./g, "").replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  })();
+  const maxCotas = Math.min(8, Math.max(1, Math.floor(parsedTax / 100)));
+  const canSubmitTax =
+    !!pendingFile && (hadTax === "nao" || (hadTax === "sim" && parsedTax >= 100));
+
+  const handleConfirmUpload = async () => {
+    if (!pendingFile || !canSubmitTax) return;
     setUploading(true);
     try {
+      const file = pendingFile;
       const url = await uploadFileToBucket("declaracoes_finais", buildStoragePath(caseId, file.name, "preview"), file);
-      const updates: any = { preview_file_url: url, preview_status: "aguardando_revisao", preview_feedback: null };
+      const updates: any = {
+        preview_file_url: url,
+        preview_status: "aguardando_revisao",
+        preview_feedback: null,
+        tax_due_amount: hadTax === "sim" ? parsedTax : 0,
+      };
+      let deliverableId = deliverable?.id;
       if (deliverable) {
         await supabase.from("final_deliverables").update(updates).eq("id", deliverable.id);
       } else {
-        await supabase.from("final_deliverables").insert({ case_id: caseId, ...updates } as any);
+        const { data: inserted } = await supabase
+          .from("final_deliverables")
+          .insert({ case_id: caseId, ...updates } as any)
+          .select("id")
+          .single();
+        deliverableId = inserted?.id;
       }
-      await logTimelineEvent(caseId, "Prévia da Declaração enviada", `Arquivo: ${file.name}`, true);
+      await logTimelineEvent(
+        caseId,
+        "Prévia da Declaração enviada",
+        `Arquivo: ${file.name}${hadTax === "sim" ? ` — Imposto a pagar: ${fmt(parsedTax)}` : " — Sem imposto a pagar"}`,
+        true,
+      );
+
+      if (hadTax === "sim" && parsedTax >= 100) {
+        const valorFmt = fmt(parsedTax);
+        const questionText =
+          `Sua declaração apresentou imposto a pagar no valor de ${valorFmt}. ` +
+          `O pagamento pode ser parcelado em até ${maxCotas} ${maxCotas === 1 ? "cota" : "cotas"} mensais ` +
+          `(mínimo de R$ 100,00 por cota). Em quantas cotas você deseja pagar? Informe um número de 1 a ${maxCotas}.`;
+        const { data: maxOrder } = await supabase
+          .from("case_questions")
+          .select("sort_order")
+          .eq("case_id", caseId)
+          .order("sort_order", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const nextOrder = ((maxOrder?.sort_order as number) ?? 0) + 1;
+        await supabase.from("case_questions").insert({
+          case_id: caseId,
+          question: questionText,
+          answer_type: "number",
+          is_required: true,
+          sort_order: nextOrder,
+        } as any);
+        await logTimelineEvent(
+          caseId,
+          "Pergunta enviada ao cliente",
+          `Pergunta sobre parcelamento do imposto (${valorFmt}, até ${maxCotas} cotas)`,
+          true,
+        );
+      }
+
       toast.success("Prévia enviada!");
+      setTaxDialogOpen(false);
+      setPendingFile(null);
       onRefresh();
-    } catch { toast.error("Erro ao enviar."); } finally { setUploading(false); }
+    } catch {
+      toast.error("Erro ao enviar.");
+    } finally {
+      setUploading(false);
+    }
   };
+
 
   const previewStatusLabel: Record<string, { text: string; color: string }> = {
     aguardando_revisao: { text: "Aguardando revisão do cliente", color: "text-warning" },
@@ -2037,11 +2111,65 @@ function PreviewCard({
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}
-        <input ref={previewRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
+        <input ref={previewRef} type="file" className="hidden" accept={getAcceptString()} onChange={(e) => { const f = e.target.files?.[0]; if (f) openTaxDialog(f); e.target.value = ""; }} />
         <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading} onClick={() => previewRef.current?.click()}>
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1" /> {del?.preview_file_url ? "Substituir" : "Upload"}</>}
         </Button>
       </div>
+
+      <Dialog open={taxDialogOpen} onOpenChange={(o) => { if (!uploading) setTaxDialogOpen(o); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Envio da prévia</DialogTitle>
+            <DialogDescription>
+              Antes de enviar a prévia, confirme se a declaração apresenta imposto a pagar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {pendingFile && (
+              <div className="flex items-center gap-2 text-sm rounded-md border p-2 bg-muted/30">
+                <FileText className="h-4 w-4 text-primary shrink-0" />
+                <span className="truncate">{pendingFile.name}</span>
+              </div>
+            )}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Houve imposto a pagar no IR?</p>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setHadTax("sim")} className={hadTax === "sim" ? "border-primary bg-primary/10" : ""}>Sim</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setHadTax("nao"); setTaxValue(""); }} className={hadTax === "nao" ? "border-primary bg-primary/10" : ""}>Não</Button>
+              </div>
+            </div>
+            {hadTax === "sim" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Valor do imposto a pagar (R$)</label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={taxValue}
+                  onChange={(e) => setTaxValue(e.target.value)}
+                />
+                {parsedTax > 0 && parsedTax < 100 && (
+                  <p className="text-xs text-destructive">O valor mínimo para parcelamento é R$ 100,00.</p>
+                )}
+                {parsedTax >= 100 && (
+                  <p className="text-xs text-muted-foreground">
+                    Será enviada uma pergunta ao cliente para escolher em quantas cotas deseja pagar
+                    (até <strong>{maxCotas}</strong> {maxCotas === 1 ? "cota" : "cotas"}, mínimo R$ 100,00 por cota).
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" disabled={uploading} onClick={() => setTaxDialogOpen(false)}>Cancelar</Button>
+            <Button disabled={!canSubmitTax || uploading} onClick={handleConfirmUpload}>
+              {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</> : "Enviar prévia"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {del?.preview_file_url && sentAtIso && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
