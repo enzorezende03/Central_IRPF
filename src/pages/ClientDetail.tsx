@@ -2295,12 +2295,14 @@ function PreviewCard({
 }
 
 // ── Declaration & Receipt Card ──
-function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao = false, readOnly = false }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; onRefresh: () => void; isRetificacao?: boolean; readOnly?: boolean }) {
+function DeclarationReceiptCard({ caseId, deliverable, clientCpf, onRefresh, isRetificacao = false, readOnly = false }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; clientCpf?: string | null; onRefresh: () => void; isRetificacao?: boolean; readOnly?: boolean }) {
   const irpfRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<HTMLInputElement>(null);
   const decRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<"irpf" | "receipt" | "rec" | "dec" | null>(null);
+  const [checking, setChecking] = useState<"irpf" | "receipt" | "rec" | "dec" | null>(null);
+  const [confirmState, setConfirmState] = useState<{ type: "irpf" | "receipt" | "rec" | "dec"; file: File; reason: string } | null>(null);
 
   const UPLOAD_CONFIG = {
     irpf: { bucket: "declaracoes_finais", field: "irpf_file_url", label: "Declaração IRPF" },
@@ -2308,6 +2310,27 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
     rec: { bucket: "recibos_entrega", field: "rec_file_url", label: "Arquivo REC" },
     dec: { bucket: "declaracoes_finais", field: "dec_file_url", label: "Arquivo DEC" },
   } as const;
+
+  const performUpload = async (type: keyof typeof UPLOAD_CONFIG, file: File, skippedCheck = false) => {
+    setUploading(type);
+    const cfg = UPLOAD_CONFIG[type];
+    try {
+      const url = await uploadFileToBucket(cfg.bucket, buildStoragePath(caseId, file.name), file);
+      if (deliverable) {
+        await supabase.from("final_deliverables").update({ [cfg.field]: url } as any).eq("id", deliverable.id);
+      } else {
+        await supabase.from("final_deliverables").insert({ case_id: caseId, retificacao: isRetificacao, [cfg.field]: url } as any);
+      }
+      await logTimelineEvent(
+        caseId,
+        `${cfg.label} enviado(a)`,
+        `Arquivo: ${file.name}${skippedCheck ? " — anexado SEM confirmação de CPF do cliente" : ""}`,
+        true,
+      );
+      toast.success(`${cfg.label} enviado(a)!`);
+      onRefresh();
+    } catch { toast.error("Erro ao enviar."); } finally { setUploading(null); }
+  };
 
   const handleUpload = async (type: keyof typeof UPLOAD_CONFIG, file: File) => {
     // REC and DEC have specific extension requirements – skip generic validation
@@ -2322,20 +2345,37 @@ function DeclarationReceiptCard({ caseId, deliverable, onRefresh, isRetificacao 
       if (err) { toast.error(err); return; }
     }
     if (file.size > 50 * 1024 * 1024) { toast.error(`Arquivo "${file.name}" excede o limite de 50 MB.`); return; }
-    setUploading(type);
-    const cfg = UPLOAD_CONFIG[type];
-    try {
-      const url = await uploadFileToBucket(cfg.bucket, buildStoragePath(caseId, file.name), file);
-      if (deliverable) {
-        await supabase.from("final_deliverables").update({ [cfg.field]: url } as any).eq("id", deliverable.id);
-      } else {
-        await supabase.from("final_deliverables").insert({ case_id: caseId, retificacao: isRetificacao, [cfg.field]: url } as any);
+
+    // CPF verification
+    const cpfDigits = (clientCpf ?? "").replace(/\D/g, "");
+    if (cpfDigits.length === 11) {
+      const nameMatch = filenameMatchesCpf(file.name, clientCpf);
+      if (nameMatch) {
+        await performUpload(type, file);
+        return;
       }
-      await logTimelineEvent(caseId, `${cfg.label} enviado(a)`, `Arquivo: ${file.name}`, true);
-      toast.success(`${cfg.label} enviado(a)!`);
-      onRefresh();
-    } catch { toast.error("Erro ao enviar."); } finally { setUploading(null); }
+      const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+      if (isPdf) {
+        setChecking(type);
+        try {
+          const pdfMatch = await pdfContainsCpf(file, clientCpf);
+          if (pdfMatch) {
+            setChecking(null);
+            await performUpload(type, file);
+            return;
+          }
+        } finally { setChecking(null); }
+        setConfirmState({ type, file, reason: "O CPF do cliente não foi encontrado no nome do arquivo nem no conteúdo do PDF." });
+        return;
+      }
+      setConfirmState({ type, file, reason: "O CPF do cliente não foi encontrado no nome do arquivo." });
+      return;
+    }
+
+    // No CPF on client record — just upload
+    await performUpload(type, file);
   };
+
 
   const toggleRelease = async () => {
     if (!deliverable) return;
