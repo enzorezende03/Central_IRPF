@@ -1025,6 +1025,13 @@ function PreviewApprovalCard({
   const [submitting, setSubmitting] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const del = deliverable as any;
+  const taxDue = typeof del.tax_due_amount === "number" ? del.tax_due_amount : 0;
+  const hasTax = taxDue >= 100;
+  const maxQuotas = hasTax ? Math.min(8, Math.max(1, Math.floor(taxDue / 100))) : 1;
+  const [quotaChoice, setQuotaChoice] = useState<number | null>(
+    typeof del.guide_quota_count === "number" && del.guide_quota_count > 0 ? del.guide_quota_count : null
+  );
+
 
   const previewStatus = del.preview_status as string;
   const isApproved = previewStatus === "aprovado";
