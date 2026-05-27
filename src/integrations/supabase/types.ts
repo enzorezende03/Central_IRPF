@@ -552,6 +552,7 @@ export type Database = {
           notes_alert_by: string | null
           notes_alert_seen_at: string | null
           notes_alert_seen_by: string | null
+          notes_attachments: Json
           portal_slug: string | null
           portal_token: string
           priority: Database["public"]["Enums"]["case_priority"]
@@ -582,6 +583,7 @@ export type Database = {
           notes_alert_by?: string | null
           notes_alert_seen_at?: string | null
           notes_alert_seen_by?: string | null
+          notes_attachments?: Json
           portal_slug?: string | null
           portal_token: string
           priority?: Database["public"]["Enums"]["case_priority"]
@@ -612,6 +614,7 @@ export type Database = {
           notes_alert_by?: string | null
           notes_alert_seen_at?: string | null
           notes_alert_seen_by?: string | null
+          notes_attachments?: Json
           portal_slug?: string | null
           portal_token?: string
           priority?: Database["public"]["Enums"]["case_priority"]
