@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase as defaultSupabase } from "@/integrations/supabase/client";
-import { createPortalClient } from "@/integrations/supabase/portal-client";
+import { createPortalClient, getPortalClient } from "@/integrations/supabase/portal-client";
 import { STATUS_LABELS } from "@/lib/types";
 import { PortalPendenciasBanner } from "@/components/PortalPendenciasBanner";
 import type { Tables } from "@/integrations/supabase/types";
