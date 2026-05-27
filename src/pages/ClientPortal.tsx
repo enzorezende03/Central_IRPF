@@ -2025,6 +2025,7 @@ function PortalBulkActions({
   docRequests: Tables<"document_requests">[];
   onSuccess: () => void;
 }) {
+  const supabase = getPortalClient() ?? defaultSupabase;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [marking, setMarking] = useState(false);
