@@ -1025,6 +1025,13 @@ function PreviewApprovalCard({
   const [submitting, setSubmitting] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const del = deliverable as any;
+  const taxDue = typeof del.tax_due_amount === "number" ? del.tax_due_amount : 0;
+  const hasTax = taxDue >= 100;
+  const maxQuotas = hasTax ? Math.min(8, Math.max(1, Math.floor(taxDue / 100))) : 1;
+  const [quotaChoice, setQuotaChoice] = useState<number | null>(
+    typeof del.guide_quota_count === "number" && del.guide_quota_count > 0 ? del.guide_quota_count : null
+  );
+
 
   const previewStatus = del.preview_status as string;
   const isApproved = previewStatus === "aprovado";
@@ -1050,22 +1057,34 @@ function PreviewApprovalCard({
   };
 
   const handleApprove = async () => {
+    if (hasTax && (!quotaChoice || quotaChoice < 1 || quotaChoice > maxQuotas)) {
+      toast.error(`Escolha em quantas cotas deseja pagar (1 a ${maxQuotas}).`);
+      return;
+    }
     setSubmitting(true);
     try {
-      await supabase.from("final_deliverables").update({
+      const updates: any = {
         preview_status: "aprovado",
         preview_feedback: null,
         preview_approved_at: new Date().toISOString(),
-      } as any).eq("id", deliverable.id);
+      };
+      if (hasTax && quotaChoice) {
+        updates.guide_quota_count = quotaChoice;
+        updates.guide_payment_type = quotaChoice === 1 ? "cota_unica" : "cotas";
+      }
+      await supabase.from("final_deliverables").update(updates).eq("id", deliverable.id);
       // Atualiza status da demanda para "Prévia Aprovada" — sinaliza ao time
       // que a declaração está liberada para transmissão.
       await supabase.from("irpf_cases").update({
         status: "previa_aprovada",
       } as any).eq("id", caseId);
+      const desc = hasTax && quotaChoice
+        ? `Cliente aprovou a prévia — imposto de ${taxDue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} a pagar em ${quotaChoice} ${quotaChoice === 1 ? "cota única" : "cotas"}`
+        : "Cliente aprovou a prévia da declaração — liberada para transmissão";
       await supabase.from("case_timeline").insert({
         case_id: caseId,
         event_type: "Prévia aprovada",
-        description: "Cliente aprovou a prévia da declaração — liberada para transmissão",
+        description: desc,
         visible_to_client: true,
         created_by: "Cliente",
       });
@@ -1077,6 +1096,7 @@ function PreviewApprovalCard({
       setSubmitting(false);
     }
   };
+
 
   const handleRequestAdjustments = async () => {
     if (!feedback.trim()) {
@@ -1244,12 +1264,56 @@ function PreviewApprovalCard({
           </div>
         )}
 
+        {!isApproved && hasTax && (
+          <div className="rounded-lg border-2 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-bold text-amber-800 dark:text-amber-200">
+                  Sua declaração apresentou imposto a pagar de{" "}
+                  {taxDue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}.
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  O pagamento pode ser parcelado em até <strong>{maxQuotas}</strong>{" "}
+                  {maxQuotas === 1 ? "cota" : "cotas"} mensais (mínimo R$ 100,00 por cota).
+                  Escolha em quantas cotas deseja pagar antes de aprovar:
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: maxQuotas }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setQuotaChoice(n)}
+                  className={`h-9 min-w-9 px-3 rounded-md border text-sm font-semibold transition-colors ${
+                    quotaChoice === n
+                      ? "bg-amber-600 text-white border-amber-600"
+                      : "bg-background border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                  }`}
+                >
+                  {n}x
+                </button>
+              ))}
+            </div>
+            {quotaChoice && (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Cada cota ficará em aproximadamente{" "}
+                <strong>
+                  {(taxDue / quotaChoice).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </strong>
+                {quotaChoice === 1 ? " (cota única)." : "."}
+              </p>
+            )}
+          </div>
+        )}
+
         {!isApproved && (
           <div className="flex flex-col gap-2">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 onClick={handleApprove}
-                disabled={submitting}
+                disabled={submitting || (hasTax && !quotaChoice)}
                 size="lg"
                 className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold text-base shadow-lg shadow-violet-300/50 dark:shadow-violet-900/40 py-6"
               >
@@ -1257,6 +1321,7 @@ function PreviewApprovalCard({
                 ✅ Aprovar Prévia da Declaração
               </Button>
             </motion.div>
+
 
             {!showFeedback ? (
               <Button
