@@ -1057,22 +1057,34 @@ function PreviewApprovalCard({
   };
 
   const handleApprove = async () => {
+    if (hasTax && (!quotaChoice || quotaChoice < 1 || quotaChoice > maxQuotas)) {
+      toast.error(`Escolha em quantas cotas deseja pagar (1 a ${maxQuotas}).`);
+      return;
+    }
     setSubmitting(true);
     try {
-      await supabase.from("final_deliverables").update({
+      const updates: any = {
         preview_status: "aprovado",
         preview_feedback: null,
         preview_approved_at: new Date().toISOString(),
-      } as any).eq("id", deliverable.id);
+      };
+      if (hasTax && quotaChoice) {
+        updates.guide_quota_count = quotaChoice;
+        updates.guide_payment_type = quotaChoice === 1 ? "cota_unica" : "cotas";
+      }
+      await supabase.from("final_deliverables").update(updates).eq("id", deliverable.id);
       // Atualiza status da demanda para "Prévia Aprovada" — sinaliza ao time
       // que a declaração está liberada para transmissão.
       await supabase.from("irpf_cases").update({
         status: "previa_aprovada",
       } as any).eq("id", caseId);
+      const desc = hasTax && quotaChoice
+        ? `Cliente aprovou a prévia — imposto de ${taxDue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} a pagar em ${quotaChoice} ${quotaChoice === 1 ? "cota única" : "cotas"}`
+        : "Cliente aprovou a prévia da declaração — liberada para transmissão";
       await supabase.from("case_timeline").insert({
         case_id: caseId,
         event_type: "Prévia aprovada",
-        description: "Cliente aprovou a prévia da declaração — liberada para transmissão",
+        description: desc,
         visible_to_client: true,
         created_by: "Cliente",
       });
@@ -1084,6 +1096,7 @@ function PreviewApprovalCard({
       setSubmitting(false);
     }
   };
+
 
   const handleRequestAdjustments = async () => {
     if (!feedback.trim()) {
