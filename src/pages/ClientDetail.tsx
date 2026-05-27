@@ -2492,6 +2492,37 @@ function DeclarationReceiptCard({ caseId, deliverable, clientCpf, onRefresh, isR
           )}
         </Button>
       )}
+
+      <AlertDialog open={!!confirmState} onOpenChange={(o) => { if (!o) setConfirmState(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>CPF não confere</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">{confirmState?.reason}</span>
+              <span className="block">
+                <strong>Cliente:</strong> {formatCpfMask(clientCpf)}<br />
+                <strong>Arquivo:</strong> {confirmState?.file.name}
+              </span>
+              <span className="block text-destructive font-medium">
+                Confirme se este arquivo realmente pertence a este cliente antes de anexar.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmState(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!confirmState) return;
+                const { type, file } = confirmState;
+                setConfirmState(null);
+                await performUpload(type, file, true);
+              }}
+            >
+              Anexar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
