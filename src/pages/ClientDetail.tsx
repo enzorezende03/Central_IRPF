@@ -2250,19 +2250,22 @@ function PreviewCard({
             onClick={async () => {
               if (!confirm("Confirmar aprovação interna da prévia? Isso liberará a etapa de Declaração/Recibo.")) return;
               try {
+                const approver = profileName || user?.email || "Equipe";
                 await supabase
                   .from("final_deliverables")
                   .update({
                     preview_status: "aprovado",
                     preview_approved_at: new Date().toISOString(),
+                    preview_approved_by_internal: true,
+                    preview_approved_by_name: approver,
                     preview_feedback: null,
                   } as any)
                   .eq("id", deliverable.id);
                 await logTimelineEvent(
                   caseId,
                   "Prévia aprovada internamente",
-                  "Aprovação registrada manualmente pela equipe (cliente confirmou por canal externo).",
-                  true
+                  `Aprovação registrada manualmente por ${approver} (cliente confirmou por canal externo).`,
+                  false
                 );
                 toast.success("Prévia aprovada internamente!");
                 onRefresh();
