@@ -1938,6 +1938,7 @@ function PreviewCard({
   portalUrl?: string;
   onRefresh: () => void;
 }) {
+  const { profileName, user } = useAuth();
   const previewRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [taxDialogOpen, setTaxDialogOpen] = useState(false);
