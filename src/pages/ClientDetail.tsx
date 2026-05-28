@@ -1938,6 +1938,7 @@ function PreviewCard({
   portalUrl?: string;
   onRefresh: () => void;
 }) {
+  const { profileName, user } = useAuth();
   const previewRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [taxDialogOpen, setTaxDialogOpen] = useState(false);
@@ -2014,6 +2015,9 @@ function PreviewCard({
     ajustes_solicitados: { text: "Ajustes solicitados", color: "text-destructive" },
   };
   const pStatus = del?.preview_status as string | null;
+  const approvedInternally = !!del?.preview_approved_by_internal;
+  const approvedByName = del?.preview_approved_by_name as string | null;
+  const approvedAtIso = del?.preview_approved_at as string | null;
 
   // Data do envio mais recente da prévia (a partir do timeline) — fallback para uploaded_at
   const sentAtIso: string | null = (() => {
@@ -2208,8 +2212,22 @@ function PreviewCard({
       {pStatus && del?.preview_file_url && (
         <div className="space-y-1">
           <p className={`text-xs font-medium ${previewStatusLabel[pStatus]?.color ?? "text-muted-foreground"}`}>
-            {previewStatusLabel[pStatus]?.text ?? pStatus}
+            {pStatus === "aprovado" && approvedInternally
+              ? "Aprovada internamente ✓"
+              : previewStatusLabel[pStatus]?.text ?? pStatus}
           </p>
+          {pStatus === "aprovado" && approvedInternally && (approvedByName || approvedAtIso) && (
+            <p className="text-xs text-muted-foreground">
+              {approvedByName ? `Por ${approvedByName}` : ""}
+              {approvedByName && approvedAtIso ? " • " : ""}
+              {approvedAtIso
+                ? new Date(approvedAtIso).toLocaleString("pt-BR", {
+                    day: "2-digit", month: "2-digit", year: "numeric",
+                    hour: "2-digit", minute: "2-digit",
+                  })
+                : ""}
+            </p>
+          )}
           {pStatus === "ajustes_solicitados" && del?.preview_feedback && (
             <div className="p-2 rounded bg-destructive/10 border border-destructive/20">
               <p className="text-xs font-medium text-destructive mb-0.5">Feedback do cliente:</p>
@@ -2232,19 +2250,22 @@ function PreviewCard({
             onClick={async () => {
               if (!confirm("Confirmar aprovação interna da prévia? Isso liberará a etapa de Declaração/Recibo.")) return;
               try {
+                const approver = profileName || user?.email || "Equipe";
                 await supabase
                   .from("final_deliverables")
                   .update({
                     preview_status: "aprovado",
                     preview_approved_at: new Date().toISOString(),
+                    preview_approved_by_internal: true,
+                    preview_approved_by_name: approver,
                     preview_feedback: null,
                   } as any)
                   .eq("id", deliverable.id);
                 await logTimelineEvent(
                   caseId,
                   "Prévia aprovada internamente",
-                  "Aprovação registrada manualmente pela equipe (cliente confirmou por canal externo).",
-                  true
+                  `Aprovação registrada manualmente por ${approver} (cliente confirmou por canal externo).`,
+                  false
                 );
                 toast.success("Prévia aprovada internamente!");
                 onRefresh();
@@ -2271,6 +2292,8 @@ function PreviewCard({
                 .update({
                   preview_status: "aguardando_revisao",
                   preview_approved_at: null,
+                  preview_approved_by_internal: false,
+                  preview_approved_by_name: null,
                   preview_feedback: null,
                 } as any)
                 .eq("id", deliverable.id);
