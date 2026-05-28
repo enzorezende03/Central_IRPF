@@ -2212,8 +2212,22 @@ function PreviewCard({
       {pStatus && del?.preview_file_url && (
         <div className="space-y-1">
           <p className={`text-xs font-medium ${previewStatusLabel[pStatus]?.color ?? "text-muted-foreground"}`}>
-            {previewStatusLabel[pStatus]?.text ?? pStatus}
+            {pStatus === "aprovado" && approvedInternally
+              ? "Aprovada internamente ✓"
+              : previewStatusLabel[pStatus]?.text ?? pStatus}
           </p>
+          {pStatus === "aprovado" && approvedInternally && (approvedByName || approvedAtIso) && (
+            <p className="text-xs text-muted-foreground">
+              {approvedByName ? `Por ${approvedByName}` : ""}
+              {approvedByName && approvedAtIso ? " • " : ""}
+              {approvedAtIso
+                ? new Date(approvedAtIso).toLocaleString("pt-BR", {
+                    day: "2-digit", month: "2-digit", year: "numeric",
+                    hour: "2-digit", minute: "2-digit",
+                  })
+                : ""}
+            </p>
+          )}
           {pStatus === "ajustes_solicitados" && del?.preview_feedback && (
             <div className="p-2 rounded bg-destructive/10 border border-destructive/20">
               <p className="text-xs font-medium text-destructive mb-0.5">Feedback do cliente:</p>
