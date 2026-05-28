@@ -401,6 +401,8 @@ export type Database = {
           id: string
           irpf_file_url: string | null
           preview_approved_at: string | null
+          preview_approved_by_internal: boolean
+          preview_approved_by_name: string | null
           preview_feedback: string | null
           preview_file_url: string | null
           preview_status: Database["public"]["Enums"]["preview_status"] | null
@@ -421,6 +423,8 @@ export type Database = {
           id?: string
           irpf_file_url?: string | null
           preview_approved_at?: string | null
+          preview_approved_by_internal?: boolean
+          preview_approved_by_name?: string | null
           preview_feedback?: string | null
           preview_file_url?: string | null
           preview_status?: Database["public"]["Enums"]["preview_status"] | null
@@ -441,6 +445,8 @@ export type Database = {
           id?: string
           irpf_file_url?: string | null
           preview_approved_at?: string | null
+          preview_approved_by_internal?: boolean
+          preview_approved_by_name?: string | null
           preview_feedback?: string | null
           preview_file_url?: string | null
           preview_status?: Database["public"]["Enums"]["preview_status"] | null
