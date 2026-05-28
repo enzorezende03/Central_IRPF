@@ -2292,6 +2292,8 @@ function PreviewCard({
                 .update({
                   preview_status: "aguardando_revisao",
                   preview_approved_at: null,
+                  preview_approved_by_internal: false,
+                  preview_approved_by_name: null,
                   preview_feedback: null,
                 } as any)
                 .eq("id", deliverable.id);
