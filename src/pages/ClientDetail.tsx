@@ -2015,6 +2015,9 @@ function PreviewCard({
     ajustes_solicitados: { text: "Ajustes solicitados", color: "text-destructive" },
   };
   const pStatus = del?.preview_status as string | null;
+  const approvedInternally = !!del?.preview_approved_by_internal;
+  const approvedByName = del?.preview_approved_by_name as string | null;
+  const approvedAtIso = del?.preview_approved_at as string | null;
 
   // Data do envio mais recente da prévia (a partir do timeline) — fallback para uploaded_at
   const sentAtIso: string | null = (() => {
