@@ -1,43 +1,53 @@
-## Validação de CPF no upload da Declaração e Recibo
+## Objetivo
 
-Adicionar uma checagem automática do CPF do cliente no momento em que a equipe anexa um dos 4 arquivos do card **Declaração e Recibo** (Declaração IRPF, Recibo de Entrega, Arquivo REC, Arquivo DEC), para evitar anexar arquivo de cliente errado.
+Gerar uma planilha Excel (.xlsx) confrontando os 231 registros da planilha do time comercial (`Relatório clientes IRPF 2026-2025.xlsx`) com as demandas de IRPF cadastradas no sistema, incluindo o status atual da demanda no sistema.
 
-### Como funciona
+## Como será feito o cruzamento
 
-1. **Conferência pelo nome do arquivo (sempre primeiro)**
-   - Extrai todos os dígitos do `file.name`.
-   - Compara com o CPF do cliente (`caseData.clients.cpf`, normalizado para dígitos).
-   - Se o CPF do cliente aparecer como subsequência contínua nos dígitos do nome → ✅ válido, segue upload.
+A planilha do comercial não tem CPF — só nome completo e e-mail do cliente. Por isso o pareamento será feito assim, em cascata:
 
-2. **Conferência dentro do PDF (fallback)**
-   - Se o nome não contém o CPF e o arquivo é `.pdf`, extrai o texto do PDF no próprio navegador com `pdfjs-dist` (já é uma lib leve, lazy-loaded só nesse fluxo).
-   - Busca o CPF do cliente (com e sem máscara `000.000.000-00`) no texto.
-   - Se encontrado → ✅ segue upload.
+1. **Por e-mail** (`E-mail (Pessoa)` ↔ `clients.email`), normalizado em minúsculas — mais confiável.
+2. **Por nome completo normalizado** (`Nome completo (Pessoa)` ↔ `clients.full_name`) — sem acentos, sem caixa, sem espaços extras — quando o e-mail não bater.
+3. Quando há mais de uma demanda do mesmo cliente, prioriza a do ano-base 2025 / ano-exercício 2026.
 
-3. **Quando nenhuma das duas confere**
-   - Abre um `AlertDialog` de confirmação:
-     > "O CPF do cliente (`xxx.xxx.xxx-xx`) não foi encontrado no nome do arquivo nem no conteúdo do PDF. Deseja anexar mesmo assim?"
-   - Botões: **Cancelar** (padrão) / **Anexar mesmo assim**.
-   - Decisão é registrada no `case_timeline` como observação interna ("Arquivo anexado sem confirmação de CPF").
+## Estrutura da planilha gerada
 
-### Escopo
+Arquivo: `/mnt/documents/conferencia_comercial_vs_sistema.xlsx`
 
-- Aplica-se apenas ao card **Declaração e Recibo** em `ClientDetail.tsx` (`DeclarationReceiptCard`), tanto na declaração original quanto na retificação.
-- Arquivos **.REC** e **.DEC** (binários) → só a conferência por nome de arquivo. Sem leitura interna.
-- Arquivos **.PDF** (Declaração IRPF / Recibo) → nome + conteúdo do PDF.
-- Outros formatos (JPG/PNG do recibo, por exemplo) → só nome de arquivo.
-- Sem mudanças em outros uploads (BulkUploadDialog, documentos do cliente, prévia) — fora do pedido.
+**Aba 1 — "Conferência"** (uma linha por registro do comercial, 231 linhas):
+- Nome (comercial)
+- E-mail (comercial)
+- Data cadastro (comercial)
+- Status comercial (Ganha/Perdida/etc.)
+- Tags (comercial)
+- Valor P&S (comercial)
+- **Demanda no sistema?** (Sim / Não)
+- Cliente no sistema (nome cadastrado)
+- CPF do sistema
+- Status da demanda no sistema (rótulo legível, ex.: "Aguardando Cliente", "Em Andamento", "Finalizado")
+- Responsável interno
+- Ano-base / Ano-exercício
+- Tipo de pareamento (e-mail / nome / não encontrado)
+- Link para abrir a demanda
 
-### Detalhes técnicos
+**Aba 2 — "Resumo"**:
+- Total no comercial, total encontrados, total não encontrados
+- Quebra por status do sistema
+- Quebra cruzada: status comercial × encontrado no sistema
 
-- Função utilitária nova em `src/lib/cpf-check.ts`:
-  - `digitsOnly(s)`, `extractCpfFromFilename(name, cpf)`, `extractCpfFromPdf(file, cpf)` (usa `pdfjs-dist` dinâmico).
-- `handleUpload` em `DeclarationReceiptCard` chama a checagem antes de subir o arquivo. Estado novo para controlar o `AlertDialog` de confirmação com o arquivo pendente.
-- Dependência adicional: `pdfjs-dist` (lazy import, sem impacto no bundle inicial).
-- Sem alteração de schema, RLS, ou edge functions.
+**Aba 3 — "Apenas no sistema"** (opcional, para visão inversa): demandas IRPF 2026 ativas no sistema cujo cliente NÃO aparece na planilha do comercial — útil para identificar demandas criadas fora do funil comercial.
 
-### Arquivos afetados
+## Formatação
 
-- `src/pages/ClientDetail.tsx` — fluxo de upload em `DeclarationReceiptCard`, AlertDialog de confirmação.
-- `src/lib/cpf-check.ts` *(novo)* — utilitário de validação por nome e por conteúdo de PDF.
-- `package.json` — adicionar `pdfjs-dist`.
+- Fonte Arial, cabeçalho em negrito com fundo cinza claro.
+- Linhas "Não encontrado no sistema" destacadas em amarelo.
+- Auto-filtro ativo em todas as colunas.
+- Larguras de coluna ajustadas.
+
+## Detalhes técnicos
+
+- Leitura da planilha com DuckDB (`read_xlsx`) → CSV temporário.
+- Consulta no banco via `psql` em `clients` + `irpf_cases` (somente ativas, `deleted_at IS NULL`).
+- Geração do .xlsx com `openpyxl` (Python). Sem fórmulas — valores estáticos de conferência.
+
+Posso seguir com a geração?
