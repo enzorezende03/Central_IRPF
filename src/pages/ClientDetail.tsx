@@ -2582,6 +2582,14 @@ function GuideCard({ caseId, deliverable, clientName, clientPhone, clientEmail, 
   const [quotas, setQuotas] = useState<PaymentQuota[]>([]);
   const [loadingQuotas, setLoadingQuotas] = useState(false);
 
+  // Sincroniza com escolha do cliente quando o deliverable é atualizado (ex.: cliente aprovou no portal)
+  useEffect(() => {
+    if (del?.has_guide !== undefined) setHasGuide(!!del.has_guide);
+    if (del?.guide_payment_type) setPaymentType(del.guide_payment_type as "cota_unica" | "cotas");
+    if (del?.guide_quota_count) setQuotaCount(del.guide_quota_count);
+  }, [del?.has_guide, del?.guide_payment_type, del?.guide_quota_count]);
+
+
   const loadQuotas = useCallback(async () => {
     setLoadingQuotas(true);
     const { data } = await supabase
