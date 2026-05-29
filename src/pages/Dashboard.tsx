@@ -153,16 +153,15 @@ export default function Dashboard() {
               <StatCard label="Docs em Análise" value={byStatus("documentos_em_analise")} icon={FileText} color="text-blue-500" onClick={() => goToDemandasWithFilter("documentos_em_analise")} />
               <StatCard label="Impedidas" value={byStatus("impedida")} icon={ShieldAlert} color="text-rose-500" onClick={() => goToDemandasWithFilter("impedida")} />
               <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => goToDemandasWithFilter("em_andamento")} />
+              <StatCard label="Declaração em Preenchimento" value={byStatus("declaracao_em_preenchimento")} icon={FileText} color="text-blue-600" onClick={() => goToDemandasWithFilter("declaracao_em_preenchimento")} />
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => goToDemandasWithFilter("pendencia")} />
               <StatCard label="Pendências Respondidas" value={byStatus("pendencia_respondida")} icon={MessageSquareReply} color="text-cyan-600" onClick={() => goToDemandasWithFilter("pendencia_respondida")} />
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => goToDemandasWithFilter("previa_enviada")} />
               <StatCard label="Ajuste de Prévia" value={previaAjustes} icon={AlertCircle} color="text-destructive" onClick={() => goToDemandasWithFilter("previa_ajustes")} />
               <StatCard label="Prévias Aprovadas" value={previaAprovada} icon={CheckCircle} color="text-emerald-500" onClick={() => goToDemandasWithFilter("previa_aprovada")} />
               <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => goToDemandasWithFilter("finalizado")} />
+              <StatCard label="Retificando" value={byStatus("retificando")} icon={AlertCircle} color="text-amber-600" onClick={() => goToDemandasWithFilter("retificando")} />
               <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} />
-              {profileName && (
-                <StatCard label="Observações p/ você" value={notesAlertMine} icon={BellRing} color="text-amber-500" onClick={() => goToDemandasWithFilter("notes_alert_mine")} />
-              )}
               <StatCard label="Observações pendentes" value={notesAlertAll} icon={Bell} color="text-amber-600" onClick={() => goToDemandasWithFilter("notes_alert_all")} />
             </div>
           </>
