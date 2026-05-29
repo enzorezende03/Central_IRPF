@@ -2582,6 +2582,14 @@ function GuideCard({ caseId, deliverable, clientName, clientPhone, clientEmail, 
   const [quotas, setQuotas] = useState<PaymentQuota[]>([]);
   const [loadingQuotas, setLoadingQuotas] = useState(false);
 
+  // Sincroniza com escolha do cliente quando o deliverable é atualizado (ex.: cliente aprovou no portal)
+  useEffect(() => {
+    if (del?.has_guide !== undefined) setHasGuide(!!del.has_guide);
+    if (del?.guide_payment_type) setPaymentType(del.guide_payment_type as "cota_unica" | "cotas");
+    if (del?.guide_quota_count) setQuotaCount(del.guide_quota_count);
+  }, [del?.has_guide, del?.guide_payment_type, del?.guide_quota_count]);
+
+
   const loadQuotas = useCallback(async () => {
     setLoadingQuotas(true);
     const { data } = await supabase
@@ -2670,10 +2678,21 @@ function GuideCard({ caseId, deliverable, clientName, clientPhone, clientEmail, 
 
   return (
     <div className="space-y-3">
+      {del?.guide_payment_type && (
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+          <p className="font-medium text-primary">Escolha do cliente</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {del.guide_payment_type === "cota_unica"
+              ? "Pagar em cota única"
+              : `Parcelar em ${del.guide_quota_count ?? "?"} cotas`}
+          </p>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Possui guia de pagamento?</label>
         <Switch checked={hasGuide} onCheckedChange={toggleGuide} />
       </div>
+
 
       {hasGuide && (
         <>
