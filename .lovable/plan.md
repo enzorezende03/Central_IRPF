@@ -1,53 +1,65 @@
-## Objetivo
+## Diagnóstico
 
-Gerar uma planilha Excel (.xlsx) confrontando os 231 registros da planilha do time comercial (`Relatório clientes IRPF 2026-2025.xlsx`) com as demandas de IRPF cadastradas no sistema, incluindo o status atual da demanda no sistema.
+Conferi a demanda da Fátima Cezario no banco:
 
-## Como será feito o cruzamento
+- `irpf_cases.status = 'finalizado'` (deveria estar `retificando`/`retificada`)
+- `retificacao_iniciada_em` está preenchido (a abertura registrou)
+- Existem **2 linhas** em `final_deliverables`: uma original (`retificacao=false`) e a retificadora (`retificacao=true`, com DEC + REC + IRPF + recibo já anexados)
 
-A planilha do comercial não tem CPF — só nome completo e e-mail do cliente. Por isso o pareamento será feito assim, em cascata:
+Ou seja: os documentos da retificadora **foram salvos**, mas o status foi **revertido para "finalizado"** pelos triggers automáticos do banco. Isso também explica por que o portal do cliente não mostra a retificadora (o portal só exibe os blocos de retificação quando `status` é `retificando`/`retificada`).
 
-1. **Por e-mail** (`E-mail (Pessoa)` ↔ `clients.email`), normalizado em minúsculas — mais confiável.
-2. **Por nome completo normalizado** (`Nome completo (Pessoa)` ↔ `clients.full_name`) — sem acentos, sem caixa, sem espaços extras — quando o e-mail não bater.
-3. Quando há mais de uma demanda do mesmo cliente, prioriza a do ano-base 2025 / ano-exercício 2026.
+## Causa raiz
 
-## Estrutura da planilha gerada
+Três funções do banco mexem em `irpf_cases.status` quando algo muda em `final_deliverables` / `document_requests` e **nenhuma delas conhece o estado de retificação**:
 
-Arquivo: `/mnt/documents/conferencia_comercial_vs_sistema.xlsx`
+1. `auto_update_client_status(p_case_id)` — lê `final_deliverables` sem filtrar `retificacao`. Como agora existem duas linhas, o `SELECT INTO` pega uma arbitrária e, vendo `irpf_file_url` + `sent_to_client=true`, força `status='finalizado'`. Além disso, a lista de estados "protegidos" (`impedida`, `dispensada`, `previa_enviada`, `previa_aprovada`) **não inclui** `retificando` nem `retificada`.
 
-**Aba 1 — "Conferência"** (uma linha por registro do comercial, 231 linhas):
-- Nome (comercial)
-- E-mail (comercial)
-- Data cadastro (comercial)
-- Status comercial (Ganha/Perdida/etc.)
-- Tags (comercial)
-- Valor P&S (comercial)
-- **Demanda no sistema?** (Sim / Não)
-- Cliente no sistema (nome cadastrado)
-- CPF do sistema
-- Status da demanda no sistema (rótulo legível, ex.: "Aguardando Cliente", "Em Andamento", "Finalizado")
-- Responsável interno
-- Ano-base / Ano-exercício
-- Tipo de pareamento (e-mail / nome / não encontrado)
-- Link para abrir a demanda
+2. `recalc_case_progress(p_case_id)` — mesmo problema de `SELECT INTO` em `final_deliverables` sem filtrar `retificacao`, e também recalcula `status` sem proteger os estados de retificação.
 
-**Aba 2 — "Resumo"**:
-- Total no comercial, total encontrados, total não encontrados
-- Quebra por status do sistema
-- Quebra cruzada: status comercial × encontrado no sistema
+3. `auto_set_status_on_preview` — dispara em qualquer linha de `final_deliverables` (inclusive a retificadora) e pode forçar `previa_enviada`/`previa_aprovada` por causa do `preview_status` da linha de retificação.
 
-**Aba 3 — "Apenas no sistema"** (opcional, para visão inversa): demandas IRPF 2026 ativas no sistema cujo cliente NÃO aparece na planilha do comercial — útil para identificar demandas criadas fora do funil comercial.
+## Plano de correção
 
-## Formatação
+### 1. Migração — proteger triggers contra o fluxo de retificação
 
-- Fonte Arial, cabeçalho em negrito com fundo cinza claro.
-- Linhas "Não encontrado no sistema" destacadas em amarelo.
-- Auto-filtro ativo em todas as colunas.
-- Larguras de coluna ajustadas.
+Atualizar três funções (sem mudar comportamento normal):
 
-## Detalhes técnicos
+- **`auto_update_client_status`**
+  - Adicionar `retificando` e `retificada` à lista de estados protegidos (retorna sem alterar).
+  - Filtrar `final_deliverables` por `retificacao = false` ao ler `preview_file_url`, `irpf_file_url`, `sent_to_client`.
 
-- Leitura da planilha com DuckDB (`read_xlsx`) → CSV temporário.
-- Consulta no banco via `psql` em `clients` + `irpf_cases` (somente ativas, `deleted_at IS NULL`).
-- Geração do .xlsx com `openpyxl` (Python). Sem fórmulas — valores estáticos de conferência.
+- **`recalc_case_progress`**
+  - Mesmo filtro `retificacao = false` no `SELECT INTO` da deliverable.
+  - Se `status` atual for `retificando`/`retificada`/`finalizado`, recalcular o `progress_percent` mas **não** sobrescrever `status`.
 
-Posso seguir com a geração?
+- **`auto_set_status_on_preview`**
+  - Ignorar (retornar `NEW`) quando `NEW.retificacao = true`.
+  - Manter os estados `retificando`/`retificada` na lista de protegidos.
+
+### 2. Reparar a demanda da Fátima
+
+Na mesma migração, restaurar o status correto da demanda já afetada:
+
+```sql
+UPDATE irpf_cases
+   SET status = 'retificada', updated_at = now()
+ WHERE id = 'cc92ba84-01e4-4245-aa4c-7cc19beb953f';
+```
+
+(A retificadora já tem DEC + REC + IRPF + recibo + `sent_to_client=true`, então o estado final correto é `retificada`. Registrar evento na timeline informando o ajuste.)
+
+### 3. Pequenos ajustes no front (`src/pages/ClientDetail.tsx`)
+
+- No clique de **"Marcar como Retificada"**, invalidar também a query `irpf-case` (além das já invalidadas) para refletir o novo status imediatamente.
+- No upload da retificadora (`DeclarationReceiptCard` com `isRetificacao`), invalidar `irpf-case` no `onRefresh` para que o front não mostre status desatualizado caso o usuário recarregue.
+
+### 4. Verificação no Portal do Cliente
+
+Nenhuma mudança de código no portal — assim que o `status` voltar a ser `retificando`/`retificada`, o bloco "Declaração Retificadora" já aparece corretamente (lógica em `ClientPortal.tsx:576-595` já existente).
+
+## Resultado esperado
+
+- Anexar documentos na retificadora **não rebaixa** o status para `finalizado`.
+- Botão **"Marcar como Retificada"** persiste o status `retificada` (sem reversão por trigger).
+- Portal do cliente exibe o card de **Declaração Retificadora** com o arquivo liberado.
+- A demanda da Fátima fica corrigida automaticamente.
