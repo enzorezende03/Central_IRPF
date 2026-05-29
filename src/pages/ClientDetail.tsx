@@ -927,6 +927,8 @@ export default function ClientDetail() {
                     onRefresh={() => {
                       queryClient.invalidateQueries({ queryKey: ["case-deliverable-ret", id] });
                       queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });
+                      queryClient.invalidateQueries({ queryKey: ["irpf-case", id] });
+                      queryClient.invalidateQueries({ queryKey: ["irpf-cases"] });
                     }}
                   />
                   {caseData.status === "retificando" && retDeliverable?.dec_file_url && retDeliverable?.rec_file_url && (
