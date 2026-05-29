@@ -2678,10 +2678,21 @@ function GuideCard({ caseId, deliverable, clientName, clientPhone, clientEmail, 
 
   return (
     <div className="space-y-3">
+      {del?.guide_payment_type && (
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+          <p className="font-medium text-primary">Escolha do cliente</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {del.guide_payment_type === "cota_unica"
+              ? "Pagar em cota única"
+              : `Parcelar em ${del.guide_quota_count ?? "?"} cotas`}
+          </p>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Possui guia de pagamento?</label>
         <Switch checked={hasGuide} onCheckedChange={toggleGuide} />
       </div>
+
 
       {hasGuide && (
         <>
