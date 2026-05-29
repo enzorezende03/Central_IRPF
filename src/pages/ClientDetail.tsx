@@ -916,6 +916,11 @@ export default function ClientDetail() {
                         </CardDescription>
                       )}
                     </div>
+                    <CopyStageMessageButton
+                      message={`Olá!\n\nSua declaração de Imposto de Renda foi retificada e já está disponível.\nAcesse pelo link da Central do IR no aplicativo ou pelo link: ${portalUrl} para conferência.\n\nEstamos à disposição para qualquer dúvida!`}
+                      label="Copiar msg"
+                      toastLabel="Mensagem da retificadora copiada!"
+                    />
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
