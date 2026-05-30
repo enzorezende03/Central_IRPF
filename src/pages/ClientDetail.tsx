@@ -2326,6 +2326,7 @@ function PreviewCard({
 
 // ── Declaration & Receipt Card ──
 function DeclarationReceiptCard({ caseId, deliverable, clientCpf, onRefresh, isRetificacao = false, readOnly = false }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; clientCpf?: string | null; onRefresh: () => void; isRetificacao?: boolean; readOnly?: boolean }) {
+  const { profileName, user } = useAuth();
   const irpfRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<HTMLInputElement>(null);
@@ -2333,6 +2334,7 @@ function DeclarationReceiptCard({ caseId, deliverable, clientCpf, onRefresh, isR
   const [uploading, setUploading] = useState<"irpf" | "receipt" | "rec" | "dec" | null>(null);
   const [checking, setChecking] = useState<"irpf" | "receipt" | "rec" | "dec" | null>(null);
   const [confirmState, setConfirmState] = useState<{ type: "irpf" | "receipt" | "rec" | "dec"; file: File; reason: string } | null>(null);
+
 
   const UPLOAD_CONFIG = {
     irpf: { bucket: "declaracoes_finais", field: "irpf_file_url", label: "Declaração IRPF" },
