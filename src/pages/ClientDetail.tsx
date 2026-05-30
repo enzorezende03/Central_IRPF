@@ -864,12 +864,19 @@ export default function ClientDetail() {
             </Card>
 
             {/* ── 9d. Retificar (botão) ── */}
-            {caseData.status === "finalizado" && !caseData.retificacao_iniciada_em && (
+            {(caseData.status === "finalizado" ||
+              (!!(deliverable as any)?.irpf_file_url && !!(deliverable as any)?.receipt_file_url &&
+               !["retificando", "retificada", "dispensada", "impedida"].includes(caseData.status as string))
+             ) && !caseData.retificacao_iniciada_em && (
               <Card className="border-amber-500/40 bg-amber-500/5">
                 <CardContent className="p-4 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium">Precisa corrigir esta declaração?</p>
-                    <p className="text-xs text-muted-foreground">Inicie uma retificação dentro desta mesma demanda.</p>
+                    <p className="text-xs text-muted-foreground">
+                      {caseData.status === "finalizado"
+                        ? "Inicie uma retificação dentro desta mesma demanda."
+                        : "A declaração ainda não foi liberada para o cliente, mas você já pode iniciar a retificação."}
+                    </p>
                   </div>
                   <Button
                     variant="outline"
