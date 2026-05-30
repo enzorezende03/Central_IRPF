@@ -2286,7 +2286,7 @@ function PreviewCard({
         </div>
       )}
 
-      {del?.preview_file_url && pStatus === "aprovado" && deliverable && (
+      {pStatus === "aprovado" && (del as any)?.preview_approved_by_internal && deliverable && (
         <Button
           size="sm"
           variant="ghost"
