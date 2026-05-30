@@ -2243,9 +2243,43 @@ function PreviewCard({
             </p>
           )}
           {pStatus === "ajustes_solicitados" && del?.preview_feedback && (
-            <div className="p-2 rounded bg-destructive/10 border border-destructive/20">
-              <p className="text-xs font-medium text-destructive mb-0.5">Feedback do cliente:</p>
-              <p className="text-sm">{del.preview_feedback}</p>
+            <div className="p-2 rounded bg-destructive/10 border border-destructive/20 space-y-2">
+              <div>
+                <p className="text-xs font-medium text-destructive mb-0.5">Feedback do cliente:</p>
+                <p className="text-sm">{del.preview_feedback}</p>
+              </div>
+              {deliverable && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs w-full bg-background"
+                  onClick={async () => {
+                    if (!confirm("Marcar feedback como visualizado? Isso libera a demanda para avançar (ex.: retificando, nova prévia).")) return;
+                    try {
+                      const viewer = profileName || user?.email || "Equipe";
+                      await supabase
+                        .from("final_deliverables")
+                        .update({
+                          preview_status: "aguardando_revisao",
+                          preview_feedback: null,
+                        } as any)
+                        .eq("id", deliverable.id);
+                      await logTimelineEvent(
+                        caseId,
+                        "Feedback da prévia visualizado",
+                        `${viewer} marcou o feedback do cliente como visualizado.`,
+                        false
+                      );
+                      toast.success("Feedback marcado como visualizado.");
+                      onRefresh();
+                    } catch {
+                      toast.error("Erro ao marcar feedback.");
+                    }
+                  }}
+                >
+                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Marcar como visualizado
+                </Button>
+              )}
             </div>
           )}
         </div>
