@@ -2286,7 +2286,7 @@ function PreviewCard({
         </div>
       )}
 
-      {del?.preview_file_url && pStatus === "aprovado" && deliverable && (
+      {pStatus === "aprovado" && (del as any)?.preview_approved_by_internal && deliverable && (
         <Button
           size="sm"
           variant="ghost"
@@ -2326,6 +2326,7 @@ function PreviewCard({
 
 // ── Declaration & Receipt Card ──
 function DeclarationReceiptCard({ caseId, deliverable, clientCpf, onRefresh, isRetificacao = false, readOnly = false }: { caseId: string; deliverable: Tables<"final_deliverables"> | null | undefined; clientCpf?: string | null; onRefresh: () => void; isRetificacao?: boolean; readOnly?: boolean }) {
+  const { profileName, user } = useAuth();
   const irpfRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<HTMLInputElement>(null);
@@ -2333,6 +2334,7 @@ function DeclarationReceiptCard({ caseId, deliverable, clientCpf, onRefresh, isR
   const [uploading, setUploading] = useState<"irpf" | "receipt" | "rec" | "dec" | null>(null);
   const [checking, setChecking] = useState<"irpf" | "receipt" | "rec" | "dec" | null>(null);
   const [confirmState, setConfirmState] = useState<{ type: "irpf" | "receipt" | "rec" | "dec"; file: File; reason: string } | null>(null);
+
 
   const UPLOAD_CONFIG = {
     irpf: { bucket: "declaracoes_finais", field: "irpf_file_url", label: "Declaração IRPF" },
@@ -2469,16 +2471,62 @@ function DeclarationReceiptCard({ caseId, deliverable, clientCpf, onRefresh, isR
 
   if (!previewApproved && !isRetificacao) {
     return (
-      <div className="rounded-md border border-dashed p-4 bg-muted/30 text-center space-y-1">
+      <div className="rounded-md border border-dashed p-4 bg-muted/30 text-center space-y-3">
         <Lock className="h-5 w-5 mx-auto text-muted-foreground" />
         <p className="text-sm font-medium">Etapa bloqueada</p>
         <p className="text-xs text-muted-foreground">
-          Disponível somente após a <span className="font-medium">aprovação da prévia</span> pelo cliente
-          (ou aprovação interna pela equipe).
+          Disponível após <span className="font-medium">aprovação da prévia</span> pelo cliente — ou libere
+          manualmente abaixo se não for enviar prévia.
         </p>
+        {!readOnly && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={async () => {
+              if (!confirm("Liberar Declaração e Recibo (e Guia de Pagamento) sem enviar prévia ao cliente? A ação será registrada na timeline.")) return;
+              try {
+                const approver = profileName || user?.email || "Equipe";
+                if (deliverable) {
+                  await supabase
+                    .from("final_deliverables")
+                    .update({
+                      preview_status: "aprovado",
+                      preview_approved_at: new Date().toISOString(),
+                      preview_approved_by_internal: true,
+                      preview_approved_by_name: approver,
+                      preview_feedback: null,
+                    } as any)
+                    .eq("id", deliverable.id);
+                } else {
+                  await supabase.from("final_deliverables").insert({
+                    case_id: caseId,
+                    preview_status: "aprovado",
+                    preview_approved_at: new Date().toISOString(),
+                    preview_approved_by_internal: true,
+                    preview_approved_by_name: approver,
+                  } as any);
+                }
+                await logTimelineEvent(
+                  caseId,
+                  "Etapa liberada sem prévia",
+                  `Etapa de Declaração/Recibo liberada manualmente por ${approver} sem envio de prévia ao cliente.`,
+                  false
+                );
+                toast.success("Etapa liberada!");
+                onRefresh();
+              } catch {
+                toast.error("Erro ao liberar etapa.");
+              }
+            }}
+          >
+            <CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Liberar etapa sem prévia
+          </Button>
+        )}
       </div>
     );
   }
+
 
   if (readOnly) {
     return (
