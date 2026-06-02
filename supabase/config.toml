@@ -1,1 +1,4 @@
 project_id = "qsjpkwojcvxsjsszprrt"
+
+[functions.sso]
+verify_jwt = false
