@@ -223,7 +223,7 @@ export default function Demandas() {
       } else if (specialFilter === "notes_alert_all") {
         matchSpecial = (c as any).notes_alert === true;
       }
-      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType && matchSpecial;
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType && matchReceita && matchSpecial;
     });
     if (sortField) {
       list.sort((a, b) => {
