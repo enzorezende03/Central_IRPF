@@ -17,6 +17,8 @@ import { useCases } from "@/hooks/use-cases";
 import { useLastClientUploads } from "@/hooks/use-last-client-upload";
 import { useAuth } from "@/hooks/use-auth";
 import { STATUS_LABELS, type DemandStatus } from "@/lib/types";
+import { RECEITA_SITUACOES, RECEITA_SITUACAO_MAP, type ReceitaSituacao } from "@/lib/receita-situacao";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
