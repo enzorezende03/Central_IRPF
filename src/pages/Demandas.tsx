@@ -469,6 +469,7 @@ export default function Demandas() {
                         {sortField === "ultimo_doc" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                       </span>
                     </TableHead>
+                    <TableHead className="hidden lg:table-cell whitespace-nowrap">Receita Federal</TableHead>
                     {showDeleted && <TableHead className="whitespace-nowrap">Excluída por</TableHead>}
                     <TableHead className="w-10" />
                   </TableRow>
