@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle, Target, CalendarCheck, BarChart3,
+  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle, Target, CalendarCheck, BarChart3, Landmark,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
@@ -29,6 +29,7 @@ const menuItems = [
   { title: "Kanban Operacional", url: "/kanban", icon: Kanban, permission: "acesso_demandas" },
   { title: "Mensagens", url: "/mensagens", icon: MessageCircle, permission: "acesso_demandas" },
   { title: "Cobrança", url: "/cobranca", icon: DollarSign, permission: "acesso_cobranca" },
+  { title: "Pós-Entrega", url: "/pos-entrega", icon: Landmark, permission: "__admin_op__" },
   { title: "Metas IRPF", url: "/metas", icon: Target, permission: "acesso_metas" },
   { title: "Planejamento", url: "/planejamento", icon: CalendarCheck, permission: "acesso_metas" },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "__admin__" },
@@ -52,10 +53,12 @@ export function AppSidebar() {
 
   const roleLabel = role === "admin" ? "Administrador" : role === "operacional" ? "Operacional" : role === "financeiro" ? "Financeiro" : "Usuário";
 
-  const visibleItems = menuItems.filter((item) =>
-    item.permission === null ||
-    (item.permission === "__admin__" ? role === "admin" : hasPermission(item.permission))
-  );
+  const visibleItems = menuItems.filter((item) => {
+    if (item.permission === null) return true;
+    if (item.permission === "__admin__") return role === "admin";
+    if (item.permission === "__admin_op__") return role === "admin" || role === "operacional";
+    return hasPermission(item.permission);
+  });
 
   return (
     <TooltipProvider>
