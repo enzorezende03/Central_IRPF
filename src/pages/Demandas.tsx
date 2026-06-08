@@ -370,6 +370,7 @@ export default function Demandas() {
                   setPriorityFilter([]);
                   setClientStatusFilter([]);
                   setDeclarationTypeFilter([]);
+                  setReceitaFilter([]);
                   setSpecialFilter(null);
                 }}
               >
