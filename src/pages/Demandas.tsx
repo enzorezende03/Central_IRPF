@@ -257,7 +257,7 @@ export default function Demandas() {
     }).length;
   }, [cases, search]);
 
-  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0 || !!specialFilter;
+  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0 || receitaFilter.length > 0 || !!specialFilter;
 
   const specialFilterLabel: Record<string, string> = {
     previa_ajustes: "Ajuste de Prévia",
