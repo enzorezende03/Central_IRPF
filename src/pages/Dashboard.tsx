@@ -81,6 +81,7 @@ export default function Dashboard() {
   const notesAlertMine = filtered.filter(
     (c: any) => c.notes_alert === true && profileName && c.internal_owner === profileName,
   ).length;
+  const retificadas = byStatus("retificada");
 
   // Navegar para Demandas com o filtro do card
   const goToDemandasWithFilter = (key: string) => {
