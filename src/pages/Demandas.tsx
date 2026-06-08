@@ -80,6 +80,9 @@ export default function Demandas() {
   const [specialFilter, setSpecialFilter] = useState<string | null>(isSpecial ? rawStatusParam : null);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
   const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string[]>(toArr(saved.declarationTypeFilter));
+  const [receitaFilter, setReceitaFilter] = useState<string[]>(
+    searchParams.get("receita") ? toArr(searchParams.get("receita")) : toArr(saved.receitaFilter),
+  );
   const [sortField, setSortField] = useState<"cliente" | "ano" | "ultimo_doc" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
