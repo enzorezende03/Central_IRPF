@@ -76,6 +76,7 @@ export default function Dashboard() {
   const previaAprovada = filtered.filter((c) => c.status === "previa_aprovada").length;
 
   const notesAlertAll = filtered.filter((c: any) => c.notes_alert === true).length;
+  const emMalha = filtered.filter((c: any) => c.receita_situacao === "em_malha").length;
   const notesAlertMine = filtered.filter(
     (c: any) => c.notes_alert === true && profileName && c.internal_owner === profileName,
   ).length;
