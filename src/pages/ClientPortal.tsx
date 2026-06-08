@@ -23,6 +23,7 @@ import { supabase as defaultSupabase } from "@/integrations/supabase/client";
 import { createPortalClient, getPortalClient } from "@/integrations/supabase/portal-client";
 import { STATUS_LABELS } from "@/lib/types";
 import { PortalPendenciasBanner } from "@/components/PortalPendenciasBanner";
+import { CLIENT_PORTAL_MESSAGES, type ReceitaSituacao } from "@/lib/receita-situacao";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Database } from "@/integrations/supabase/types";
 
