@@ -558,6 +558,19 @@ export default function Demandas() {
                             );
                           })()}
                         </TableCell>
+                        <TableCell className="hidden lg:table-cell whitespace-nowrap">
+                          {(() => {
+                            const sit = (c as any).receita_situacao as ReceitaSituacao | null;
+                            if (!sit) return null;
+                            const meta = RECEITA_SITUACAO_MAP[sit];
+                            if (!meta) return null;
+                            return (
+                              <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium", meta.badgeClass)}>
+                                <span>{meta.icon}</span> {meta.label}
+                              </span>
+                            );
+                          })()}
+                        </TableCell>
                         {showDeleted && (
                           <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                             {(c as any).deleted_by_name ? (
