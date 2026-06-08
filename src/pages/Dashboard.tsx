@@ -16,6 +16,7 @@ import { StatusBadge, BillingBadge, PriorityBadge } from "@/components/StatusBad
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -80,6 +81,7 @@ export default function Dashboard() {
   const notesAlertMine = filtered.filter(
     (c: any) => c.notes_alert === true && profileName && c.internal_owner === profileName,
   ).length;
+  const retificadas = byStatus("retificada");
 
   // Navegar para Demandas com o filtro do card
   const goToDemandasWithFilter = (key: string) => {
@@ -139,36 +141,55 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Stat Cards */}
-        {isLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
-            ))}
-          </div>
-        ) : (
-          <>
+        {/* Grupo 1 — Requerem atenção */}
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Requerem atenção</p>
+          {isLoading ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-              <StatCard label="Total de Demandas" value={total} icon={Users} color="text-primary" onClick={() => goToDemandasWithFilter("total")} />
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 rounded-xl" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <StatCard label="Aguardando Cliente" value={byStatus("aguardando_cliente")} icon={Clock} color="text-warning" onClick={() => goToDemandasWithFilter("aguardando_cliente")} />
-              <StatCard label="Documentos Parciais" value={byStatus("documentos_parciais")} icon={FileWarning} color="text-amber-500" onClick={() => goToDemandasWithFilter("documentos_parciais")} />
               <StatCard label="Docs em Análise" value={byStatus("documentos_em_analise")} icon={FileText} color="text-blue-500" onClick={() => goToDemandasWithFilter("documentos_em_analise")} />
-              <StatCard label="Impedidas" value={byStatus("impedida")} icon={ShieldAlert} color="text-rose-500" onClick={() => goToDemandasWithFilter("impedida")} />
               <StatCard label="Em Andamento" value={byStatus("em_andamento")} icon={PlayCircle} color="text-info" onClick={() => goToDemandasWithFilter("em_andamento")} />
               <StatCard label="Declaração em Preenchimento" value={byStatus("declaracao_em_preenchimento")} icon={FileText} color="text-blue-600" onClick={() => goToDemandasWithFilter("declaracao_em_preenchimento")} />
+              <StatCard label="Impedidas" value={byStatus("impedida")} icon={ShieldAlert} color="text-rose-500" onClick={() => goToDemandasWithFilter("impedida")} />
               <StatCard label="Pendências" value={byStatus("pendencia")} icon={AlertTriangle} color="text-destructive" onClick={() => goToDemandasWithFilter("pendencia")} />
               <StatCard label="Pendências Respondidas" value={byStatus("pendencia_respondida")} icon={MessageSquareReply} color="text-cyan-600" onClick={() => goToDemandasWithFilter("pendencia_respondida")} />
               <StatCard label="Prévias Enviadas" value={previaEnviada} icon={Send} color="text-violet-500" onClick={() => goToDemandasWithFilter("previa_enviada")} />
               <StatCard label="Ajuste de Prévia" value={previaAjustes} icon={AlertCircle} color="text-destructive" onClick={() => goToDemandasWithFilter("previa_ajustes")} />
               <StatCard label="Prévias Aprovadas" value={previaAprovada} icon={CheckCircle} color="text-emerald-500" onClick={() => goToDemandasWithFilter("previa_aprovada")} />
-              <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-success" onClick={() => goToDemandasWithFilter("finalizado")} />
               <StatCard label="Retificando" value={byStatus("retificando")} icon={AlertCircle} color="text-amber-600" onClick={() => goToDemandasWithFilter("retificando")} />
-              <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} />
-              <StatCard label="Observações pendentes" value={notesAlertAll} icon={Bell} color="text-amber-600" onClick={() => goToDemandasWithFilter("notes_alert_all")} />
               <StatCard label="Em malha fiscal" value={emMalha} icon={Landmark} color="text-amber-600" onClick={() => navigate(`/pos-entrega?situacao=em_malha`)} />
+              <StatCard label="Observações pendentes" value={notesAlertAll} icon={Bell} color="text-amber-600" onClick={() => goToDemandasWithFilter("notes_alert_all")} />
             </div>
-          </>
-        )}
+          )}
+        </div>
+
+        <Separator className="my-2" />
+
+        {/* Grupo 2 — Temporada */}
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Temporada</p>
+          {isLoading ? (
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-xl" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
+              <StatCard label="Total de Demandas" value={total} icon={Users} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("total")} compact />
+              <StatCard label="Documentos Parciais" value={byStatus("documentos_parciais")} icon={FileWarning} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("documentos_parciais")} compact />
+              <StatCard label="Finalizados" value={byStatus("finalizado")} icon={CheckCircle} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("finalizado")} compact />
+              <StatCard label="Retificadas" value={retificadas} icon={AlertCircle} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("retificada")} compact />
+              <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} compact />
+            </div>
+          )}
+        </div>
 
         {/* Unread Messages */}
         <Card>
