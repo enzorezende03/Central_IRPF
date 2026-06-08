@@ -343,6 +343,13 @@ export default function Demandas() {
               placeholder="Tipo de declaração"
               width="w-44"
             />
+            <MultiSelectFilter
+              options={RECEITA_SITUACOES.map((s) => ({ value: s.value, label: `${s.icon} ${s.label}` }))}
+              selected={receitaFilter}
+              onChange={setReceitaFilter}
+              placeholder="Situação Receita"
+              width="w-48"
+            />
             {role === "admin" && (
               <Button
                 variant={showDeleted ? "default" : "outline"}
