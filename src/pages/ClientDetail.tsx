@@ -968,6 +968,18 @@ export default function ClientDetail() {
                 </CardContent>
               </Card>
             )}
+
+            {/* ── 9f. Acompanhamento Receita Federal ── */}
+            {(caseData.status === "finalizado" || caseData.status === "retificada") && (
+              <ReceitaSituacaoCard
+                caseId={id!}
+                initialSituacao={(caseData as any).receita_situacao ?? null}
+                initialSituacaoEm={(caseData as any).receita_situacao_em ?? null}
+                initialSituacaoPorId={(caseData as any).receita_situacao_por ?? null}
+                initialMalhaMotivo={(caseData as any).malha_motivo ?? null}
+                initialMalhaStatus={(caseData as any).malha_status ?? null}
+              />
+            )}
           </div>
 
           {/* Retificar dialog */}
