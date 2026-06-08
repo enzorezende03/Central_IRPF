@@ -208,6 +208,7 @@ export default function Demandas() {
         matchProc = procuracaoFilter === "ok" ? hasProc : !hasProc;
       }
       const matchDeclType = declarationTypeFilter.length === 0 || declarationTypeFilter.includes((c as any).declaration_type);
+      const matchReceita = receitaFilter.length === 0 || receitaFilter.includes((c as any).receita_situacao ?? "");
       // Hide dispensadas unless explicitly filtered
       if (c.status === "dispensada" && !internalStatusFilter.includes("dispensada")) return false;
       // Quando filtro por urgentes em aberto, ocultar finalizadas
