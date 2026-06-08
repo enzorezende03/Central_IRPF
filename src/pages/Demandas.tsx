@@ -148,7 +148,9 @@ export default function Demandas() {
     }
     if (qOwner !== null) setOwnerFilter(toArr(qOwner));
     if (qPriority !== null) setPriorityFilter(toArr(qPriority));
-    if (qStatus !== null || qOwner !== null || qPriority !== null) {
+    const qReceita = searchParams.get("receita");
+    if (qReceita !== null) setReceitaFilter(toArr(qReceita));
+    if (qStatus !== null || qOwner !== null || qPriority !== null || qReceita !== null) {
       setShowDeleted(false);
       setSearchParams({}, { replace: true });
     }
@@ -157,14 +159,14 @@ export default function Demandas() {
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
-      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize, showDeleted,
+      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, receitaFilter, sortField, sortDir, pageSize, showDeleted,
     }));
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize, showDeleted]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, receitaFilter, sortField, sortDir, pageSize, showDeleted]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, receitaFilter, sortField, sortDir, pageSize]);
 
   const handleSort = (field: "cliente" | "ano" | "ultimo_doc") => {
     if (sortField === field) {
