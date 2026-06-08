@@ -24,7 +24,9 @@ import type { Database } from "@/integrations/supabase/types";
 type BillingStatus = Database["public"]["Enums"]["billing_status"];
 
 export default function Cobranca() {
-  const { data: cases = [], isLoading } = useCases();
+  const { data: allCases = [], isLoading } = useCases();
+  // Demandas dispensadas não geram cobrança — excluir do painel
+  const cases = useMemo(() => allCases.filter((c) => c.status !== "dispensada"), [allCases]);
   const queryClient = useQueryClient();
   const { role, hasPermission } = useAuth();
   const canEdit = role === "admin" || hasPermission("editar_cobranca");
