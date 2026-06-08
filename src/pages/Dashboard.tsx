@@ -5,7 +5,8 @@ import {
   Users, Clock, PlayCircle, AlertTriangle, CheckCircle,
   ArrowRight, Filter,
   FileText, Bell, Send, Ban, FileWarning, ShieldAlert, MessageSquareReply,
-  AlertCircle, BellRing,
+  AlertCircle, BellRing, Landmark,
+
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -75,6 +76,7 @@ export default function Dashboard() {
   const previaAprovada = filtered.filter((c) => c.status === "previa_aprovada").length;
 
   const notesAlertAll = filtered.filter((c: any) => c.notes_alert === true).length;
+  const emMalha = filtered.filter((c: any) => c.receita_situacao === "em_malha").length;
   const notesAlertMine = filtered.filter(
     (c: any) => c.notes_alert === true && profileName && c.internal_owner === profileName,
   ).length;
@@ -163,6 +165,7 @@ export default function Dashboard() {
               <StatCard label="Retificando" value={byStatus("retificando")} icon={AlertCircle} color="text-amber-600" onClick={() => goToDemandasWithFilter("retificando")} />
               <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} />
               <StatCard label="Observações pendentes" value={notesAlertAll} icon={Bell} color="text-amber-600" onClick={() => goToDemandasWithFilter("notes_alert_all")} />
+              <StatCard label="Em malha fiscal" value={emMalha} icon={Landmark} color="text-amber-600" onClick={() => navigate(`/demandas?receita=em_malha`)} />
             </div>
           </>
         )}

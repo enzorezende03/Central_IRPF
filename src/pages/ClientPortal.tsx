@@ -23,6 +23,7 @@ import { supabase as defaultSupabase } from "@/integrations/supabase/client";
 import { createPortalClient, getPortalClient } from "@/integrations/supabase/portal-client";
 import { STATUS_LABELS } from "@/lib/types";
 import { PortalPendenciasBanner } from "@/components/PortalPendenciasBanner";
+import { CLIENT_PORTAL_MESSAGES, type ReceitaSituacao } from "@/lib/receita-situacao";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -628,6 +629,26 @@ export default function ClientPortal() {
                     </CardContent>
                   </Card>
                 )}
+
+                {/* Acompanhamento Receita Federal — visível ao cliente apenas após preenchimento */}
+                {(caseData.status === "finalizado" || caseData.status === "retificada") &&
+                  (caseData as any).receita_situacao &&
+                  (() => {
+                    const sit = (caseData as any).receita_situacao as ReceitaSituacao;
+                    const txt = CLIENT_PORTAL_MESSAGES[sit];
+                    if (!txt) return null;
+                    return (
+                      <Card className="border-primary/30 bg-primary/5">
+                        <CardContent className="p-5">
+                          <h3 className="text-sm font-semibold mb-1">Acompanhamento Receita Federal</h3>
+                          <p className="text-base font-medium mb-1">{txt.title}</p>
+                          <p className="text-sm text-muted-foreground">{txt.message}</p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
+
+
 
                 {/* Final Deliverables (original) */}
                 {deliverable && deliverable.sent_to_client && (

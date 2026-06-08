@@ -17,6 +17,8 @@ import { useCases } from "@/hooks/use-cases";
 import { useLastClientUploads } from "@/hooks/use-last-client-upload";
 import { useAuth } from "@/hooks/use-auth";
 import { STATUS_LABELS, type DemandStatus } from "@/lib/types";
+import { RECEITA_SITUACOES, RECEITA_SITUACAO_MAP, type ReceitaSituacao } from "@/lib/receita-situacao";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -78,6 +80,9 @@ export default function Demandas() {
   const [specialFilter, setSpecialFilter] = useState<string | null>(isSpecial ? rawStatusParam : null);
   const [procuracaoFilter, setProcuracaoFilter] = useState<string>(saved.procuracaoFilter ?? "all");
   const [declarationTypeFilter, setDeclarationTypeFilter] = useState<string[]>(toArr(saved.declarationTypeFilter));
+  const [receitaFilter, setReceitaFilter] = useState<string[]>(
+    searchParams.get("receita") ? toArr(searchParams.get("receita")) : toArr(saved.receitaFilter),
+  );
   const [sortField, setSortField] = useState<"cliente" | "ano" | "ultimo_doc" | null>(saved.sortField ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(saved.sortDir ?? "asc");
   const [pageSize, setPageSize] = useState<number>(saved.pageSize ?? 50);
@@ -143,7 +148,9 @@ export default function Demandas() {
     }
     if (qOwner !== null) setOwnerFilter(toArr(qOwner));
     if (qPriority !== null) setPriorityFilter(toArr(qPriority));
-    if (qStatus !== null || qOwner !== null || qPriority !== null) {
+    const qReceita = searchParams.get("receita");
+    if (qReceita !== null) setReceitaFilter(toArr(qReceita));
+    if (qStatus !== null || qOwner !== null || qPriority !== null || qReceita !== null) {
       setShowDeleted(false);
       setSearchParams({}, { replace: true });
     }
@@ -152,14 +159,14 @@ export default function Demandas() {
 
   useEffect(() => {
     localStorage.setItem(DEMANDAS_FILTERS_KEY, JSON.stringify({
-      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize, showDeleted,
+      search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, receitaFilter, sortField, sortDir, pageSize, showDeleted,
     }));
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize, showDeleted]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, receitaFilter, sortField, sortDir, pageSize, showDeleted]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, pageSize]);
+  }, [search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, receitaFilter, sortField, sortDir, pageSize]);
 
   const handleSort = (field: "cliente" | "ano" | "ultimo_doc") => {
     if (sortField === field) {
@@ -201,6 +208,7 @@ export default function Demandas() {
         matchProc = procuracaoFilter === "ok" ? hasProc : !hasProc;
       }
       const matchDeclType = declarationTypeFilter.length === 0 || declarationTypeFilter.includes((c as any).declaration_type);
+      const matchReceita = receitaFilter.length === 0 || receitaFilter.includes((c as any).receita_situacao ?? "");
       // Hide dispensadas unless explicitly filtered
       if (c.status === "dispensada" && !internalStatusFilter.includes("dispensada")) return false;
       // Quando filtro por urgentes em aberto, ocultar finalizadas
@@ -215,7 +223,7 @@ export default function Demandas() {
       } else if (specialFilter === "notes_alert_all") {
         matchSpecial = (c as any).notes_alert === true;
       }
-      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType && matchSpecial;
+      return matchSearch && matchTag && matchOwner && matchInternal && matchClient && matchPriority && matchProc && matchDeclType && matchReceita && matchSpecial;
     });
     if (sortField) {
       list.sort((a, b) => {
@@ -235,7 +243,7 @@ export default function Demandas() {
       });
     }
     return list;
-  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, sortField, sortDir, lastUploads, specialFilter, profileName]);
+  }, [cases, search, tagFilter, ownerFilter, internalStatusFilter, clientStatusFilter, priorityFilter, procuracaoFilter, declarationTypeFilter, receitaFilter, sortField, sortDir, lastUploads, specialFilter, profileName]);
 
   // Quantos resultados existem considerando apenas a busca (ignorando filtros), para detectar quando filtros estão ocultando matches
   const searchOnlyMatches = useMemo(() => {
@@ -249,7 +257,7 @@ export default function Demandas() {
     }).length;
   }, [cases, search]);
 
-  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0 || !!specialFilter;
+  const hasActiveFilters = tagFilter.length > 0 || ownerFilter.length > 0 || internalStatusFilter.length > 0 || procuracaoFilter !== "all" || priorityFilter.length > 0 || clientStatusFilter.length > 0 || declarationTypeFilter.length > 0 || receitaFilter.length > 0 || !!specialFilter;
 
   const specialFilterLabel: Record<string, string> = {
     previa_ajustes: "Ajuste de Prévia",
@@ -335,6 +343,13 @@ export default function Demandas() {
               placeholder="Tipo de declaração"
               width="w-44"
             />
+            <MultiSelectFilter
+              options={RECEITA_SITUACOES.map((s) => ({ value: s.value, label: `${s.icon} ${s.label}` }))}
+              selected={receitaFilter}
+              onChange={setReceitaFilter}
+              placeholder="Situação Receita"
+              width="w-48"
+            />
             {role === "admin" && (
               <Button
                 variant={showDeleted ? "default" : "outline"}
@@ -355,6 +370,7 @@ export default function Demandas() {
                   setPriorityFilter([]);
                   setClientStatusFilter([]);
                   setDeclarationTypeFilter([]);
+                  setReceitaFilter([]);
                   setSpecialFilter(null);
                 }}
               >
@@ -453,6 +469,7 @@ export default function Demandas() {
                         {sortField === "ultimo_doc" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                       </span>
                     </TableHead>
+                    <TableHead className="hidden lg:table-cell whitespace-nowrap">Receita Federal</TableHead>
                     {showDeleted && <TableHead className="whitespace-nowrap">Excluída por</TableHead>}
                     <TableHead className="w-10" />
                   </TableRow>
@@ -541,6 +558,19 @@ export default function Demandas() {
                             );
                           })()}
                         </TableCell>
+                        <TableCell className="hidden lg:table-cell whitespace-nowrap">
+                          {(() => {
+                            const sit = (c as any).receita_situacao as ReceitaSituacao | null;
+                            if (!sit) return null;
+                            const meta = RECEITA_SITUACAO_MAP[sit];
+                            if (!meta) return null;
+                            return (
+                              <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium", meta.badgeClass)}>
+                                <span>{meta.icon}</span> {meta.label}
+                              </span>
+                            );
+                          })()}
+                        </TableCell>
                         {showDeleted && (
                           <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                             {(c as any).deleted_by_name ? (
@@ -561,7 +591,7 @@ export default function Demandas() {
                   })}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={(showDeleted ? 12 : 11) + (canEdit ? 1 : 0)} className="text-center py-10 text-muted-foreground">
+                      <TableCell colSpan={(showDeleted ? 13 : 12) + (canEdit ? 1 : 0)} className="text-center py-10 text-muted-foreground">
                         {cases.length === 0 ? (
                           "Nenhuma demanda cadastrada ainda."
                         ) : search && searchOnlyMatches > 0 && hasActiveFilters ? (

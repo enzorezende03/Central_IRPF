@@ -556,6 +556,8 @@ export type Database = {
           id: string
           internal_notes: string | null
           internal_owner: string | null
+          malha_motivo: string | null
+          malha_status: string | null
           notes_alert: boolean
           notes_alert_at: string | null
           notes_alert_by: string | null
@@ -566,6 +568,9 @@ export type Database = {
           portal_token: string
           priority: Database["public"]["Enums"]["case_priority"]
           progress_percent: number
+          receita_situacao: string | null
+          receita_situacao_em: string | null
+          receita_situacao_por: string | null
           retificacao_iniciada_em: string | null
           retificacao_iniciada_por: string | null
           retificacao_justificativa: string | null
@@ -587,6 +592,8 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
+          malha_motivo?: string | null
+          malha_status?: string | null
           notes_alert?: boolean
           notes_alert_at?: string | null
           notes_alert_by?: string | null
@@ -597,6 +604,9 @@ export type Database = {
           portal_token: string
           priority?: Database["public"]["Enums"]["case_priority"]
           progress_percent?: number
+          receita_situacao?: string | null
+          receita_situacao_em?: string | null
+          receita_situacao_por?: string | null
           retificacao_iniciada_em?: string | null
           retificacao_iniciada_por?: string | null
           retificacao_justificativa?: string | null
@@ -618,6 +628,8 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           internal_owner?: string | null
+          malha_motivo?: string | null
+          malha_status?: string | null
           notes_alert?: boolean
           notes_alert_at?: string | null
           notes_alert_by?: string | null
@@ -628,6 +640,9 @@ export type Database = {
           portal_token?: string
           priority?: Database["public"]["Enums"]["case_priority"]
           progress_percent?: number
+          receita_situacao?: string | null
+          receita_situacao_em?: string | null
+          receita_situacao_por?: string | null
           retificacao_iniciada_em?: string | null
           retificacao_iniciada_por?: string | null
           retificacao_justificativa?: string | null

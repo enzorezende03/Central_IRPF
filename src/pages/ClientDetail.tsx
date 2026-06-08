@@ -52,6 +52,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 import { filenameMatchesCpf, pdfContainsCpf, formatCpfMask } from "@/lib/cpf-check";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ReceitaSituacaoCard } from "@/components/ReceitaSituacaoCard";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -967,6 +968,18 @@ export default function ClientDetail() {
                   )}
                 </CardContent>
               </Card>
+            )}
+
+            {/* ── 9f. Acompanhamento Receita Federal ── */}
+            {(caseData.status === "finalizado" || caseData.status === "retificada") && (
+              <ReceitaSituacaoCard
+                caseId={id!}
+                initialSituacao={(caseData as any).receita_situacao ?? null}
+                initialSituacaoEm={(caseData as any).receita_situacao_em ?? null}
+                initialSituacaoPorId={(caseData as any).receita_situacao_por ?? null}
+                initialMalhaMotivo={(caseData as any).malha_motivo ?? null}
+                initialMalhaStatus={(caseData as any).malha_status ?? null}
+              />
             )}
           </div>
 
