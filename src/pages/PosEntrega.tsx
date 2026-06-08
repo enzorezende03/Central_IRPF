@@ -72,10 +72,13 @@ export default function PosEntrega() {
   if (!allowed) return <Navigate to="/" replace />;
 
   // Base: temporada ativa + status finalizado/retificada
+  // Convenção: season_year (ano da entrega) = base_year (ano-calendário) + 1
   const baseCases = useMemo(() => {
     return cases.filter((c) => {
       const okStatus = c.status === "finalizado" || (c.status as any) === "retificada";
-      const okSeason = !activeSeasonYear || c.base_year === activeSeasonYear;
+      const okSeason = !activeSeasonYear
+        || c.base_year === activeSeasonYear
+        || c.base_year === activeSeasonYear - 1;
       return okStatus && okSeason;
     });
   }, [cases, activeSeasonYear]);
