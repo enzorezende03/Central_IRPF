@@ -591,7 +591,7 @@ export default function Demandas() {
                   })}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={(showDeleted ? 12 : 11) + (canEdit ? 1 : 0)} className="text-center py-10 text-muted-foreground">
+                      <TableCell colSpan={(showDeleted ? 13 : 12) + (canEdit ? 1 : 0)} className="text-center py-10 text-muted-foreground">
                         {cases.length === 0 ? (
                           "Nenhuma demanda cadastrada ainda."
                         ) : search && searchOnlyMatches > 0 && hasActiveFilters ? (
