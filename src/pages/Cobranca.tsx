@@ -203,9 +203,11 @@ export default function Cobranca() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos status IRPF</SelectItem>
-              {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
+              {Object.entries(STATUS_LABELS)
+                .filter(([k]) => k !== "dispensada")
+                .map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={handleExportExcel} disabled={filtered.length === 0} className="whitespace-nowrap">
