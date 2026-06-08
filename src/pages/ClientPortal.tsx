@@ -629,6 +629,13 @@ export default function ClientPortal() {
                   </Card>
                 )}
 
+                {/* Acompanhamento Receita Federal — visível ao cliente apenas após preenchimento */}
+                {(caseData.status === "finalizado" || caseData.status === "retificada") &&
+                  (caseData as any).receita_situacao && (
+                    <ReceitaSituacaoClientCard situacao={(caseData as any).receita_situacao} />
+                  )}
+
+
                 {/* Final Deliverables (original) */}
                 {deliverable && deliverable.sent_to_client && (
                   caseData.status === "retificada" ? (
