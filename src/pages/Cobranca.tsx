@@ -24,7 +24,9 @@ import type { Database } from "@/integrations/supabase/types";
 type BillingStatus = Database["public"]["Enums"]["billing_status"];
 
 export default function Cobranca() {
-  const { data: cases = [], isLoading } = useCases();
+  const { data: allCases = [], isLoading } = useCases();
+  // Demandas dispensadas não geram cobrança — excluir do painel
+  const cases = useMemo(() => allCases.filter((c) => c.status !== "dispensada"), [allCases]);
   const queryClient = useQueryClient();
   const { role, hasPermission } = useAuth();
   const canEdit = role === "admin" || hasPermission("editar_cobranca");
@@ -201,9 +203,11 @@ export default function Cobranca() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos status IRPF</SelectItem>
-              {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
+              {Object.entries(STATUS_LABELS)
+                .filter(([k]) => k !== "dispensada")
+                .map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={handleExportExcel} disabled={filtered.length === 0} className="whitespace-nowrap">
