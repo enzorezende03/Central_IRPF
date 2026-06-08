@@ -165,6 +165,7 @@ export default function Dashboard() {
               <StatCard label="Retificando" value={byStatus("retificando")} icon={AlertCircle} color="text-amber-600" onClick={() => goToDemandasWithFilter("retificando")} />
               <StatCard label="Dispensadas" value={byStatus("dispensada")} icon={Ban} color="text-muted-foreground" onClick={() => goToDemandasWithFilter("dispensada")} />
               <StatCard label="Observações pendentes" value={notesAlertAll} icon={Bell} color="text-amber-600" onClick={() => goToDemandasWithFilter("notes_alert_all")} />
+              <StatCard label="Em malha fiscal" value={emMalha} icon={Landmark} color="text-amber-600" onClick={() => goToDemandasWithFilter("em_malha")} />
             </div>
           </>
         )}
