@@ -52,6 +52,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { validateFile, getAcceptString, uploadFileToBucket, buildStoragePath, MAX_FILE_SIZE_LABEL, ALLOWED_EXTENSIONS_LABEL } from "@/lib/upload-utils";
 import { filenameMatchesCpf, pdfContainsCpf, formatCpfMask } from "@/lib/cpf-check";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ReceitaSituacaoCard } from "@/components/ReceitaSituacaoCard";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
