@@ -632,9 +632,22 @@ export default function ClientPortal() {
 
                 {/* Acompanhamento Receita Federal — visível ao cliente apenas após preenchimento */}
                 {(caseData.status === "finalizado" || caseData.status === "retificada") &&
-                  (caseData as any).receita_situacao && (
-                    <ReceitaSituacaoClientCard situacao={(caseData as any).receita_situacao} />
-                  )}
+                  (caseData as any).receita_situacao &&
+                  (() => {
+                    const sit = (caseData as any).receita_situacao as ReceitaSituacao;
+                    const txt = CLIENT_PORTAL_MESSAGES[sit];
+                    if (!txt) return null;
+                    return (
+                      <Card className="border-primary/30 bg-primary/5">
+                        <CardContent className="p-5">
+                          <h3 className="text-sm font-semibold mb-1">Acompanhamento Receita Federal</h3>
+                          <p className="text-base font-medium mb-1">{txt.title}</p>
+                          <p className="text-sm text-muted-foreground">{txt.message}</p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
+
 
 
                 {/* Final Deliverables (original) */}
