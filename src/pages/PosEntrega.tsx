@@ -59,6 +59,7 @@ export default function PosEntrega() {
     initialSituacao ? [initialSituacao] : (saved.situacaoFilter ?? []),
   );
   const [ownerFilter, setOwnerFilter] = useState<string[]>(saved.ownerFilter ?? []);
+  const [unitFilter, setUnitFilter] = useState<"all" | "2mc" | "2ms">(saved.unitFilter ?? "all");
   const [dateFrom, setDateFrom] = useState<string>(saved.dateFrom ?? "");
   const [dateTo, setDateTo] = useState<string>(saved.dateTo ?? "");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
