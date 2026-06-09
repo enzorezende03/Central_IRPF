@@ -174,7 +174,7 @@ export default function PosEntrega() {
     qc.invalidateQueries({ queryKey: ["irpf-cases"] });
   };
 
-  const hasActiveFilters = situacaoFilter.length > 0 || ownerFilter.length > 0 || !!dateFrom || !!dateTo;
+  const hasActiveFilters = situacaoFilter.length > 0 || ownerFilter.length > 0 || unitFilter !== "all" || !!dateFrom || !!dateTo;
 
   return (
     <InternalLayout>
