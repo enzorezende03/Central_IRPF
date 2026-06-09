@@ -59,15 +59,16 @@ export default function PosEntrega() {
     initialSituacao ? [initialSituacao] : (saved.situacaoFilter ?? []),
   );
   const [ownerFilter, setOwnerFilter] = useState<string[]>(saved.ownerFilter ?? []);
+  const [unitFilter, setUnitFilter] = useState<"all" | "2mc" | "2ms">(saved.unitFilter ?? "all");
   const [dateFrom, setDateFrom] = useState<string>(saved.dateFrom ?? "");
   const [dateTo, setDateTo] = useState<string>(saved.dateTo ?? "");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem(FILTERS_KEY, JSON.stringify({
-      situacaoFilter, ownerFilter, dateFrom, dateTo,
+      situacaoFilter, ownerFilter, unitFilter, dateFrom, dateTo,
     }));
-  }, [situacaoFilter, ownerFilter, dateFrom, dateTo]);
+  }, [situacaoFilter, ownerFilter, unitFilter, dateFrom, dateTo]);
 
   if (!allowed) return <Navigate to="/" replace />;
 
@@ -93,12 +94,16 @@ export default function PosEntrega() {
   const filteredNoSituacao = useMemo(() => {
     return baseCases.filter((c) => {
       const okOwner = ownerFilter.length === 0 || (c.internal_owner && ownerFilter.includes(c.internal_owner));
+      const tags = (c.clients?.tags ?? []) as string[];
+      const okUnit = unitFilter === "all"
+        || (unitFilter === "2mc" && tags.includes("2M Contabilidade"))
+        || (unitFilter === "2ms" && tags.includes("2M Saúde"));
       const completed = c.completed_at ? new Date(c.completed_at) : null;
       const okFrom = !dateFrom || (completed && completed >= new Date(dateFrom));
       const okTo = !dateTo || (completed && completed <= new Date(dateTo + "T23:59:59"));
-      return okOwner && okFrom && okTo;
+      return okOwner && okUnit && okFrom && okTo;
     });
-  }, [baseCases, ownerFilter, dateFrom, dateTo]);
+  }, [baseCases, ownerFilter, unitFilter, dateFrom, dateTo]);
 
   // Aplica filtro de situação por cima
   const filtered = useMemo(() => {
@@ -169,7 +174,7 @@ export default function PosEntrega() {
     qc.invalidateQueries({ queryKey: ["irpf-cases"] });
   };
 
-  const hasActiveFilters = situacaoFilter.length > 0 || ownerFilter.length > 0 || !!dateFrom || !!dateTo;
+  const hasActiveFilters = situacaoFilter.length > 0 || ownerFilter.length > 0 || unitFilter !== "all" || !!dateFrom || !!dateTo;
 
   return (
     <InternalLayout>
@@ -202,6 +207,16 @@ export default function PosEntrega() {
             placeholder="Responsáveis"
             width="w-48"
           />
+          <Select value={unitFilter} onValueChange={(v) => setUnitFilter(v as any)}>
+            <SelectTrigger className="w-40 h-10">
+              <SelectValue placeholder="Unidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as unidades</SelectItem>
+              <SelectItem value="2mc">2MC — 2M Contabilidade</SelectItem>
+              <SelectItem value="2ms">2MS — 2M Saúde</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="flex items-center gap-2">
             <CalendarRange className="h-4 w-4 text-muted-foreground" />
             <Input
@@ -226,6 +241,7 @@ export default function PosEntrega() {
               onClick={() => {
                 setSituacaoFilter([]);
                 setOwnerFilter([]);
+                setUnitFilter("all");
                 setDateFrom("");
                 setDateTo("");
               }}
@@ -319,13 +335,26 @@ export default function PosEntrega() {
                   const meta = sit ? RECEITA_SITUACAO_MAP[sit] : null;
                   return (
                     <TableRow key={c.id} className={cn(isMalha && "bg-amber-50 hover:bg-amber-100/70")}>
-                      <TableCell className="max-w-[220px]">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="block truncate font-medium">{c.clients?.full_name ?? "—"}</span>
-                          </TooltipTrigger>
-                          <TooltipContent>{c.clients?.full_name ?? "—"}</TooltipContent>
-                        </Tooltip>
+                      <TableCell className="max-w-[260px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="block truncate font-medium">{c.clients?.full_name ?? "—"}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>{c.clients?.full_name ?? "—"}</TooltipContent>
+                          </Tooltip>
+                          {(() => {
+                            const tags = (c.clients?.tags ?? []) as string[];
+                            const has2mc = tags.includes("2M Contabilidade");
+                            const has2ms = tags.includes("2M Saúde");
+                            return (
+                              <span className="flex shrink-0 gap-1">
+                                {has2mc && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">2MC</span>}
+                                {has2ms && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600">2MS</span>}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap font-mono text-xs">
                         {c.clients?.cpf ? formatCPF(c.clients.cpf) : "—"}
