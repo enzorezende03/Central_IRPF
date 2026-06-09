@@ -357,7 +357,7 @@ export default function PosEntrega() {
                         </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap font-mono text-xs">
-                        {c.clients?.cpf ? formatCPF(c.clients.cpf) : "—"}
+                        {c.clients?.cpf ? c.clients.cpf.replace(/\D/g, "") : "—"}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{c.internal_owner ?? "—"}</TableCell>
                       <TableCell className="whitespace-nowrap text-sm">
