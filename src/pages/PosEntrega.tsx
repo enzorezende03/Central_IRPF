@@ -241,6 +241,7 @@ export default function PosEntrega() {
               onClick={() => {
                 setSituacaoFilter([]);
                 setOwnerFilter([]);
+                setUnitFilter("all");
                 setDateFrom("");
                 setDateTo("");
               }}
