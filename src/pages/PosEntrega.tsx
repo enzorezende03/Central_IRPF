@@ -335,13 +335,26 @@ export default function PosEntrega() {
                   const meta = sit ? RECEITA_SITUACAO_MAP[sit] : null;
                   return (
                     <TableRow key={c.id} className={cn(isMalha && "bg-amber-50 hover:bg-amber-100/70")}>
-                      <TableCell className="max-w-[220px]">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="block truncate font-medium">{c.clients?.full_name ?? "—"}</span>
-                          </TooltipTrigger>
-                          <TooltipContent>{c.clients?.full_name ?? "—"}</TooltipContent>
-                        </Tooltip>
+                      <TableCell className="max-w-[260px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="block truncate font-medium">{c.clients?.full_name ?? "—"}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>{c.clients?.full_name ?? "—"}</TooltipContent>
+                          </Tooltip>
+                          {(() => {
+                            const tags = (c.clients?.tags ?? []) as string[];
+                            const has2mc = tags.includes("2M Contabilidade");
+                            const has2ms = tags.includes("2M Saúde");
+                            return (
+                              <span className="flex shrink-0 gap-1">
+                                {has2mc && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">2MC</span>}
+                                {has2ms && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600">2MS</span>}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap font-mono text-xs">
                         {c.clients?.cpf ? formatCPF(c.clients.cpf) : "—"}
