@@ -207,6 +207,16 @@ export default function PosEntrega() {
             placeholder="Responsáveis"
             width="w-48"
           />
+          <Select value={unitFilter} onValueChange={(v) => setUnitFilter(v as any)}>
+            <SelectTrigger className="w-40 h-10">
+              <SelectValue placeholder="Unidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as unidades</SelectItem>
+              <SelectItem value="2mc">2MC — 2M Contabilidade</SelectItem>
+              <SelectItem value="2ms">2MS — 2M Saúde</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="flex items-center gap-2">
             <CalendarRange className="h-4 w-4 text-muted-foreground" />
             <Input
