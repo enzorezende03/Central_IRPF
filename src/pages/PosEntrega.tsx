@@ -66,9 +66,9 @@ export default function PosEntrega() {
 
   useEffect(() => {
     localStorage.setItem(FILTERS_KEY, JSON.stringify({
-      situacaoFilter, ownerFilter, dateFrom, dateTo,
+      situacaoFilter, ownerFilter, unitFilter, dateFrom, dateTo,
     }));
-  }, [situacaoFilter, ownerFilter, dateFrom, dateTo]);
+  }, [situacaoFilter, ownerFilter, unitFilter, dateFrom, dateTo]);
 
   if (!allowed) return <Navigate to="/" replace />;
 
