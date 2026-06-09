@@ -94,12 +94,16 @@ export default function PosEntrega() {
   const filteredNoSituacao = useMemo(() => {
     return baseCases.filter((c) => {
       const okOwner = ownerFilter.length === 0 || (c.internal_owner && ownerFilter.includes(c.internal_owner));
+      const tags = (c.clients?.tags ?? []) as string[];
+      const okUnit = unitFilter === "all"
+        || (unitFilter === "2mc" && tags.includes("2M Contabilidade"))
+        || (unitFilter === "2ms" && tags.includes("2M Saúde"));
       const completed = c.completed_at ? new Date(c.completed_at) : null;
       const okFrom = !dateFrom || (completed && completed >= new Date(dateFrom));
       const okTo = !dateTo || (completed && completed <= new Date(dateTo + "T23:59:59"));
-      return okOwner && okFrom && okTo;
+      return okOwner && okUnit && okFrom && okTo;
     });
-  }, [baseCases, ownerFilter, dateFrom, dateTo]);
+  }, [baseCases, ownerFilter, unitFilter, dateFrom, dateTo]);
 
   // Aplica filtro de situação por cima
   const filtered = useMemo(() => {
