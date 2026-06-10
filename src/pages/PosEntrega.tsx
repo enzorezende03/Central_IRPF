@@ -339,9 +339,14 @@ export default function PosEntrega() {
                         <div className="flex items-center gap-2 min-w-0">
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="block truncate font-medium">{c.clients?.full_name ?? "—"}</span>
+                              <Link
+                                to={`/demandas/${c.id}`}
+                                className="block truncate font-medium hover:text-primary hover:underline transition-colors"
+                              >
+                                {c.clients?.full_name ?? "—"}
+                              </Link>
                             </TooltipTrigger>
-                            <TooltipContent>{c.clients?.full_name ?? "—"}</TooltipContent>
+                            <TooltipContent>Abrir demanda — {c.clients?.full_name ?? "—"}</TooltipContent>
                           </Tooltip>
                           {(() => {
                             const tags = (c.clients?.tags ?? []) as string[];
