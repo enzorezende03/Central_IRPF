@@ -948,24 +948,27 @@ export default function ClientDetail() {
                   {caseData.status === "retificando" && retDeliverable?.dec_file_url && retDeliverable?.rec_file_url && (
                     <Button
                       className="w-full"
-                      onClick={async () => {
-                        const { error } = await supabase
-                          .from("irpf_cases")
-                          .update({ status: "retificada" })
-                          .eq("id", id!);
-                        if (error) { toast.error("Erro ao concluir retificação."); return; }
-                        await logTimelineEvent(
-                          id!,
-                          "Retificação concluída",
-                          `Declaração retificada entregue por ${profileName ?? "equipe"}`,
-                          false,
-                        );
-                        toast.success("Declaração marcada como Retificada.");
-                        invalidateAll();
-                      }}
+                      onClick={() => setShowFinalizarRetDialog(true)}
                     >
                       <CheckCircle className="h-4 w-4 mr-1.5" /> Marcar como Retificada
                     </Button>
+                  )}
+                  {(retDeliverable as any)?.has_complementary_guide && (
+                    <div className="space-y-2 pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-amber-600" />
+                        <h4 className="text-sm font-semibold">Guia Complementar (DARF)</h4>
+                      </div>
+                      <ComplementaryGuideCard
+                        caseId={id!}
+                        deliverable={retDeliverable}
+                        clientName={clientName}
+                        clientPhone={client?.phone ?? null}
+                        clientEmail={client?.email ?? null}
+                        portalSlugOrToken={linkId}
+                        onRefresh={invalidateAll}
+                      />
+                    </div>
                   )}
                 </CardContent>
               </Card>
