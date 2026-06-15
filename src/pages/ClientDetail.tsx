@@ -3176,7 +3176,198 @@ function QuotaRow({
   );
 }
 
-// ── Copy Stage Message Button ──
+// ── Complementary Guide Card (after retificação) ──
+function ComplementaryGuideCard({
+  caseId,
+  deliverable,
+  clientName,
+  clientPhone,
+  clientEmail,
+  portalSlugOrToken,
+  onRefresh,
+}: {
+  caseId: string;
+  deliverable: Tables<"final_deliverables"> | null | undefined;
+  clientName: string;
+  clientPhone: string | null;
+  clientEmail: string | null;
+  portalSlugOrToken: string;
+  onRefresh: () => void;
+}) {
+  const del = deliverable as any;
+  const [uploading, setUploading] = useState(false);
+  const [dueDate, setDueDate] = useState<string>(del?.complementary_guide_due_date ?? "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDueDate(del?.complementary_guide_due_date ?? "");
+  }, [del?.complementary_guide_due_date]);
+
+  if (!deliverable) return null;
+
+  const fileUrl: string | null = del?.complementary_guide_file_url ?? null;
+  const fileName: string | null = del?.complementary_guide_file_name ?? null;
+  const sent: boolean = !!del?.complementary_guide_sent_to_client;
+  const sentAt: string | null = del?.complementary_guide_sent_at ?? null;
+
+  const message = getPaymentGuideMessage({
+    clientName,
+    slugOrToken: portalSlugOrToken,
+    isSingle: true,
+    quotaNumber: 1,
+    totalQuotas: 1,
+    dueDate: dueDate || null,
+  });
+  const subject = "Guia DARF complementar (retificação) do Imposto de Renda";
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const err = validateFile(file);
+    if (err) { toast.error(err); return; }
+    setUploading(true);
+    try {
+      const path = buildStoragePath(caseId, file.name, "guias/complementar");
+      const url = await uploadFileToBucket("documentos_clientes", path, file);
+      await supabase.from("final_deliverables").update({
+        complementary_guide_file_url: url,
+        complementary_guide_file_name: file.name,
+      } as any).eq("id", deliverable.id);
+      await logTimelineEvent(caseId, "Guia complementar anexada", `Arquivo: ${file.name}`, false);
+      toast.success("Guia complementar anexada!");
+      onRefresh();
+    } catch {
+      toast.error("Erro ao enviar arquivo.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeFile = async () => {
+    if (!confirm("Remover guia complementar?")) return;
+    await supabase.from("final_deliverables").update({
+      complementary_guide_file_url: null,
+      complementary_guide_file_name: null,
+      complementary_guide_sent_to_client: false,
+      complementary_guide_sent_at: null,
+    } as any).eq("id", deliverable.id);
+    onRefresh();
+  };
+
+  const saveDueDate = async (value: string) => {
+    setDueDate(value);
+    await supabase.from("final_deliverables").update({
+      complementary_guide_due_date: value || null,
+    } as any).eq("id", deliverable.id);
+    onRefresh();
+  };
+
+  const toggleSent = async () => {
+    if (!fileUrl) { toast.error("Anexe a guia antes de marcar como enviada."); return; }
+    const newSent = !sent;
+    await supabase.from("final_deliverables").update({
+      complementary_guide_sent_to_client: newSent,
+      complementary_guide_sent_at: newSent ? new Date().toISOString() : null,
+    } as any).eq("id", deliverable.id);
+    if (newSent) {
+      await logTimelineEvent(caseId, "Guia complementar enviada", "Guia DARF complementar enviada ao cliente", true);
+    }
+    onRefresh();
+  };
+
+  const disableGuide = async () => {
+    if (!confirm("Remover etapa de guia complementar desta retificação?")) return;
+    await supabase.from("final_deliverables").update({
+      has_complementary_guide: false,
+      complementary_guide_file_url: null,
+      complementary_guide_file_name: null,
+      complementary_guide_sent_to_client: false,
+      complementary_guide_sent_at: null,
+      complementary_guide_due_date: null,
+    } as any).eq("id", deliverable.id);
+    toast.success("Etapa removida.");
+    onRefresh();
+  };
+
+  return (
+    <div className="rounded-md border p-2.5 space-y-2 bg-card">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">Guia complementar</span>
+        {sent ? (
+          <Badge variant="default" className="text-[10px]">Enviada</Badge>
+        ) : fileUrl ? (
+          <Badge variant="secondary" className="text-[10px]">Pronta</Badge>
+        ) : (
+          <Badge variant="outline" className="text-[10px]">Pendente</Badge>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Label className="text-xs text-muted-foreground shrink-0">Vencimento:</Label>
+        <Input type="date" value={dueDate} onChange={(e) => saveDueDate(e.target.value)} className="h-8 text-xs" />
+      </div>
+
+      {fileUrl ? (
+        <div className="flex items-center gap-2 p-1.5 border rounded bg-muted/40">
+          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+          <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate flex-1">
+            {fileName ?? "Guia anexada"}
+          </a>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={removeFile}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ) : (
+        <div>
+          <input ref={fileInputRef} type="file" accept={getAcceptString()} className="hidden" onChange={handleUpload} />
+          <Button type="button" variant="outline" size="sm" className="w-full h-8 text-xs" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5 mr-1.5" /> Anexar guia complementar</>}
+          </Button>
+        </div>
+      )}
+
+      <Button size="sm" variant={sent ? "outline" : "default"} className="w-full h-7 text-xs" onClick={toggleSent} disabled={!fileUrl}>
+        {sent ? (
+          <><CheckCircle className="h-3 w-3 mr-1" /> Enviada {sentAt ? `em ${format(new Date(sentAt), "dd/MM/yyyy")}` : ""} — desfazer</>
+        ) : (
+          <><Send className="h-3 w-3 mr-1" /> Marcar como enviada ao cliente</>
+        )}
+      </Button>
+
+      {fileUrl && (
+        <div className="space-y-1.5 pt-1 border-t">
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Mensagem para o cliente</Label>
+          <Textarea value={message} readOnly rows={4} className="text-xs resize-none" onFocus={(e) => e.currentTarget.select()} />
+          <div className="grid grid-cols-3 gap-1.5">
+            <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => { navigator.clipboard.writeText(message); toast.success("Mensagem copiada!"); }}>
+              <Copy className="h-3 w-3 mr-1" /> Copiar
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] px-2" asChild>
+              <a href={buildWhatsAppLink(clientPhone, message)} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="h-3 w-3 mr-1" /> WhatsApp
+              </a>
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] px-2" asChild>
+              <a href={buildMailtoLink(clientEmail, subject, message)}>
+                <Mail className="h-3 w-3 mr-1" /> E-mail
+              </a>
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            Lembre de anexar o arquivo da guia ao enviar pelo WhatsApp ou e-mail.
+          </p>
+        </div>
+      )}
+
+      <Button type="button" variant="ghost" size="sm" className="w-full h-6 text-[10px] text-muted-foreground" onClick={disableGuide}>
+        Não houve guia complementar — remover etapa
+      </Button>
+    </div>
+  );
+}
+
+
 function CopyStageMessageButton({ message, label, toastLabel }: { message: string; label: string; toastLabel: string }) {
   return (
     <Button
