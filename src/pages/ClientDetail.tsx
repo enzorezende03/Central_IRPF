@@ -233,6 +233,7 @@ export default function ClientDetail() {
   const noteAttachmentInputRef = useRef<HTMLInputElement>(null);
   const [showRetificarDialog, setShowRetificarDialog] = useState(false);
   const [retificacaoMotivo, setRetificacaoMotivo] = useState("");
+  const [showFinalizarRetDialog, setShowFinalizarRetDialog] = useState(false);
 
   type NoteAttachment = { url: string; name: string; uploaded_by?: string; uploaded_at?: string };
   const noteAttachments: NoteAttachment[] = Array.isArray((caseData as any)?.notes_attachments)
