@@ -393,10 +393,16 @@ export type Database = {
       final_deliverables: {
         Row: {
           case_id: string
+          complementary_guide_due_date: string | null
+          complementary_guide_file_name: string | null
+          complementary_guide_file_url: string | null
+          complementary_guide_sent_at: string | null
+          complementary_guide_sent_to_client: boolean
           dec_file_url: string | null
           guide_payment_type: string | null
           guide_quota_count: number | null
           guide_url: string | null
+          has_complementary_guide: boolean
           has_guide: boolean
           id: string
           irpf_file_url: string | null
@@ -415,10 +421,16 @@ export type Database = {
         }
         Insert: {
           case_id: string
+          complementary_guide_due_date?: string | null
+          complementary_guide_file_name?: string | null
+          complementary_guide_file_url?: string | null
+          complementary_guide_sent_at?: string | null
+          complementary_guide_sent_to_client?: boolean
           dec_file_url?: string | null
           guide_payment_type?: string | null
           guide_quota_count?: number | null
           guide_url?: string | null
+          has_complementary_guide?: boolean
           has_guide?: boolean
           id?: string
           irpf_file_url?: string | null
@@ -437,10 +449,16 @@ export type Database = {
         }
         Update: {
           case_id?: string
+          complementary_guide_due_date?: string | null
+          complementary_guide_file_name?: string | null
+          complementary_guide_file_url?: string | null
+          complementary_guide_sent_at?: string | null
+          complementary_guide_sent_to_client?: boolean
           dec_file_url?: string | null
           guide_payment_type?: string | null
           guide_quota_count?: number | null
           guide_url?: string | null
+          has_complementary_guide?: boolean
           has_guide?: boolean
           id?: string
           irpf_file_url?: string | null
