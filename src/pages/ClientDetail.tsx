@@ -1039,6 +1039,83 @@ export default function ClientDetail() {
             </DialogContent>
           </Dialog>
 
+          {/* Finalizar retificação dialog */}
+          <AlertDialog open={showFinalizarRetDialog} onOpenChange={setShowFinalizarRetDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Concluir retificação</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Houve <strong>guia complementar</strong> (DARF) gerada nesta retificação?
+                  <br />
+                  <span className="text-xs text-muted-foreground">
+                    Se sim, será aberto um passo para anexar a guia, semelhante ao das cotas.
+                  </span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-2">
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from("irpf_cases")
+                      .update({ status: "retificada" })
+                      .eq("id", id!);
+                    if (error) { toast.error("Erro ao concluir retificação."); return; }
+                    if (retDeliverable) {
+                      await supabase
+                        .from("final_deliverables")
+                        .update({ has_complementary_guide: false } as any)
+                        .eq("id", retDeliverable.id);
+                    }
+                    await logTimelineEvent(
+                      id!,
+                      "Retificação concluída",
+                      `Declaração retificada entregue por ${profileName ?? "equipe"} — sem guia complementar`,
+                      false,
+                    );
+                    toast.success("Declaração marcada como Retificada.");
+                    setShowFinalizarRetDialog(false);
+                    invalidateAll();
+                  }}
+                >
+                  Não houve guia
+                </Button>
+                <AlertDialogAction
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from("irpf_cases")
+                      .update({ status: "retificada" })
+                      .eq("id", id!);
+                    if (error) { toast.error("Erro ao concluir retificação."); return; }
+                    if (retDeliverable) {
+                      await supabase
+                        .from("final_deliverables")
+                        .update({ has_complementary_guide: true } as any)
+                        .eq("id", retDeliverable.id);
+                    } else {
+                      await supabase
+                        .from("final_deliverables")
+                        .insert({ case_id: id!, retificacao: true, has_complementary_guide: true } as any);
+                    }
+                    await logTimelineEvent(
+                      id!,
+                      "Retificação concluída",
+                      `Declaração retificada entregue por ${profileName ?? "equipe"} — com guia complementar a anexar`,
+                      false,
+                    );
+                    toast.success("Anexe a guia complementar abaixo.");
+                    setShowFinalizarRetDialog(false);
+                    invalidateAll();
+                  }}
+                >
+                  Sim, houve guia
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+
 
           {/* Right column (1/3) */}
           <div className="space-y-6">
