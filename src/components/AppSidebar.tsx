@@ -58,6 +58,7 @@ export function AppSidebar() {
     if (item.permission === null) return true;
     if (item.permission === "__admin__") return role === "admin";
     if (item.permission === "__admin_op__") return role === "admin" || role === "operacional";
+    if (item.permission === "__admin_op_fin__") return role === "admin" || role === "operacional" || role === "financeiro";
     return hasPermission(item.permission);
   });
 
