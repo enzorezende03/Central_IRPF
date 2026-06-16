@@ -12,6 +12,7 @@ import KanbanPage from "./pages/KanbanPage";
 import Cobranca from "./pages/Cobranca";
 import MetasIRPF from "./pages/MetasIRPF";
 import PosEntrega from "./pages/PosEntrega";
+import Cotas from "./pages/Cotas";
 import PlanejamentoSemanal from "./pages/PlanejamentoSemanal";
 import Relatorios from "./pages/Relatorios";
 import Clientes from "./pages/Clientes";
