@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle, Target, CalendarCheck, BarChart3, Landmark,
+  LayoutDashboard, FileText, Kanban, DollarSign, Users, Settings, LogOut, MessageCircle, Target, CalendarCheck, BarChart3, Landmark, Calculator,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useOfficeLogo } from "@/hooks/use-office-logo";
@@ -30,6 +30,7 @@ const menuItems = [
   { title: "Mensagens", url: "/mensagens", icon: MessageCircle, permission: "acesso_demandas" },
   { title: "Cobrança", url: "/cobranca", icon: DollarSign, permission: "acesso_cobranca" },
   { title: "Pós-Entrega", url: "/pos-entrega", icon: Landmark, permission: "__admin_op__" },
+  { title: "Imposto em Cotas", url: "/cotas", icon: Calculator, permission: "__admin_op_fin__" },
   { title: "Metas IRPF", url: "/metas", icon: Target, permission: "acesso_metas" },
   { title: "Planejamento", url: "/planejamento", icon: CalendarCheck, permission: "acesso_metas" },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "__admin__" },
@@ -57,6 +58,7 @@ export function AppSidebar() {
     if (item.permission === null) return true;
     if (item.permission === "__admin__") return role === "admin";
     if (item.permission === "__admin_op__") return role === "admin" || role === "operacional";
+    if (item.permission === "__admin_op_fin__") return role === "admin" || role === "operacional" || role === "financeiro";
     return hasPermission(item.permission);
   });
 
