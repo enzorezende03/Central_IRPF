@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Target, TrendingUp, TrendingDown, CalendarDays, Trophy, AlertTriangle,
-  Plus, Save, Wand2, Pencil, Trash2, Activity, Calendar, Lock,
+  Plus, Save, Wand2, Pencil, Trash2, Activity, Calendar, Lock, Filter, X,
 } from "lucide-react";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useSeasons, useWeeklyGoals, useUpsertSeason, useDeleteSeason,
@@ -42,6 +43,7 @@ export default function MetasIRPF() {
 
   const { data: seasons = [], isLoading: loadingSeasons } = useSeasons();
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [excludedOwners, setExcludedOwners] = useState<string[]>([]);
 
   // pick default season: current year > most recent
   useEffect(() => {
@@ -103,29 +105,32 @@ export default function MetasIRPF() {
         )}
 
         {season && (
-          <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="bg-muted/50">
-              <TabsTrigger value="overview" className="gap-2"><Activity className="h-4 w-4" /> Visão Geral</TabsTrigger>
-              <TabsTrigger value="weekly" className="gap-2"><Calendar className="h-4 w-4" /> Metas Semanais</TabsTrigger>
-              {canManage && (
-                <TabsTrigger value="config" className="gap-2"><Target className="h-4 w-4" /> Configuração</TabsTrigger>
-              )}
-            </TabsList>
+          <>
+            <OwnerFilterBar season={season} excluded={excludedOwners} onChange={setExcludedOwners} />
+            <Tabs defaultValue="overview" className="space-y-4">
+              <TabsList className="bg-muted/50">
+                <TabsTrigger value="overview" className="gap-2"><Activity className="h-4 w-4" /> Visão Geral</TabsTrigger>
+                <TabsTrigger value="weekly" className="gap-2"><Calendar className="h-4 w-4" /> Metas Semanais</TabsTrigger>
+                {canManage && (
+                  <TabsTrigger value="config" className="gap-2"><Target className="h-4 w-4" /> Configuração</TabsTrigger>
+                )}
+              </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
-              <OverviewBlock season={season} />
-            </TabsContent>
-
-            <TabsContent value="weekly" className="space-y-6">
-              <WeeklyBlock season={season} canManage={canManage} />
-            </TabsContent>
-
-            {canManage && (
-              <TabsContent value="config" className="space-y-6">
-                <ConfigBlock season={season} onYearChange={setSelectedYear} />
+              <TabsContent value="overview" className="space-y-6">
+                <OverviewBlock season={season} excludedOwners={excludedOwners} />
               </TabsContent>
-            )}
-          </Tabs>
+
+              <TabsContent value="weekly" className="space-y-6">
+                <WeeklyBlock season={season} canManage={canManage} excludedOwners={excludedOwners} />
+              </TabsContent>
+
+              {canManage && (
+                <TabsContent value="config" className="space-y-6">
+                  <ConfigBlock season={season} onYearChange={setSelectedYear} />
+                </TabsContent>
+              )}
+            </Tabs>
+          </>
         )}
       </div>
     </InternalLayout>
@@ -215,10 +220,19 @@ function computeLiveRealized(
   }).length;
 }
 
-function OverviewBlock({ season }: { season: any }) {
+function OverviewBlock({ season, excludedOwners = [] }: { season: any; excludedOwners?: string[] }) {
   const { data: weeks = [] } = useWeeklyGoals(season.id);
-  const { data: finalized = [], isSuccess: finalizedLoaded } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  const { data: rawFinalized = [], isSuccess: finalizedLoaded } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
   const snapshot = useSnapshotWeeklyRealized();
+  const hasExclusion = excludedOwners.length > 0;
+  const finalized = useMemo(() => {
+    if (!hasExclusion) return rawFinalized;
+    const set = new Set(excludedOwners);
+    return rawFinalized.filter((f: any) => {
+      const owner = f.internal_owner ?? "__none__";
+      return !set.has(owner);
+    });
+  }, [rawFinalized, excludedOwners, hasExclusion]);
 
   const totalPlanned = season.total_planned || 0;
 
@@ -249,7 +263,7 @@ function OverviewBlock({ season }: { season: any }) {
     const we = parseISODate(w.week_end);
     const isClosed = today > we; // week ended yesterday or earlier
     const live = computeLiveRealized(w, finalized);
-    const realized = isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
+    const realized = !hasExclusion && isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
     return { ...w, realized };
   });
 
@@ -258,6 +272,7 @@ function OverviewBlock({ season }: { season: any }) {
   // otherwise we'd freeze a "0" while the request is still in-flight.
   
   useEffect(() => {
+    if (hasExclusion) return; // don't freeze simulated values
     if (!finalizedLoaded || weeks.length === 0) return;
     const pending = weeks
       .filter((w) => today > parseISODate(w.week_end) && (w.realized_snapshot == null))
@@ -267,7 +282,7 @@ function OverviewBlock({ season }: { season: any }) {
       snapshot.mutate(pending);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeks, finalized, finalizedLoaded]);
+  }, [weeks, finalized, finalizedLoaded, hasExclusion]);
 
   const totalFinalized = realizedPerWeek.reduce((s, w) => s + w.realized, 0);
   const percentDone = totalPlanned > 0 ? (totalFinalized / totalPlanned) * 100 : 0;
@@ -667,9 +682,15 @@ function BonusScaleCard({
 
 /* ─────────────────────────────  WEEKLY  ───────────────────────────── */
 
-function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean }) {
+function WeeklyBlock({ season, canManage, excludedOwners = [] }: { season: any; canManage: boolean; excludedOwners?: string[] }) {
   const { data: weeks = [], isLoading } = useWeeklyGoals(season.id);
-  const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  const { data: rawFinalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  const hasExclusion = excludedOwners.length > 0;
+  const finalized = useMemo(() => {
+    if (!hasExclusion) return rawFinalized;
+    const set = new Set(excludedOwners);
+    return rawFinalized.filter((f: any) => !set.has(f.internal_owner ?? "__none__"));
+  }, [rawFinalized, excludedOwners, hasExclusion]);
   const replace = useReplaceWeeklyGoals();
   const update = useUpdateWeeklyGoal();
 
@@ -769,7 +790,7 @@ function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean })
                     const we = parseISODate(w.week_end);
                     const isClosed = today > we;
                     const live = computeLiveRealized(w, finalized);
-                    const realized = isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
+                    const realized = !hasExclusion && isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
                     const currentGoal = edits[w.id] ?? w.goal_count;
                     const diff = realized - currentGoal;
                     const pct = currentGoal > 0 ? (realized / currentGoal) * 100 : 0;
@@ -1046,3 +1067,68 @@ function NewSeasonDialog({ onCreated, initial }: { onCreated: (year: number) => 
     </Dialog>
   );
 }
+
+/* ─────────────────────  OWNER FILTER BAR  ───────────────────── */
+
+function OwnerFilterBar({
+  season,
+  excluded,
+  onChange,
+}: {
+  season: any;
+  excluded: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+
+  const options = useMemo(() => {
+    const set = new Set<string>();
+    let hasNone = false;
+    finalized.forEach((f: any) => {
+      const o = f.internal_owner;
+      if (o && String(o).trim().length > 0) set.add(o);
+      else hasNone = true;
+    });
+    const arr = Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const opts = arr.map((v) => ({ value: v, label: v }));
+    if (hasNone) opts.push({ value: "__none__", label: "Sem responsável" });
+    return opts;
+  }, [finalized]);
+
+  const hasExclusion = excluded.length > 0;
+  const labels = excluded
+    .map((v) => (v === "__none__" ? "Sem responsável" : v))
+    .join(", ");
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+      <div className="flex items-center gap-2">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Simular sem entregas de:</span>
+        <MultiSelectFilter
+          options={options}
+          selected={excluded}
+          onChange={onChange}
+          placeholder="Responsável"
+          width="w-56"
+        />
+      </div>
+      {hasExclusion && (
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          <span>
+            Simulação ativa: ignorando entregas de <strong>{labels}</strong>. Snapshots semanais não estão sendo aplicados.
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="ml-1 inline-flex items-center gap-1 hover:underline"
+          >
+            <X className="h-3 w-3" /> Limpar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+

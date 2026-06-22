@@ -1,33 +1,34 @@
-## Objetivo
-Permitir que a equipe libere as etapas **Declaração e Recibo** e **Guia de Pagamento (DARF)** mesmo quando não houver prévia anexada.
+# Filtro de exclusão por responsável na tela Metas IRPF
 
-## Como funciona hoje
-- Em `src/pages/ClientDetail.tsx` (≈ linha 2468/2669), as duas etapas checam `preview_status === 'aprovado'`. Se falso, mostram "Etapa bloqueada".
-- Existe um botão "Aprovar internamente" (≈ linha 2253), mas ele só aparece quando já existe `preview_file_url`. Ou seja: sem upload de prévia, não há como destravar.
+Adicionar um controle no topo da página **Metas IRPF** que permite simular como ficariam meta x realizado **excluindo as entregas de um (ou mais) responsável** — começando pela Ana Braga, mas funcionando para qualquer responsável cadastrado.
 
-## Mudanças (somente front, em `src/pages/ClientDetail.tsx`)
+## Comportamento
 
-### 1. No bloco "Etapa bloqueada" do `DeclarationReceiptCard`
-Quando `!readOnly` (uso interno), além da mensagem, mostrar um botão **"Liberar etapa sem prévia"** que:
-- Abre `confirm("Liberar Declaração e Recibo sem enviar prévia ao cliente?")`.
-- Faz `upsert` em `final_deliverables` para o `case_id` setando:
-  - `preview_status = 'aprovado'`
-  - `preview_approved_at = now()`
-  - `preview_approved_by_internal = true`
-  - `preview_approved_by_name = profileName || user.email`
-- Registra em `case_timeline`: "Etapa liberada internamente sem envio de prévia por <usuário>" (`visible_to_client = false`).
-- Invalida queries `irpf-case` e dispara `onRefresh()`.
+- Novo campo "Excluir entregas de" ao lado do seletor de Temporada no header.
+- Multi-select com a lista de responsáveis internos (`internal_owner`) que aparecem na temporada selecionada, mais opção "Sem responsável".
+- Quando há ao menos um responsável selecionado:
+  - Aparece uma faixa de aviso discreta indicando "Simulação: ignorando entregas de Ana Braga" com botão "Limpar".
+  - Todos os números da aba Visão Geral são recalculados ignorando esses casos: KPI Realizados, % Concluído, status vs meta, projeção, gráfico acumulado e escala de bônus.
+  - Aba Metas Semanais: coluna "Realizado" recalculada na mesma lógica (o snapshot persistido continua intocado — a simulação roda só em memória).
+- Sem seleção, tudo se comporta exatamente como hoje (inclui snapshots já congelados).
 
-### 2. Texto do estado bloqueado
-Atualizar para: "Disponível após aprovação da prévia pelo cliente — ou libere manualmente abaixo se não for enviar prévia."
+## Detalhes técnicos
 
-### 3. Guia de Pagamento (DARF)
-Não precisa alterar: ela usa o mesmo `preview_status === 'aprovado'` e desbloqueia automaticamente assim que a Declaração liberar.
+1. **`src/hooks/use-irpf-goals.ts` → `useFinalizedCasesInRange`**
+   - Acrescentar `internal_owner` ao select de `irpf_cases` para que o filtro funcione no front.
 
-### 4. Reversão
-O botão existente "Cancelar aprovação interna" (≈ linha 2289) continua válido para travar de novo. Como `preview_file_url` ficará nulo nesse cenário, ajustar a condição daquele botão para aparecer também quando `pStatus === 'aprovado' && preview_approved_by_internal = true`, independente de existir arquivo de prévia.
+2. **`src/pages/MetasIRPF.tsx`**
+   - Novo estado `excludedOwners: string[]` no componente raiz, passado para `OverviewBlock` e `WeeklyBlock`.
+   - Em `OverviewBlock`/`WeeklyBlock`, antes de calcular `realizedPerWeek`, filtrar `finalized` removendo os casos cujo `internal_owner` está em `excludedOwners` (com `__none__` cobrindo sem responsável).
+   - Quando houver exclusão ativa:
+     - Para semanas fechadas, **não usar** `realized_snapshot` — recalcular ao vivo a partir da lista filtrada (caso contrário a simulação não teria efeito retroativo).
+     - Desativar o efeito de auto-snapshot enquanto a simulação estiver ligada.
+   - Lista de responsáveis para o multi-select: derivada de `finalized` (`internal_owner` distintos), ordenada alfabeticamente.
+   - Adicionar componente `MultiSelectFilter` (já existe no projeto) ao header.
 
-## Fora de escopo
-- Não altera triggers do banco, status do `irpf_cases` nem schema.
-- Não muda fluxo da retificadora nem portal do cliente.
-- Finalização da demanda continua acontecendo normalmente quando IRPF + recibo forem anexados e marcados como enviados ao cliente.
+3. Sem alterações de banco, migrations ou permissões.
+
+## Arquivos alterados
+
+- `src/hooks/use-irpf-goals.ts`
+- `src/pages/MetasIRPF.tsx`
