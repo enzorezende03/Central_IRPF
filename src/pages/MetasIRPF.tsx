@@ -220,10 +220,19 @@ function computeLiveRealized(
   }).length;
 }
 
-function OverviewBlock({ season }: { season: any }) {
+function OverviewBlock({ season, excludedOwners = [] }: { season: any; excludedOwners?: string[] }) {
   const { data: weeks = [] } = useWeeklyGoals(season.id);
-  const { data: finalized = [], isSuccess: finalizedLoaded } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  const { data: rawFinalized = [], isSuccess: finalizedLoaded } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
   const snapshot = useSnapshotWeeklyRealized();
+  const hasExclusion = excludedOwners.length > 0;
+  const finalized = useMemo(() => {
+    if (!hasExclusion) return rawFinalized;
+    const set = new Set(excludedOwners);
+    return rawFinalized.filter((f: any) => {
+      const owner = f.internal_owner ?? "__none__";
+      return !set.has(owner);
+    });
+  }, [rawFinalized, excludedOwners, hasExclusion]);
 
   const totalPlanned = season.total_planned || 0;
 
