@@ -1067,3 +1067,68 @@ function NewSeasonDialog({ onCreated, initial }: { onCreated: (year: number) => 
     </Dialog>
   );
 }
+
+/* ─────────────────────  OWNER FILTER BAR  ───────────────────── */
+
+function OwnerFilterBar({
+  season,
+  excluded,
+  onChange,
+}: {
+  season: any;
+  excluded: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+
+  const options = useMemo(() => {
+    const set = new Set<string>();
+    let hasNone = false;
+    finalized.forEach((f: any) => {
+      const o = f.internal_owner;
+      if (o && String(o).trim().length > 0) set.add(o);
+      else hasNone = true;
+    });
+    const arr = Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const opts = arr.map((v) => ({ value: v, label: v }));
+    if (hasNone) opts.push({ value: "__none__", label: "Sem responsável" });
+    return opts;
+  }, [finalized]);
+
+  const hasExclusion = excluded.length > 0;
+  const labels = excluded
+    .map((v) => (v === "__none__" ? "Sem responsável" : v))
+    .join(", ");
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+      <div className="flex items-center gap-2">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Simular sem entregas de:</span>
+        <MultiSelectFilter
+          options={options}
+          selected={excluded}
+          onChange={onChange}
+          placeholder="Responsável"
+          width="w-56"
+        />
+      </div>
+      {hasExclusion && (
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          <span>
+            Simulação ativa: ignorando entregas de <strong>{labels}</strong>. Snapshots semanais não estão sendo aplicados.
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="ml-1 inline-flex items-center gap-1 hover:underline"
+          >
+            <X className="h-3 w-3" /> Limpar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
