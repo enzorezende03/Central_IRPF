@@ -263,7 +263,7 @@ function OverviewBlock({ season, excludedOwners = [] }: { season: any; excludedO
     const we = parseISODate(w.week_end);
     const isClosed = today > we; // week ended yesterday or earlier
     const live = computeLiveRealized(w, finalized);
-    const realized = isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
+    const realized = !hasExclusion && isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
     return { ...w, realized };
   });
 
