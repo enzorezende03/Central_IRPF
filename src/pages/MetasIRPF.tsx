@@ -105,29 +105,32 @@ export default function MetasIRPF() {
         )}
 
         {season && (
-          <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="bg-muted/50">
-              <TabsTrigger value="overview" className="gap-2"><Activity className="h-4 w-4" /> Visão Geral</TabsTrigger>
-              <TabsTrigger value="weekly" className="gap-2"><Calendar className="h-4 w-4" /> Metas Semanais</TabsTrigger>
-              {canManage && (
-                <TabsTrigger value="config" className="gap-2"><Target className="h-4 w-4" /> Configuração</TabsTrigger>
-              )}
-            </TabsList>
+          <>
+            <OwnerFilterBar season={season} excluded={excludedOwners} onChange={setExcludedOwners} />
+            <Tabs defaultValue="overview" className="space-y-4">
+              <TabsList className="bg-muted/50">
+                <TabsTrigger value="overview" className="gap-2"><Activity className="h-4 w-4" /> Visão Geral</TabsTrigger>
+                <TabsTrigger value="weekly" className="gap-2"><Calendar className="h-4 w-4" /> Metas Semanais</TabsTrigger>
+                {canManage && (
+                  <TabsTrigger value="config" className="gap-2"><Target className="h-4 w-4" /> Configuração</TabsTrigger>
+                )}
+              </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
-              <OverviewBlock season={season} />
-            </TabsContent>
-
-            <TabsContent value="weekly" className="space-y-6">
-              <WeeklyBlock season={season} canManage={canManage} />
-            </TabsContent>
-
-            {canManage && (
-              <TabsContent value="config" className="space-y-6">
-                <ConfigBlock season={season} onYearChange={setSelectedYear} />
+              <TabsContent value="overview" className="space-y-6">
+                <OverviewBlock season={season} excludedOwners={excludedOwners} />
               </TabsContent>
-            )}
-          </Tabs>
+
+              <TabsContent value="weekly" className="space-y-6">
+                <WeeklyBlock season={season} canManage={canManage} excludedOwners={excludedOwners} />
+              </TabsContent>
+
+              {canManage && (
+                <TabsContent value="config" className="space-y-6">
+                  <ConfigBlock season={season} onYearChange={setSelectedYear} />
+                </TabsContent>
+              )}
+            </Tabs>
+          </>
         )}
       </div>
     </InternalLayout>
