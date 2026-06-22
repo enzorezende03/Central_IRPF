@@ -790,7 +790,7 @@ function WeeklyBlock({ season, canManage, excludedOwners = [] }: { season: any; 
                     const we = parseISODate(w.week_end);
                     const isClosed = today > we;
                     const live = computeLiveRealized(w, finalized);
-                    const realized = isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
+                    const realized = !hasExclusion && isClosed && w.realized_snapshot != null ? w.realized_snapshot : live;
                     const currentGoal = edits[w.id] ?? w.goal_count;
                     const diff = realized - currentGoal;
                     const pct = currentGoal > 0 ? (realized / currentGoal) * 100 : 0;
