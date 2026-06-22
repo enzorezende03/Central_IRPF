@@ -682,9 +682,15 @@ function BonusScaleCard({
 
 /* ─────────────────────────────  WEEKLY  ───────────────────────────── */
 
-function WeeklyBlock({ season, canManage }: { season: any; canManage: boolean }) {
+function WeeklyBlock({ season, canManage, excludedOwners = [] }: { season: any; canManage: boolean; excludedOwners?: string[] }) {
   const { data: weeks = [], isLoading } = useWeeklyGoals(season.id);
-  const { data: finalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  const { data: rawFinalized = [] } = useFinalizedCasesInRange(season.start_date, season.deadline_date);
+  const hasExclusion = excludedOwners.length > 0;
+  const finalized = useMemo(() => {
+    if (!hasExclusion) return rawFinalized;
+    const set = new Set(excludedOwners);
+    return rawFinalized.filter((f: any) => !set.has(f.internal_owner ?? "__none__"));
+  }, [rawFinalized, excludedOwners, hasExclusion]);
   const replace = useReplaceWeeklyGoals();
   const update = useUpdateWeeklyGoal();
 
