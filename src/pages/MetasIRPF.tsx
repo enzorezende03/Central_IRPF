@@ -43,6 +43,7 @@ export default function MetasIRPF() {
 
   const { data: seasons = [], isLoading: loadingSeasons } = useSeasons();
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [excludedOwners, setExcludedOwners] = useState<string[]>([]);
 
   // pick default season: current year > most recent
   useEffect(() => {
