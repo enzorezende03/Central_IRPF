@@ -272,6 +272,7 @@ function OverviewBlock({ season, excludedOwners = [] }: { season: any; excludedO
   // otherwise we'd freeze a "0" while the request is still in-flight.
   
   useEffect(() => {
+    if (hasExclusion) return; // don't freeze simulated values
     if (!finalizedLoaded || weeks.length === 0) return;
     const pending = weeks
       .filter((w) => today > parseISODate(w.week_end) && (w.realized_snapshot == null))
@@ -281,7 +282,7 @@ function OverviewBlock({ season, excludedOwners = [] }: { season: any; excludedO
       snapshot.mutate(pending);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeks, finalized, finalizedLoaded]);
+  }, [weeks, finalized, finalizedLoaded, hasExclusion]);
 
   const totalFinalized = realizedPerWeek.reduce((s, w) => s + w.realized, 0);
   const percentDone = totalPlanned > 0 ? (totalFinalized / totalPlanned) * 100 : 0;
